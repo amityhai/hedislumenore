@@ -1,0 +1,262 @@
+.simulator-container {
+  padding: 24px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #0f6e56;
+  cursor: pointer;
+  margin-bottom: 14px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+.simulator-header {
+  margin-bottom: 24px;
+}
+
+.simulator-header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.simulator-header p {
+  font-size: 13px;
+  color: #6b6a66;
+}
+
+.sim-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.sim-tabs .tab {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #e8e6e1;
+  background: #fff;
+  color: #6b6a66;
+  transition: all 0.15s;
+}
+
+.sim-tabs .tab:hover {
+  border-color: #9c9a92;
+}
+
+.sim-tabs .tab.active {
+  background: #0f6e56;
+  color: #fff;
+  border-color: #0f6e56;
+}
+
+.sim-single,
+.sim-cross {
+  background: #fff;
+  border: 1px solid #e8e6e1;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b6a66;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e8e6e1;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.calc-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.calc-item {
+  text-align: center;
+}
+
+.calc-label {
+  font-size: 10px;
+  color: #9c9a92;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.calc-value {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.calc-arrow {
+  color: #9c9a92;
+  font-size: 14px;
+}
+
+.calc-result {
+  padding: 6px 14px;
+  border: 2px solid #0f6e56;
+  border-radius: 8px;
+}
+
+.calc-result .calc-value {
+  color: #0f6e56;
+}
+
+.slider-section {
+  margin-bottom: 16px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.slider-header span:first-child {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.slider-count {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f6e56;
+}
+
+.slider {
+  width: 100%;
+  margin: 10px 0;
+  accent-color: #0f6e56;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #9c9a92;
+}
+
+.sim-result {
+  padding: 16px;
+  background: #f5f4f0;
+  border-radius: 10px;
+  margin: 14px 0;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.sim-result.goal-met {
+  background: #eaf3de;
+}
+
+.result-main {
+  flex: 1;
+}
+
+.result-label {
+  font-size: 10px;
+  color: #9c9a92;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.result-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.result-delta {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.result-side {
+  text-align: right;
+}
+
+.result-status {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.insight-line {
+  padding: 12px 14px;
+  background: #e1f5ee;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #085041;
+  margin-top: 10px;
+}
+
+.sim-cross h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.sim-cross p {
+  font-size: 12px;
+  color: #6b6a66;
+  margin-bottom: 14px;
+}
+
+.cross-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cross-table th {
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #9c9a92;
+  border-bottom: 1px solid #e8e6e1;
+  background: #fafaf7;
+}
+
+.cross-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f0efe8;
+  font-size: 12px;
+  color: #6b6a66;
+}
+
+.cross-table tr:hover td {
+  background: #fafaf7;
+  cursor: pointer;
+}

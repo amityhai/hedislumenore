@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>QualityPulse</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f8f7f4;--card:#fff;--border:#e8e6e1;--text:#1a1a18;--text2:#6b6a66;--text3:#9c9a92;--green:#0f6e56;--gbg:#eaf3de;--gt:#27500a;--red:#a32d2d;--rbg:#fcebeb;--rt:#791f1f;--amber:#854f0b;--abg:#faeeda;--at:#633806;--blue:#185fa5;--bbg:#e6f1fb;--bt:#0c447c;--teal:#0f6e56;--tbg:#e1f5ee;--r:10px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.app{display:flex;min-height:100vh}
+.sb{width:210px;background:var(--card);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto;z-index:50}
+.logo{padding:0 20px 20px;font-size:18px;font-weight:700;color:var(--teal)}
+.ni{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);cursor:pointer;font-size:13px;transition:all .15s}
+.ni:hover{background:#f0efe8;color:var(--text)}
+.ni.ac{background:var(--tbg);color:var(--teal);font-weight:600;border-right:3px solid var(--teal)}
+.mn{margin-left:210px;flex:1;min-height:100vh}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.bc{font-size:13px;color:var(--text2)}.bc a{color:var(--teal);text-decoration:none;cursor:pointer}
+.ha{display:flex;align-items:center;gap:10px}
+.btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--teal);color:#fff}.btn-p:hover{background:#0a5a46}
+.btn-o{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-o:hover{border-color:var(--text3)}
+.btn-ai{background:var(--teal);color:#fff;display:flex;align-items:center;gap:6px}
+.ct{padding:24px}
+.pt{font-size:20px;font-weight:600;margin-bottom:4px}
+.ps{font-size:13px;color:var(--text2);margin-bottom:18px}
+.page{display:none}.page.active{display:block}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--teal);cursor:pointer;margin-bottom:14px;font-weight:500}.back:hover{text-decoration:underline}
+/* Cards */
+.kr{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kp{padding:14px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--card);cursor:pointer;transition:all .15s}
+.kp:hover{border-color:var(--text3)}
+.kl{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.kv{font-size:26px;font-weight:700}
+.ks{font-size:11px;margin-top:3px}
+.kp-g{border-bottom:3px solid #97c459}.kp-g .kl{color:var(--gt)}
+.kp-b{border-bottom:3px solid #85b7eb}.kp-b .kl{color:var(--bt)}
+.kp-r{border-bottom:3px solid #f09595}.kp-r .kl,.kp-r .ks{color:var(--red)}
+.kp-t{border-bottom:3px solid var(--teal)}.kp-t .ks{color:var(--teal)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.cd{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.ct2{font-size:13px;font-weight:600;margin-bottom:12px}
+/* LOB bars */
+.lr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ln{width:85px;font-size:12px;color:var(--text2)}
+.lt{flex:1;height:10px;background:#f0efe8;border-radius:5px;overflow:hidden}
+.lb{height:100%;border-radius:5px;background:var(--teal)}
+.lv{width:100px;font-size:12px;font-weight:600;text-align:right}
+/* Hotspot */
+.hi{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0efe8;font-size:12px;cursor:pointer}.hi:last-child{border:none}.hi:hover{color:var(--teal)}
+.hr{font-weight:700}.hr.bad{color:var(--red)}
+.er{font-size:12px;padding:6px 0;border-bottom:1px solid #f0efe8}.er:last-child{border:none}
+.ed{font-weight:700;color:var(--red);float:right}
+/* Pills */
+.dtabs{display:flex;gap:4px;margin-bottom:12px}
+.dt{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text2)}.dt:hover{border-color:var(--text3)}.dt.ac{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.pl{padding:5px 12px;border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--card);transition:all .15s}.pl:hover{transform:translateY(-1px)}
+.pl.above{border-color:#97c459;color:var(--gt)}.pl.below{border-color:#f09595;color:var(--red)}.pl.at{border-color:#85b7eb;color:var(--bt)}.pl.sel{background:var(--teal);color:#fff;border-color:var(--teal)}
+/* Measure card */
+.mc{display:grid;grid-template-columns:1fr 180px;gap:16px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px}
+.mn2{font-size:15px;font-weight:600;margin-bottom:4px}
+.md{font-size:12px;color:var(--text2);margin-bottom:10px}
+.ms{display:flex;gap:16px}
+.msi{text-align:center}.msl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}.msv{font-size:18px;font-weight:700}
+/* Strat cards */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:8px}
+.sc{padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:11px}.sc:hover{border-color:var(--text3)}
+.sc.neg{border-left:3px solid var(--red)}.sc.pos{border-left:3px solid #97c459}
+.scn{font-weight:600;font-size:12px;margin-bottom:4px;color:var(--text)}
+.scr{display:flex;justify-content:space-between;margin-bottom:2px;color:var(--text2)}
+.sh{padding:6px 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);user-select:none}.sh:hover{color:var(--text)}
+/* Badge */
+.badge{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;display:inline-block}
+.bg{background:var(--gbg);color:var(--gt)}.ba{background:var(--abg);color:var(--at)}.br{background:var(--rbg);color:var(--rt)}.bb{background:var(--bbg);color:var(--bt)}
+/* Tables */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);border-bottom:1px solid var(--border);background:#fafaf7}
+td{padding:9px 10px;border-bottom:1px solid #f0efe8;font-size:12px;color:var(--text2)}
+tr:hover td{background:#fafaf7}
+.clink{cursor:pointer;color:var(--teal);font-weight:600}
+.clink:hover{text-decoration:underline}
+/* Calc flow */
+.cf{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.ci{text-align:center}.cil{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}.civ{font-size:17px;font-weight:700}
+.ca{color:var(--text3);font-size:14px}
+.cr{padding:6px 14px;border:2px solid var(--teal);border-radius:8px}
+/* Detail tabs */
+.dts{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px}
+.dti{padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}.dti:hover{color:var(--text)}.dti.ac{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
+/* Metric pills */
+.mpills{display:flex;gap:6px;margin-bottom:10px}
+.mp{padding:5px 14px;border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card)}.mp.ac{background:var(--teal);color:#fff;border-color:var(--teal)}
+/* Episode banner */
+.eb{padding:10px 14px;background:var(--abg);border-radius:8px;font-size:12px;color:var(--at);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+/* Slider */
+.sim-slider{width:100%;margin:10px 0;accent-color:var(--teal)}
+/* Modal */
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border-radius:12px;padding:24px;width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-t{font-size:16px;font-weight:600}
+.modal-x{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.modal-info{padding:10px 14px;background:#f5f4f0;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.7}
+.fg{margin-bottom:12px}
+.fg label{font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px}
+.fg select,.fg input,.fg textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit}
+.fg textarea{height:60px;resize:vertical}
+/* AI Panel */
+.pnl{position:fixed;top:0;right:-420px;width:420px;height:100vh;background:var(--card);border-left:1px solid var(--border);z-index:200;transition:right .3s;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,.08)}
+.pnl.open{right:0}
+.ph{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:1}
+.pht{font-size:15px;font-weight:600}
+.pb{padding:18px}
+.is{margin-bottom:18px}
+.ih{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:6px}
+.ii{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.it{font-size:12px;color:var(--text2);line-height:1.8}
+.it ul{padding-left:16px}.it li{margin-bottom:4px}
+.pf{padding:12px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);position:sticky;bottom:0;background:var(--card)}
+/* Action buttons */
+.act-btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:var(--teal);color:#fff}.act-btn:hover{background:#0a5a46}
+.act-btn-o{background:transparent;border:1px solid var(--border);color:var(--text2)}.act-btn-o:hover{background:#f5f4f0}
+.mon-btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:default;border:none;background:#f5f4f0;color:var(--text3)}
+.hidden{display:none !important}
+/* Provider CRSP card */
+.crsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.crsp-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.crsp-head:hover{background:#fafaf7}
+.crsp-name{font-size:14px;font-weight:600}
+.crsp-meta{font-size:12px;color:var(--text2)}
+.crsp-body{padding:0 16px 14px}
+/* Sim result */
+.sim-res{padding:16px;background:#f5f4f0;border-radius:var(--r);margin:14px 0;display:flex;gap:20px;align-items:center}
+.sim-res.goal-met{background:var(--gbg)}
+.sr-main{flex:1}
+.sr-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}
+.sr-val{font-size:28px;font-weight:700}
+.sr-delta{font-size:13px;font-weight:500;margin-top:2px}
+.sr-side{text-align:right}
+.insight-line{padding:12px 14px;background:var(--tbg);border-radius:8px;font-size:12px;color:#085041;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="sb">
+  <div class="logo">QualityPulse</div>
+  <div class="ni ac" data-p="dashboard" onclick="showPage('dashboard')">Dashboard</div>
+  <div class="ni" data-p="detail" onclick="showPage('detail')">Measure detail</div>
+  <div class="ni" data-p="cac" onclick="showPage('cac')">Care Action Center</div>
+  <div class="ni" data-p="sim" onclick="showPage('sim')">Rate Simulator</div>
+  <div class="ni" data-p="prov" onclick="showPage('prov')">Provider scores</div>
+  <div style="position:absolute;bottom:20px;left:20px;display:flex;align-items:center;gap:8px">
+    <div style="width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">JM</div>
+    <div><div style="font-size:12px;font-weight:600">Jennifer Martin</div><div style="font-size:10px;color:var(--text3)">Quality Director</div></div>
+  </div>
+</div>
+
+<div class="mn">
+<div class="hd">
+  <div class="bc" id="bc">QualityPulse / <strong>Dashboard</strong></div>
+  <div class="ha">
+    <button class="btn btn-ai" onclick="togglePanel()">✨ Analyze</button>
+    <button class="btn btn-o">Export</button>
+  </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="ct page active" id="pg-dashboard">
+<div class="pt">Quality Management Command Center</div>
+<div class="ps">Real-time performance snapshot, trends, and equity alerts. Data as of: March 30, 2026</div>
+
+<div class="kr">
+  <div class="kp kp-g" onclick="filterByKpi('above')"><div class="kl">Above goal / target</div><div class="kv">35 <span style="font-size:14px;font-weight:400;color:var(--text2)">/ 88</span></div><div class="ks" style="color:var(--gt)">+5 vs MY 2025</div></div>
+  <div class="kp kp-b" onclick="filterByKpi('at')"><div class="kl">At goal / target</div><div class="kv">7 <span style="font-size:14px;font-weight:400;color:var(--text2)">/ 88</span></div><div class="ks">Stable vs MY 2025</div></div>
+  <div class="kp kp-r" onclick="filterByKpi('below')"><div class="kl">Below benchmark / critical</div><div class="kv">46 <span style="font-size:14px;font-weight:400;color:var(--text2)">need attention</span></div><div class="ks">7 critical, 39 below target</div></div>
+  <div class="kp kp-t"><div class="kl">Gaps closed (MTD)</div><div class="kv">643</div><div class="ks">+18% vs Feb</div></div>
+</div>
+<div id="filter-chip" class="hidden" style="margin-bottom:14px;padding:6px 14px;background:var(--tbg);border-radius:20px;font-size:12px;color:#085041;font-weight:500;width:fit-content"></div>
+
+<div class="g2">
+  <div class="cd">
+    <div class="ct2">Measures meeting target</div>
+    <svg width="100%" viewBox="0 0 400 150">
+      <line x1="40" y1="130" x2="380" y2="130" stroke="#e8e6e1" stroke-width=".5"/>
+      <line x1="40" y1="98" x2="380" y2="98" stroke="#e8e6e1" stroke-width=".5" stroke-dasharray="3"/>
+      <line x1="40" y1="66" x2="380" y2="66" stroke="#e8e6e1" stroke-width=".5" stroke-dasharray="3"/>
+      <line x1="40" y1="34" x2="380" y2="34" stroke="#e8e6e1" stroke-width=".5" stroke-dasharray="3"/>
+      <text x="12" y="133" fill="#9c9a92" font-size="9">0</text>
+      <text x="12" y="101" fill="#9c9a92" font-size="9">30</text>
+      <text x="12" y="69" fill="#9c9a92" font-size="9">60</text>
+      <text x="12" y="37" fill="#9c9a92" font-size="9">88</text>
+      <text x="72" y="145" fill="#9c9a92" font-size="9" text-anchor="middle">Jan</text>
+      <text x="134" y="145" fill="#9c9a92" font-size="9" text-anchor="middle">Feb</text>
+      <text x="196" y="145" fill="#9c9a92" font-size="9" text-anchor="middle">Mar</text>
+      <text x="258" y="145" fill="#9c9a92" font-size="9" text-anchor="middle">Apr</text>
+      <text x="320" y="145" fill="#9c9a92" font-size="9" text-anchor="middle">May</text>
+      <text x="372" y="145" fill="#9c9a92" font-size="9" text-anchor="middle">Jun</text>
+      <polyline fill="none" stroke="#9c9a92" stroke-width="1.5" stroke-dasharray="4 3" points="72,99 134,95 196,90 258,86 320,82 372,78"/>
+      <polyline fill="none" stroke="var(--teal)" stroke-width="2" points="72,97 134,92 196,87 258,84 320,80 372,76"/>
+      <circle cx="372" cy="76" r="4" fill="var(--teal)"/>
+      <text x="372" y="68" fill="var(--teal)" font-size="10" font-weight="600" text-anchor="middle">35</text>
+      <line x1="60" y1="18" x2="78" y2="18" stroke="var(--teal)" stroke-width="2"/><text x="82" y="21" fill="var(--text2)" font-size="9">Current Year</text>
+      <line x1="155" y1="18" x2="173" y2="18" stroke="#9c9a92" stroke-width="1.5" stroke-dasharray="4 3"/><text x="177" y="21" fill="#9c9a92" font-size="9">Prior Year</text>
+    </svg>
+  </div>
+  <div class="cd">
+    <div class="ct2">Performance by product line</div>
+    <div class="lr"><div class="ln">Medicaid</div><div class="lt"><div class="lb" style="width:53.8%"></div></div><div class="lv">28/52 (53.8%)</div></div>
+    <div class="lr"><div class="ln">Commercial</div><div class="lt"><div class="lb" style="width:75%"></div></div><div class="lv">18/24 (75.0%)</div></div>
+    <div class="lr"><div class="ln">Medicare</div><div class="lt"><div class="lb" style="width:54.5%"></div></div><div class="lv">12/22 (54.5%)</div></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">% of measures meeting their defined goal per product line</div>
+  </div>
+</div>
+
+<!-- Hotspot panels — ABOVE measure section per user request -->
+<div class="g3">
+  <div class="cd">
+    <div class="ct2">Lowest performing measures</div>
+    <div class="hi" onclick="openMeasure('AIS-E')"><span>AIS-E — Adult Immunization</span><span class="hr bad">38.4%</span></div>
+    <div class="hi" onclick="openMeasure('IET')"><span>IET — Initiation SUD Treatment</span><span class="hr bad">45.0%</span></div>
+    <div class="hi" onclick="openMeasure('CHL')"><span>CHL — Chlamydia Screening</span><span class="hr bad">52.1%</span></div>
+    <div class="hi" onclick="openMeasure('CBP')"><span>CBP — Controlling High BP</span><span class="hr bad">58.0%</span></div>
+    <div class="hi" onclick="openMeasure('COL-E')"><span>COL-E — Colorectal Screening</span><span class="hr bad">62.4%</span></div>
+  </div>
+  <div class="cd">
+    <div class="ct2">Lowest performing CRSPs</div>
+    <div class="hi" onclick="showPage('prov')"><span>CRSP-004 Metro Health</span><span class="hr bad">58.2%</span></div>
+    <div class="hi" onclick="showPage('prov')"><span>CRSP-007 South Valley</span><span class="hr bad">62.1%</span></div>
+    <div class="hi" onclick="showPage('prov')"><span>CRSP-012 East Side Medical</span><span class="hr bad">64.8%</span></div>
+    <div class="hi" onclick="showPage('prov')"><span>CRSP-002 North East</span><span class="hr">68.4%</span></div>
+    <div class="hi" onclick="showPage('prov')"><span>CRSP-009 Lakeview</span><span class="hr">69.1%</span></div>
+  </div>
+  <div class="cd">
+    <div class="ct2" style="display:flex;justify-content:space-between">Equity alerts <span class="badge ba">4 active</span></div>
+    <div class="er">BCS-E: Black 58% vs org 66%<span class="ed">-8 pts</span></div>
+    <div class="er">CBP: Hispanic 52% vs org 65%<span class="ed">-13 pts</span></div>
+    <div class="er">GSD: Black 64% vs org 73%<span class="ed">-9 pts</span></div>
+    <div class="er">CHL: AI/AN 42% vs org 52%<span class="ed">-10 pts</span></div>
+  </div>
+</div>
+
+<!-- Measure quick view -->
+<div class="cd" style="margin-bottom:18px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div class="ct2" style="margin:0">Measure performance</div>
+    <span class="clink" onclick="document.getElementById('ftbl').classList.toggle('hidden')">Show all measures →</span>
+  </div>
+  <div class="dtabs">
+    <div class="dt ac" onclick="switchDom(this,'eoc')">EOC</div>
+    <div class="dt" onclick="switchDom(this,'ecds')">ECDS</div>
+    <div class="dt" onclick="switchDom(this,'aac')">AAC</div>
+    <div class="dt" onclick="switchDom(this,'uru')">URU</div>
+  </div>
+  <div class="pills" id="mpills"></div>
+  <div id="msum"></div>
+  <div id="ftbl" class="hidden">
+    <table><thead><tr><th>Measure</th><th>Actionable</th><th>Rate</th><th>Goal</th><th>Gap</th><th>Open gaps</th><th>Status</th></tr></thead><tbody id="ftbody"></tbody></table>
+  </div>
+</div>
+
+<!-- Strat preview -->
+<div id="stprev"></div>
+</div>
+
+<!-- ==================== MEASURE DETAIL ==================== -->
+<div class="ct page" id="pg-detail">
+<div class="back" onclick="showPage('dashboard')">← Back to Dashboard</div>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+  <div><div style="font-size:18px;font-weight:600" id="d-title"></div><div style="font-size:12px;color:var(--text2)" id="d-desc"></div></div>
+  <div id="d-badge"></div>
+</div>
+<div class="mpills" id="d-metrics"></div>
+<div class="mpills" id="d-prods" style="margin-bottom:10px"></div>
+<div style="font-size:11px;color:var(--text3);margin-bottom:12px;display:flex;gap:14px" id="d-props"></div>
+<div class="cf" id="d-flow"></div>
+<div class="dts" id="d-tabs"></div>
+<div id="d-content"></div>
+</div>
+
+<!-- ==================== CARE ACTION CENTER ==================== -->
+<div class="ct page" id="pg-cac">
+<div class="back" onclick="showPage('dashboard')">← Back to Dashboard</div>
+<div class="pt">Care Action Center</div>
+<div class="ps">Prioritize and act on open care gaps.</div>
+<div class="kr">
+  <div class="kp"><div class="kl">Total non-compliant</div><div class="kv">8,234</div></div>
+  <div class="kp" style="border-bottom:3px solid #EF9F27"><div class="kl" style="color:var(--at)">Unassigned</div><div class="kv">2,392</div></div>
+  <div class="kp" style="border-bottom:3px solid #85b7eb"><div class="kl" style="color:var(--bt)">Actionable now</div><div class="kv">5,842</div></div>
+  <div class="kp kp-r"><div class="kl">Expiring this week</div><div class="kv">127</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+  <select style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option>All Measures</option><option>BCS-E</option><option>FUH</option><option>CHL</option></select>
+  <select style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option>All Status</option><option>Actionable</option><option>Expired</option></select>
+  <select style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option>All CRSP Groups</option></select>
+  <select style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option>All Assigned</option></select>
+</div>
+<table>
+<thead><tr><th>Member ID</th><th>Name</th><th>Measure</th><th>Type</th><th>Window</th><th>Days left</th><th>Status</th><th>Assigned</th><th>Action</th></tr></thead>
+<tbody>
+  <tr><td>0094184633</td><td style="font-weight:600">Adams, Daisha</td><td>FUH</td><td>Follow-up</td><td>7-day (03/29)</td><td style="color:var(--red);font-weight:600">2 days</td><td><span style="color:var(--amber);font-weight:600">Urgent</span></td><td>Sarah Jenkins</td><td><button class="act-btn" onclick="openModal('proactive')">Schedule visit</button></td></tr>
+  <tr><td>0071758297</td><td style="font-weight:600">Brown, Lisa</td><td>FUH</td><td>Follow-up</td><td>7-day (03/15)</td><td style="color:var(--red);font-weight:600">Expired</td><td><span style="color:var(--red);font-weight:600">Expired</span></td><td>Michael Chen</td><td><button class="mon-btn" onclick="openModal('expired')">Monitor only</button></td></tr>
+  <tr><td>0048291034</td><td style="font-weight:600">Chen, Michael</td><td>FUH</td><td>Follow-up</td><td>30-day (04/27)</td><td style="color:var(--gt);font-weight:600">28 days</td><td><span style="color:var(--gt);font-weight:600">Actionable</span></td><td>Unassigned</td><td><button class="act-btn" onclick="openModal('proactive')">Schedule visit</button></td></tr>
+  <tr><td>0082341122</td><td style="font-weight:600">Smith, Sarah</td><td>BCS-E</td><td>Screening</td><td>Annual (12/31)</td><td style="color:var(--gt);font-weight:600">276 days</td><td><span style="color:var(--gt);font-weight:600">Actionable</span></td><td>Sarah Jenkins</td><td><button class="act-btn" onclick="openModal('screening')">Assign action</button></td></tr>
+  <tr><td>0067123456</td><td style="font-weight:600">Garcia, Maria</td><td>CHL</td><td>Screening</td><td>Annual (12/31)</td><td style="color:var(--gt);font-weight:600">276 days</td><td><span style="color:var(--gt);font-weight:600">Actionable</span></td><td>Unassigned</td><td><button class="act-btn" onclick="openModal('screening')">Assign action</button></td></tr>
+  <tr><td>0055214432</td><td style="font-weight:600">Davis, James</td><td>CBP</td><td>Screening</td><td>Annual (12/31)</td><td style="color:var(--gt);font-weight:600">276 days</td><td><span style="color:var(--gt);font-weight:600">Actionable</span></td><td>Unassigned</td><td><button class="act-btn" onclick="openModal('screening')">Assign action</button></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ==================== RATE SIMULATOR ==================== -->
+<div class="ct page" id="pg-sim">
+<div class="back" onclick="showPage('dashboard')">← Back to Dashboard</div>
+<div class="pt">Rate Simulator</div>
+<div class="ps">Model gap closure scenarios for individual measures.</div>
+<div class="dtabs" style="margin-bottom:18px">
+  <div class="dt ac" onclick="switchSimTab(this,'single')">Single Measure</div>
+  <div class="dt" onclick="switchSimTab(this,'cross')">Cross-Measure</div>
+</div>
+
+<!-- Single Measure Tab -->
+<div id="sim-single">
+<div class="fg"><label>Select measure</label>
+<select id="sim-sel" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="updateSim()">
+</select></div>
+<div class="cf" id="sim-flow"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:12px;font-weight:600">Gaps to close</span><span style="font-size:22px;font-weight:700;color:var(--teal)" id="sim-count">0</span></div>
+<input type="range" min="0" max="538" value="0" class="sim-slider" id="sim-slider" oninput="updateSim()">
+<div style="position:relative;height:20px;background:#f0efe8;border-radius:10px;margin:10px 0;overflow:hidden">
+  <div id="sim-bar" style="height:100%;border-radius:10px;background:var(--teal);width:66%;transition:width .2s"></div>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)"><span>0%</span><span id="sim-goal-label">Goal: 72%</span><span>100%</span></div>
+<div class="sim-res" id="sim-res">
+  <div class="sr-main"><div class="sr-label">Projected rate</div><div class="sr-val" id="sim-proj">66.00%</div><div class="sr-delta" id="sim-delta" style="color:var(--text3)">+0.00% from current</div></div>
+  <div class="sr-side"><div class="sr-label">Gap to goal</div><div style="font-size:18px;font-weight:700;color:var(--red)" id="sim-gtg">-6.00%</div><div style="font-size:11px;color:var(--text3);margin-top:2px" id="sim-status">Below goal</div></div>
+</div>
+<div class="insight-line" id="sim-insight"></div>
+</div>
+
+<!-- Cross-Measure Tab -->
+<div id="sim-cross" class="hidden">
+<div class="ct2">Cross-measure comparison</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:14px">Compare gap-to-goal across measures. Click any row to simulate.</div>
+<table>
+<thead><tr><th>Measure</th><th>Current rate</th><th>Goal</th><th>Gap to goal</th><th>Open gaps</th><th>Gaps for goal</th><th>Effort</th><th></th></tr></thead>
+<tbody id="cross-tbody"></tbody>
+</table>
+<div id="cross-summary" style="margin-top:12px;font-size:12px;color:var(--text2);padding:10px 14px;background:#f5f4f0;border-radius:8px"></div>
+<div id="combo-result"></div>
+</div>
+</div>
+
+<!-- ==================== PROVIDER SCORES ==================== -->
+<div class="ct page" id="pg-prov">
+<div class="back" onclick="showPage('dashboard')">← Back to Dashboard</div>
+<div class="pt">Provider Scores</div>
+<div class="ps">Performance metrics by provider group and individual clinician.</div>
+<div style="margin-bottom:14px"><input placeholder="Search CRSP groups..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:300px"></div>
+<div id="prov-list"></div>
+</div>
+
+</div><!-- /mn -->
+</div><!-- /app -->
+
+<!-- MODALS -->
+<div class="modal-bg" id="modal">
+<div class="modal" id="modal-content"></div>
+</div>
+
+<!-- AI PANEL -->
+<div class="pnl" id="ai-pnl">
+<div class="ph"><div class="pht">✨ AI Performance Analysis</div><button class="modal-x" onclick="togglePanel()">✕</button></div>
+<div class="pb">
+  <div class="is"><div class="ih"><div class="ii" style="background:var(--bbg);color:var(--bt)">📊</div>Executive summary</div><div class="it">35 of 88 measures (39.8%) are meeting their goals, up from 30 last quarter. However, 7 measures are in critical status — more than 5 points below target. Medicaid product line is weakest at 53.8% measures meeting goal vs Commercial at 75%. Overall gap closure rate improved 18% month-over-month.</div></div>
+  <div class="is"><div class="ih"><div class="ii" style="background:var(--rbg);color:var(--rt)">⚠</div>Key risks</div><div class="it"><ul><li>BCS-E rate dropped 2.4% YoY to 66% — now 6 points below the 72% goal. 538 open gaps remain, 96 closures needed to reach goal.</li><li>CBP Medicaid rate at 58% is 14 points below goal — largest gap-to-goal across all measures.</li><li>FUH 7-day has only 28 actionable episodes of 464 total gaps. Most windows expired.</li><li>IET Initiation at 45% is trending down — requires provider-level workflow changes.</li></ul></div></div>
+  <div class="is"><div class="ih"><div class="ii" style="background:var(--gbg);color:var(--gt)">✅</div>Quick wins</div><div class="it"><ul><li>CHL needs only 38 gap closures to reach goal — a targeted phone campaign could close this in 2 weeks.</li><li>GSD needs 56 closures — high impact on diabetes Star measures.</li><li>CBP needs only 40 closures to reach 68% goal — pharmacy-based BP screening could help.</li><li>FUH 30-day is already above goal (72.6% vs 70%) — maintain, no additional investment.</li></ul></div></div>
+  <div class="is"><div class="ih"><div class="ii" style="background:var(--tbg);color:#085041">🏥</div>Health equity</div><div class="it"><ul><li>BCS-E: Black members at 58% vs 66% org average — 8-point disparity. Closing 50 gaps would nearly eliminate it.</li><li>CBP: Hispanic members 52% vs 65% — 13-point disparity, likely language and transportation barriers.</li><li>4 measures have subgroups with 5+ point disparities requiring targeted outreach.</li></ul></div></div>
+  <div class="is"><div class="ih"><div class="ii" style="background:var(--abg);color:var(--at)">👨‍⚕</div>Provider hotspots</div><div class="it"><ul><li>CRSP-004 Metro Health has lowest average rate (58.2%) across 12 providers.</li><li>11% of members (~936) are unattributed — gap outreach cannot work without PCP attribution.</li></ul></div></div>
+</div>
+<div class="pf">Last generated: Just now · Data as of: March 30, 2026</div>
+</div>
+
+<script>
+// ===== DATA =====
+const M = {
+  eoc:[
+    {id:'CBP',name:'Controlling High Blood Pressure',desc:'Persons 18-85 with hypertension whose BP was adequately controlled.',rate:65,goal:68,denom:2456,num:1596,gaps:860,act:true,type:'Screening',method:'ADMIN',item:'Person',benefit:'Medical'},
+    {id:'GSD',name:'Glycemic Status Assessment',desc:'Persons 18-75 with diabetes who had HbA1c testing.',rate:73,goal:78,denom:1890,num:1380,gaps:510,act:true,type:'Screening',method:'HYBRID',item:'Person',benefit:'Medical'},
+    {id:'CHL',name:'Chlamydia Screening',desc:'Women 16-24 who were identified as sexually active and had a chlamydia test.',rate:61.1,goal:65,denom:950,num:580,gaps:370,act:true,type:'Screening',method:'ADMIN',item:'Person',benefit:'Medical'},
+    {id:'SAA',name:'Adherence to Antipsychotics',desc:'Persons with schizophrenia who maintained PDC ≥80% for antipsychotic medications.',rate:63.9,goal:66,denom:2048,num:1309,gaps:739,act:true,type:'Adherence',method:'ADMIN',item:'Person',benefit:'Medical+Pharmacy'},
+    {id:'FUH',name:'Follow-Up After Hospitalization for Mental Illness',desc:'Discharges for persons 6+ hospitalized for mental illness who had follow-up visit.',rate:72.6,goal:75,denom:1696,num:1232,gaps:464,act:false,type:'Follow-up',method:'ADMIN',item:'Episode',benefit:'Medical+MH',active:28,metrics:['FollowUp30Day','FollowUp7Day']},
+    {id:'IET',name:'Initiation of SUD Treatment',desc:'Persons with new SUD episode who initiated treatment within 14 days.',rate:45,goal:50,denom:1100,num:495,gaps:605,act:false,type:'Follow-up',method:'ADMIN',item:'Episode',benefit:'Medical',active:38,metrics:['Initiation','Engagement']},
+  ],
+  ecds:[
+    {id:'BCS-E',name:'Breast Cancer Screening',desc:'Persons 40-74 recommended for routine breast cancer screening who had a mammogram.',rate:66,goal:72,denom:1582,num:1044,gaps:538,act:true,type:'Screening',method:'ECDS',item:'Person',benefit:'Medical'},
+    {id:'COL-E',name:'Colorectal Cancer Screening',desc:'Persons 45-75 who had appropriate screening for colorectal cancer.',rate:62.4,goal:70,denom:1806,num:1127,gaps:679,act:true,type:'Screening',method:'ECDS',item:'Person',benefit:'Medical'},
+    {id:'CCS-E',name:'Cervical Cancer Screening',desc:'Persons 24-64 who had cervical cancer screening.',rate:64.8,goal:68,denom:1248,num:809,gaps:439,act:true,type:'Screening',method:'ECDS',item:'Person',benefit:'Medical'},
+    {id:'AIS-E',name:'Adult Immunization Status',desc:'Adults 19+ who received recommended immunizations.',rate:38.4,goal:42,denom:4210,num:1617,gaps:2593,act:true,type:'Screening',method:'ECDS',item:'Person',benefit:'Medical'},
+  ],
+  aac:[
+    {id:'AAP',name:'Adults Access to Preventive Health',desc:'Adults 20+ who had an ambulatory or preventive care visit.',rate:64.3,goal:68,denom:7100,num:4565,gaps:2535,act:true,type:'Access',method:'ADMIN',item:'Person',benefit:'Medical'},
+    {id:'FUM',name:'Follow-Up After ED for Mental Illness',desc:'ED visits for persons 6+ with mental illness who had follow-up.',rate:61,goal:65,denom:820,num:500,gaps:320,act:false,type:'Follow-up',method:'ADMIN',item:'Episode',benefit:'Medical+MH',active:23,metrics:['FollowUp30Day','FollowUp7Day']},
+    {id:'FUA',name:'Follow-Up After ED for Substance Use',desc:'ED visits for persons 13+ with SUD who had follow-up.',rate:54.8,goal:60,denom:560,num:307,gaps:253,act:false,type:'Follow-up',method:'ADMIN',item:'Episode',benefit:'Medical',active:65,metrics:['FollowUp30Day','FollowUp7Day']},
+  ],
+  uru:[
+    {id:'PCR',name:'Plan All-Cause Readmissions',desc:'Rate of acute inpatient stays followed by readmission within 30 days.',rate:10.2,goal:9.5,denom:1422,num:0,gaps:0,act:false,type:'Utilization',method:'ADMIN',item:'Episode',benefit:'Medical'},
+    {id:'EDU',name:'ED Utilization',desc:'Rate of ED visits per 1,000 member months.',rate:48.2,goal:45,denom:7100,num:0,gaps:0,act:false,type:'Utilization',method:'ADMIN',item:'Person',benefit:'Medical'},
+  ]
+};
+const allM = Object.values(M).flat();
+
+const SD = {
+  'BCS-E':{age:[{n:'42-51',r:82.86,d:4200,nc:720},{n:'52-74',r:80,d:5600,nc:1120}],race:[{n:'Black',r:58,d:612,nc:257,dp:-8},{n:'Hispanic',r:62.1,d:248,nc:94,dp:-3.9},{n:'White',r:67.9,d:680,nc:218,dp:1.9},{n:'Asian',r:76.5,d:144,nc:34,dp:10.5},{n:'AI/AN',r:55,d:40,nc:18,dp:-11},{n:'NHPI',r:70,d:20,nc:6,dp:4},{n:'MENA',r:64,d:50,nc:18,dp:-2},{n:'Other',r:63,d:80,nc:30,dp:-3},{n:'Two+',r:68,d:36,nc:12,dp:2},{n:'Unknown',r:65,d:172,nc:60,dp:-1}],eth:[{n:'Hispanic or Latino',r:62.1,d:248,nc:94,dp:-3.9},{n:'Not Hispanic or Latino',r:68.4,d:980,nc:309,dp:2.4},{n:'Asked But No Answer',r:59.2,d:120,nc:49,dp:-6.8},{n:'Unknown',r:64.8,d:234,nc:82,dp:-1.2}]},
+  'FUH':{age:[{n:'6-17',r:76.87,d:294,nc:68},{n:'18-64',r:70.62,d:1198,nc:352},{n:'65+',r:78.43,d:204,nc:44}],race:[{n:'Black',r:69.87,d:312,nc:94,dp:-2.8},{n:'Hispanic',r:62,d:245,nc:93,dp:-10.6},{n:'White',r:70.7,d:820,nc:240,dp:-1.9},{n:'Asian',r:68.1,d:144,nc:46,dp:-4.5},{n:'Other',r:42.6,d:61,nc:35,dp:-30},{n:'Unknown',r:69,d:114,nc:35,dp:-3.6}],eth:[{n:'Hispanic or Latino',r:62,d:245,nc:93,dp:-10.6},{n:'Not Hispanic or Latino',r:73.4,d:1100,nc:293,dp:0.8},{n:'Asked But No Answer',r:65,d:180,nc:63,dp:-7.6},{n:'Unknown',r:68,d:171,nc:55,dp:-4.6}]},
+};
+const defSD={age:[{n:'18-44',r:68,d:800,nc:256},{n:'45-64',r:65,d:1200,nc:420},{n:'65+',r:72,d:400,nc:112}],race:[{n:'Black',r:58,d:400,nc:168,dp:-8},{n:'White',r:68,d:600,nc:192,dp:2},{n:'Hispanic',r:60,d:300,nc:120,dp:-6},{n:'Asian',r:72,d:100,nc:28,dp:6},{n:'AI/AN',r:52,d:30,nc:14,dp:-14},{n:'Other',r:64,d:100,nc:36,dp:-2}],eth:[{n:'Hispanic or Latino',r:60,d:300,nc:120,dp:-6},{n:'Not Hispanic or Latino',r:68,d:1000,nc:320,dp:2},{n:'Asked But No Answer',r:62,d:80,nc:30,dp:-4},{n:'Unknown',r:65,d:120,nc:42,dp:-1}]};
+
+const episodes = [
+  {mid:'0089315690',name:'Abdullah, Shareen',dob:'01/30/1994',age:32,disch:'01/15/2026',win:'30-day',days:'-',status:'Follow-up done',act:false},
+  {mid:'0073443448',name:'Adams, Crystal',dob:'09/15/1989',age:37,disch:'02/04/2026',win:'7-day',days:'-',status:'Follow-up done',act:false},
+  {mid:'0094184633',name:'Adams, Daisha',dob:'07/14/1995',age:31,disch:'03/25/2026',win:'7-day',days:'2 days',status:'Open — actionable',act:true},
+  {mid:'0071758297',name:'Brown, Lisa',dob:'07/06/1972',age:54,disch:'03/08/2026',win:'7-day',days:'Expired',status:'Closed gap',act:false,expired:true},
+  {mid:'0071758297',name:'Brown, Lisa',dob:'07/06/1972',age:54,disch:'06/14/2026',win:'30-day',days:'-',status:'Follow-up done',act:false},
+  {mid:'0048291034',name:'Chen, Michael',dob:'03/12/1980',age:46,disch:'03/28/2026',win:'30-day',days:'28 days',status:'Open — actionable',act:true},
+];
+
+const CRSPs = [
+  {id:'CRSP-001',name:'North East Medical Group',panel:4502,providers:12,avg:74.2,gaps:{BCSE:116,CBP:84,GSD:92},docs:[{name:'Dr. Sarah Jenkins',spec:'Internal Medicine',panel:450,bcs:78.2,cbp:68.5,gsd:58.2},{name:'Dr. Michael Chen',spec:'Internal Medicine',panel:380,bcs:64.5,cbp:72.1,gsd:65.4},{name:'Dr. Emily Wong',spec:'Pediatrics',panel:520,bcs:'-',cbp:92,gsd:'-'}]},
+  {id:'CRSP-002',name:'South West Health Alliance',panel:3840,providers:8,avg:68.4,gaps:{BCSE:106,CBP:112,GSD:78},docs:[{name:'Dr. Robert Smith',spec:'Family Practice',panel:480,bcs:62.1,cbp:58.4,gsd:70.2},{name:'Dr. Lisa Park',spec:'Internal Medicine',panel:360,bcs:66.8,cbp:64.2,gsd:68.9}]},
+  {id:'CRSP-004',name:'Metro Health Network',panel:2890,providers:6,avg:58.2,gaps:{BCSE:142,CBP:98,GSD:64},docs:[{name:'Dr. James Wilson',spec:'Family Practice',panel:520,bcs:55.4,cbp:52.8,gsd:61.2}]},
+];
+
+// ===== STATE =====
+let curDom='eoc', selM=null, curPage='dashboard', detailM=null;
+
+// ===== NAVIGATION =====
+function showPage(p){
+  curPage=p;
+  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+  document.getElementById('pg-'+p).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>{n.classList.remove('ac');if(n.dataset.p===p)n.classList.add('ac')});
+  const names={dashboard:'Dashboard',detail:'Measure detail',cac:'Care Action Center',sim:'Rate Simulator',prov:'Provider scores'};
+  document.getElementById('bc').innerHTML='QualityPulse / '+(p==='dashboard'?'<strong>Dashboard</strong>':'<a onclick="showPage(\'dashboard\')">Dashboard</a> / <strong>'+names[p]+'</strong>');
+  window.scrollTo(0,0);
+  if(p==='sim')initSim();
+  if(p==='prov')renderProviders();
+  if(p==='detail'&&!detailM){detailM=allM.find(x=>x.id==='BCS-E');renderDetail(detailM)}
+}
+
+function filterByKpi(type){
+  document.getElementById('ftbl').classList.remove('hidden');
+  const tbody=document.getElementById('ftbody');
+  const filtered=type==='above'?allM.filter(m=>m.rate>=m.goal):type==='at'?allM.filter(m=>Math.abs(m.rate-m.goal)<=1):allM.filter(m=>m.rate<m.goal);
+  tbody.innerHTML=filtered.map(m=>{
+    const ok=m.rate>=m.goal,st=ok?'Above':'Below',sc=ok?'color:var(--gt)':'color:var(--red)';
+    const ab=m.act?'<span class="badge bg">Actionable</span>':'<span class="badge ba">Monitor</span>';
+    const gd=m.active!=null?`${m.active} active / ${m.gaps} total`:m.gaps.toLocaleString();
+    return `<tr style="cursor:pointer" onclick="openMeasure('${m.id}')"><td style="font-weight:600;color:var(--text)">${m.id} — ${m.name}</td><td>${ab}</td><td style="font-weight:600;${sc}">${m.rate}%</td><td>${m.goal}%</td><td style="${sc}">${(m.rate-m.goal).toFixed(1)}%</td><td style="color:var(--teal);font-weight:600">${gd}</td><td style="${sc};font-weight:600">${st}</td></tr>`}).join('');
+  const labels={above:'Above goal',at:'At goal',below:'Below benchmark'};
+  const chip=document.getElementById('filter-chip');
+  chip.innerHTML=`Showing: ${filtered.length} measures ${labels[type]} <span style="cursor:pointer;margin-left:6px" onclick="clearFilter()">✕</span>`;
+  chip.classList.remove('hidden');
+  document.querySelectorAll('.kp').forEach(k=>k.style.outline='none');
+  event.currentTarget.style.outline='2px solid var(--teal)';
+}
+
+function clearFilter(){
+  document.getElementById('filter-chip').classList.add('hidden');
+  document.getElementById('ftbl').classList.add('hidden');
+  document.querySelectorAll('.kp').forEach(k=>k.style.outline='none');
+  renderFTbl();
+}
+
+function openMeasure(id){
+  const m=allM.find(x=>x.id===id);
+  if(!m)return;
+  detailM=m;
+  showPage('detail');
+  renderDetail(m);
+}
+
+// ===== DASHBOARD =====
+function switchDom(el,dom){
+  document.querySelectorAll('.dtabs .dt').forEach(t=>t.classList.remove('ac'));
+  el.classList.add('ac');curDom=dom;renderPills();
+}
+
+function renderPills(){
+  const list=M[curDom]||[];
+  document.getElementById('mpills').innerHTML=list.map(m=>{
+    const st=m.rate>=m.goal?'above':(m.goal-m.rate<=1?'at':'below');
+    const s=selM&&selM.id===m.id?' sel':'';
+    return `<div class="pl ${st}${s}" onclick="selectM('${m.id}')">${m.id}</div>`;
+  }).join('');
+}
+
+function selectM(id){
+  selM=allM.find(x=>x.id===id);
+  if(!selM)return;renderPills();renderMSum(selM);renderStPrev(selM);
+}
+
+function renderMSum(m){
+  const ok=m.rate>=m.goal,g2g=(m.rate-m.goal).toFixed(1),gn=Math.max(0,Math.ceil((m.goal/100*m.denom)-m.num));
+  const ab=m.act?'<span class="badge bg">Actionable</span>':'<span class="badge ba">Monitor only</span>';
+  const an=m.active?` (${m.active} actionable)`:'';
+  document.getElementById('msum').innerHTML=`<div class="mc"><div>
+    <div class="mn2">${m.id} — ${m.name} ${ab}</div>
+    <div class="md">Type: ${m.type} · Denom: ${m.denom.toLocaleString()} · Num: ${m.num.toLocaleString()} · Open gaps: ${m.gaps.toLocaleString()}${an}</div>
+    <div class="ms" style="margin-top:10px">
+      <div class="msi"><div class="msl">Rate</div><div class="msv" style="color:${ok?'var(--gt)':'var(--red)'}">${m.rate}%</div></div>
+      <div class="msi"><div class="msl">Goal</div><div class="msv">${m.goal}%</div></div>
+      <div class="msi"><div class="msl">Gap to goal</div><div class="msv" style="color:${ok?'var(--gt)':'var(--red)'}">${g2g>0?'+':''}${g2g}%</div></div>
+      <div class="msi"><div class="msl">Gaps for goal</div><div class="msv">${gn}</div></div>
+    </div></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-p" onclick="openMeasure('${m.id}')" style="font-size:12px">Investigate →</button>
+      <button class="btn btn-o" onclick="showPage('sim')" style="font-size:12px">Simulate</button>
+    </div></div>`;
+}
+
+function renderStPrev(m){
+  const sd=SD[m.id]||defSD;
+  function cards(items,showDp){return items.map(s=>{
+    const c=showDp?(s.dp<0?'neg':'pos'):((s.r)<(m.goal)?'neg':'pos');
+    return `<div class="sc ${c}"><div class="scn">${s.n}</div>
+      <div class="scr"><span>Rate</span><span style="font-weight:600;color:var(--text)">${s.r}%</span></div>
+      ${showDp?`<div class="scr"><span>Disparity</span><span style="font-weight:600;color:${s.dp<0?'var(--red)':'var(--gt)'}">${s.dp>0?'+':''}${s.dp} pts</span></div>`:''}
+      <div class="scr"><span>Eligible</span><span>${s.d.toLocaleString()}</span></div>
+      <div class="scr"><span>Not meeting</span><span style="color:var(--red);font-weight:600">${s.nc}</span></div></div>`}).join('')}
+  document.getElementById('stprev').innerHTML=`
+    <div style="margin-bottom:12px"><div class="sh" onclick="this.nextElementSibling.classList.toggle('hidden')">▼ Age</div><div class="sg">${cards(sd.age,false)}</div></div>
+    <div style="margin-bottom:12px"><div class="sh" onclick="this.nextElementSibling.classList.toggle('hidden')">▼ Race</div><div class="sg">${cards(sd.race,true)}</div></div>
+    <div style="margin-bottom:12px"><div class="sh" onclick="this.nextElementSibling.classList.toggle('hidden')">▼ Ethnicity</div><div class="sg">${cards(sd.eth,true)}</div></div>`;
+}
+
+function renderFTbl(){
+  document.getElementById('ftbody').innerHTML=allM.map(m=>{
+    const ok=m.rate>=m.goal,st=ok?'Above':'Below',sc=ok?'color:var(--gt)':'color:var(--red)';
+    const ab=m.act?'<span class="badge bg">Actionable</span>':'<span class="badge ba">Monitor</span>';
+    const gd=m.active!=null?`${m.active} active / ${m.gaps} total`:m.gaps.toLocaleString();
+    return `<tr style="cursor:pointer" onclick="openMeasure('${m.id}')"><td style="font-weight:600;color:var(--text)">${m.id} — ${m.name}</td><td>${ab}</td><td style="font-weight:600;${sc}">${m.rate}%</td><td>${m.goal}%</td><td style="${sc}">${(m.rate-m.goal).toFixed(1)}%</td><td style="color:var(--teal);font-weight:600">${gd}</td><td style="${sc};font-weight:600">${st}</td></tr>`}).join('');
+}
+
+// ===== MEASURE DETAIL =====
+// Sample members per group
+const sampleMembers={
+  'BCS-E':[
+    {mid:'0082341122',name:'Smith, Sarah',age:48,status:'Non-compliant',last:'-'},
+    {mid:'0067123456',name:'Garcia, Maria',age:52,status:'Non-compliant',last:'-'},
+    {mid:'0045678901',name:'Johnson, Patricia',age:55,status:'Compliant',last:'01/15/2026'},
+    {mid:'0034567890',name:'Williams, Keisha',age:63,status:'Non-compliant',last:'-'},
+    {mid:'0023456789',name:'Lee, Jennifer',age:44,status:'Compliant',last:'02/20/2026'},
+    {mid:'0012345678',name:'Davis, Angela',age:58,status:'Non-compliant',last:'-'},
+    {mid:'0098765432',name:'Martinez, Rosa',age:50,status:'Non-compliant',last:'-'},
+    {mid:'0087654321',name:'Taylor, Diana',age:67,status:'Compliant',last:'03/05/2026'},
+  ],
+  'default':[
+    {mid:'0055214432',name:'Davis, James',age:42,status:'Non-compliant',last:'-'},
+    {mid:'0044321567',name:'Wilson, Robert',age:56,status:'Compliant',last:'02/10/2026'},
+    {mid:'0033210456',name:'Brown, Michael',age:38,status:'Non-compliant',last:'-'},
+    {mid:'0022109345',name:'Anderson, Lisa',age:61,status:'Non-compliant',last:'-'},
+    {mid:'0011098234',name:'Thomas, Karen',age:47,status:'Compliant',last:'01/28/2026'},
+  ]
+};
+
+// AI insight narratives per measure
+const aiInsights={
+  'BCS-E':'BCS-E is 6 points below the 72% goal. The 52-74 age group has 1,120 non-compliant members — the largest contributor dragging the rate down (80% vs 82.86% for 42-51). Black subgroup shows an 8-point disparity at 58%. Recommend targeted outreach to age 52-74 members, particularly in Black and Hispanic subgroups. CHL and GSD have overlapping members — consider scheduling comprehensive visits.',
+  'FUH':'FUH 30-day rate is at 72.6%, slightly below the 75% goal. However, only 28 of 464 gaps have open follow-up windows — most are expired. The 18-64 age group has the lowest rate (70.62%) with 352 non-compliant episodes. Hispanic members show a 10.6-point disparity. Priority: set up automated discharge alerts rather than chasing expired windows. Focus coordinator time on the 28 actionable episodes.',
+  'CBP':'CBP is 3 points below goal at 65%. Hispanic members show a 13-point disparity — the largest equity gap across all measures. Consider pharmacy-based BP screening for members who haven\'t visited PCP in 6+ months. This measure has 860 gaps but only needs 40 closures to reach goal — an Easy win.',
+  'CHL':'CHL needs only 38 gap closures — the smallest effort of any below-goal measure. At 61.1% vs 65% goal, this is a quick win. Target phone outreach to the 21-24 age group where engagement rates are higher. AI/AN subgroup shows 10-point disparity requiring culturally sensitive outreach.',
+  'default':'This measure is below its performance goal. Review the stratification data below to identify which subgroups are contributing most to the gap. Focus outreach on the largest non-compliant groups first for maximum rate improvement. Check the equity tab for any racial or ethnic disparities that need targeted intervention.'
+};
+
+function renderDetail(m){
+  const sd=SD[m.id]||defSD;
+  document.getElementById('d-title').textContent=`${m.id} details`;
+  document.getElementById('d-desc').textContent=m.desc;
+  document.getElementById('d-badge').innerHTML=m.act?'<span class="badge bg">Actionable</span>':'<span class="badge ba">Monitor only</span>';
+  if(m.metrics){document.getElementById('d-metrics').innerHTML=m.metrics.map((mt,i)=>`<div class="mp${i===0?' ac':''}">${mt}</div>`).join('')}else{document.getElementById('d-metrics').innerHTML=''}
+  document.getElementById('d-prods').innerHTML='<div class="mp ac">Medicaid</div><div class="mp">Commercial</div><div class="mp">Medicare</div>';
+  document.getElementById('d-props').innerHTML=`Scoring: <strong>Proportion</strong> · Type: <strong>Process</strong> · Item count: <strong>${m.item}</strong> · Benefit: <strong>${m.benefit}</strong> · Method: <strong>${m.method}</strong>`;
+  const excl=Math.round(m.denom*0.08);
+  document.getElementById('d-flow').innerHTML=`
+    <div class="ci"><div class="cil">Init Pop</div><div class="civ">${(m.denom+excl).toLocaleString()}</div></div><div class="ca">→</div>
+    <div class="ci"><div class="cil">Exclusions</div><div class="civ">-${excl}</div></div><div class="ca">→</div>
+    <div class="ci"><div class="cil">Denominator</div><div class="civ">${m.denom.toLocaleString()}</div></div><div class="ca">→</div>
+    <div class="ci"><div class="cil">Numerator</div><div class="civ">${m.num.toLocaleString()}</div></div><div class="ca">→</div>
+    <div class="ci cr"><div class="cil">Rate</div><div class="civ" style="color:var(--teal)">${m.rate}%</div></div>`;
+  const isEp=m.item==='Episode';
+  const tabs=['By age','By race','By ethnicity','Exclusion detail','Value sets & meds','YoY comparison','CRSP level'];
+  if(isEp)tabs.push('Episodes');
+  document.getElementById('d-tabs').innerHTML=tabs.map((t,i)=>`<div class="dti${i===0?' ac':''}" onclick="switchDTab(this,'${t}','${m.id}')">${t}</div>`).join('');
+  renderDTab('By age',m.id);
+}
+
+function switchDTab(el,tab,id){
+  document.querySelectorAll('#d-tabs .dti').forEach(t=>t.classList.remove('ac'));
+  el.classList.add('ac');renderDTab(tab,id);
+}
+
+function toggleMembers(rowId){
+  const el=document.getElementById(rowId);
+  if(el)el.classList.toggle('hidden');
+}
+
+function getMemberRows(mId,groupName){
+  const members=sampleMembers[mId]||sampleMembers['default'];
+  return members.slice(0,4).map(mb=>`<tr style="background:#fafaf7"><td style="padding-left:40px;font-size:11px;color:var(--text3)">↳</td><td style="font-size:11px">${mb.mid}</td><td style="font-size:11px;font-weight:500">${mb.name}</td><td style="font-size:11px">${mb.age}</td><td style="font-size:11px;font-weight:500;color:${mb.status==='Compliant'?'var(--gt)':'var(--red)'}">${mb.status}</td><td style="font-size:11px">${mb.last}</td></tr>`).join('');
+}
+
+function renderDTab(tab,id){
+  const m=allM.find(x=>x.id===id);
+  const sd=SD[id]||defSD;
+  const ct=document.getElementById('d-content');
+  const insight=aiInsights[id]||aiInsights['default'];
+  const insightCard=`<div style="padding:14px 16px;background:var(--tbg);border-radius:var(--r);margin-bottom:16px;font-size:12px;color:#085041;line-height:1.8;display:flex;gap:10px"><div style="font-size:16px;flex-shrink:0">✨</div><div><strong>AI Insight:</strong> ${insight}</div></div>`;
+  
+  if(tab==='By age'){
+    ct.innerHTML=insightCard+`<table><thead><tr><th></th><th>Age Group</th><th>Denominator</th><th>Numerator</th><th>Non-Compliant</th><th>Rate</th></tr></thead><tbody>${sd.age.map((a,i)=>{
+      const rid='age-mem-'+i;
+      return `<tr style="cursor:pointer" onclick="toggleMembers('${rid}')"><td style="color:var(--teal);font-size:11px">▶</td><td style="font-weight:600">${a.n}</td><td>${a.d.toLocaleString()}</td><td>${(a.d-a.nc).toLocaleString()}</td><td style="color:var(--red);font-weight:600">${a.nc}</td><td style="font-weight:600;color:${a.r>=m.goal?'var(--gt)':'var(--red)'}">${a.r}%</td></tr><tr id="${rid}" class="hidden"><td colspan="6" style="padding:0"><table style="margin:0"><thead><tr style="background:#f5f4f0"><th></th><th>Member ID</th><th>Name</th><th>Age</th><th>Status</th><th>Last service</th></tr></thead><tbody>${getMemberRows(id,a.n)}<tr><td colspan="6" style="text-align:center;font-size:11px;color:var(--teal);cursor:pointer;padding:6px" onclick="showPage('cac')">View all ${a.nc} members →</td></tr></tbody></table></td></tr>`}).join('')}</tbody></table>`;
+  }else if(tab==='By race'){
+    ct.innerHTML=insightCard+`<table><thead><tr><th></th><th>Race</th><th>Denominator</th><th>Numerator</th><th>Non-Compliant</th><th>Rate</th><th>Disparity</th></tr></thead><tbody>${sd.race.map((r,i)=>{
+      const rid='race-mem-'+i;
+      return `<tr style="cursor:pointer" onclick="toggleMembers('${rid}')"><td style="color:var(--teal);font-size:11px">▶</td><td style="font-weight:600">${r.n}</td><td>${r.d.toLocaleString()}</td><td>${(r.d-r.nc).toLocaleString()}</td><td style="color:var(--red);font-weight:600">${r.nc}</td><td style="font-weight:600;color:${r.r>=m.rate?'var(--gt)':'var(--red)'}">${r.r}%</td><td style="font-weight:600;color:${r.dp<0?'var(--red)':'var(--gt)'}">${r.dp>0?'+':''}${r.dp} pts</td></tr><tr id="${rid}" class="hidden"><td colspan="7" style="padding:0"><table style="margin:0"><thead><tr style="background:#f5f4f0"><th></th><th>Member ID</th><th>Name</th><th>Age</th><th>Status</th><th>Last service</th></tr></thead><tbody>${getMemberRows(id,r.n)}<tr><td colspan="6" style="text-align:center;font-size:11px;color:var(--teal);cursor:pointer;padding:6px" onclick="showPage('cac')">View all ${r.nc} members →</td></tr></tbody></table></td></tr>`}).join('')}</tbody></table>`;
+  }else if(tab==='By ethnicity'){
+    ct.innerHTML=insightCard+`<table><thead><tr><th></th><th>Ethnicity</th><th>Denominator</th><th>Numerator</th><th>Non-Compliant</th><th>Rate</th><th>Disparity</th></tr></thead><tbody>${sd.eth.map((e,i)=>{
+      const rid='eth-mem-'+i;
+      return `<tr style="cursor:pointer" onclick="toggleMembers('${rid}')"><td style="color:var(--teal);font-size:11px">▶</td><td style="font-weight:600">${e.n}</td><td>${e.d.toLocaleString()}</td><td>${(e.d-e.nc).toLocaleString()}</td><td style="color:var(--red);font-weight:600">${e.nc}</td><td style="font-weight:600;color:${e.r>=m.rate?'var(--gt)':'var(--red)'}">${e.r}%</td><td style="font-weight:600;color:${e.dp<0?'var(--red)':'var(--gt)'}">${e.dp>0?'+':''}${e.dp} pts</td></tr><tr id="${rid}" class="hidden"><td colspan="7" style="padding:0"><table style="margin:0"><thead><tr style="background:#f5f4f0"><th></th><th>Member ID</th><th>Name</th><th>Age</th><th>Status</th><th>Last service</th></tr></thead><tbody>${getMemberRows(id,e.n)}<tr><td colspan="6" style="text-align:center;font-size:11px;color:var(--teal);cursor:pointer;padding:6px" onclick="showPage('cac')">View all ${e.nc} members →</td></tr></tbody></table></td></tr>`}).join('')}</tbody></table>`;
+  }else if(tab==='Episodes'){
+    ct.innerHTML=insightCard+`<div class="eb">This is an <strong>episode-based</strong> measure. Each row represents a discharge event, not a unique person. One member can appear multiple times.</div>
+    <table><thead><tr><th>Member ID</th><th>Name</th><th>Age</th><th>Discharge</th><th>Window</th><th>Days left</th><th>Status</th><th>Action</th></tr></thead><tbody>${episodes.map(e=>{
+      const dc=e.days==='Expired'?'color:var(--red);font-weight:600':(e.days!=='-'?'color:var(--gt);font-weight:600':'');
+      const sc=e.status.includes('Open')?'color:var(--gt);font-weight:600':(e.expired?'color:var(--red);font-weight:600':'');
+      return `<tr><td>${e.mid}</td><td style="font-weight:${e.name==='Brown, Lisa'?700:400}">${e.name}</td><td>${e.age}</td><td>${e.disch}</td><td>${e.win}</td><td style="${dc}">${e.days}</td><td style="${sc}">${e.status}</td><td>${e.act?'<button class="act-btn" onclick="openModal(\'proactive\')">Schedule visit</button>':(e.expired?'<button class="mon-btn" onclick="openModal(\'expired\')">Monitor only</button>':'—')}</td></tr>`}).join('')}</tbody></table>`;
+  }else{
+    ct.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">Data for "${tab}" tab would be shown here in the production version.</div>`;
+  }
+}
+
+// ===== RATE SIMULATOR =====
+function switchSimTab(el,tab){
+  document.querySelectorAll('#pg-sim .dtabs .dt').forEach(t=>t.classList.remove('ac'));
+  el.classList.add('ac');
+  document.getElementById('sim-single').classList.toggle('hidden',tab!=='single');
+  document.getElementById('sim-cross').classList.toggle('hidden',tab!=='cross');
+  if(tab==='cross')renderCross();
+}
+
+function initSim(){
+  const sel=document.getElementById('sim-sel');
+  sel.innerHTML=allM.filter(m=>m.gaps>0).map(m=>`<option value="${m.id}">${m.id} — ${m.name}</option>`).join('');
+  updateSim();
+  renderCross();
+}
+
+function updateSim(){
+  const id=document.getElementById('sim-sel').value;
+  const m=allM.find(x=>x.id===id);if(!m)return;
+  const slider=document.getElementById('sim-slider');
+  slider.max=m.gaps;
+  const gaps=parseInt(slider.value);
+  const newNum=m.num+gaps,newRate=newNum/m.denom*100,delta=newRate-m.rate,gtg=newRate-m.goal;
+  const gn=Math.max(0,Math.ceil((m.goal/100*m.denom)-m.num));
+  const ok=gtg>=0;
+  
+  document.getElementById('sim-flow').innerHTML=`<div class="ci"><div class="cil">Denominator</div><div class="civ">${m.denom.toLocaleString()}</div></div><div class="ca">→</div><div class="ci"><div class="cil">Numerator</div><div class="civ">${m.num.toLocaleString()}</div></div><div class="ca">→</div><div class="ci cr"><div class="cil">Current rate</div><div class="civ" style="color:var(--teal)">${m.rate}%</div></div><div class="ca">|</div><div class="ci"><div class="cil">Goal</div><div class="civ">${m.goal}%</div></div><div class="ci"><div class="cil">Open gaps</div><div class="civ" style="color:var(--red)">${m.gaps.toLocaleString()}</div></div>`;
+  
+  document.getElementById('sim-count').textContent=gaps;
+  document.getElementById('sim-bar').style.width=Math.min(newRate,100)+'%';
+  document.getElementById('sim-bar').style.background=ok?'#97c459':'var(--teal)';
+  document.getElementById('sim-goal-label').textContent='Goal: '+m.goal+'%';
+  document.getElementById('sim-proj').textContent=newRate.toFixed(2)+'%';
+  document.getElementById('sim-proj').style.color=ok?'var(--gt)':'var(--text)';
+  document.getElementById('sim-delta').textContent=(delta>=0?'+':'')+delta.toFixed(2)+'% from current';
+  document.getElementById('sim-gtg').textContent=(gtg>=0?'+':'')+gtg.toFixed(2)+'%';
+  document.getElementById('sim-gtg').style.color=ok?'var(--gt)':'var(--red)';
+  document.getElementById('sim-status').textContent=ok?'At or above goal':'Below goal';
+  document.getElementById('sim-res').className='sim-res'+(ok?' goal-met':'');
+  document.getElementById('sim-insight').textContent=`💡 You need to close ${gn} gaps (${(gn/m.gaps*100).toFixed(1)}% of ${m.gaps}) to reach your ${m.goal}% goal.`;
+}
+
+function renderCross(){
+  const sorted=[...allM.filter(m=>m.gaps>0&&m.rate<m.goal)].sort((a,b)=>{
+    const an=Math.max(0,Math.ceil((a.goal/100*a.denom)-a.num)),bn=Math.max(0,Math.ceil((b.goal/100*b.denom)-b.num));
+    return an-bn;
+  });
+  let easy=0,mod=0,hard=0;
+  document.getElementById('cross-tbody').innerHTML=sorted.map(m=>{
+    const gn=Math.max(0,Math.ceil((m.goal/100*m.denom)-m.num));
+    const pct=gn/m.denom*100;
+    let eff,ec;
+    if(!m.act&&m.active!=null&&m.active<gn){eff='LIMITED';ec='color:var(--amber);';hard++}
+    else if(pct<5){eff='EASY';ec='color:var(--gt);';easy++}
+    else if(pct<10){eff='MODERATE';ec='color:var(--amber);';mod++}
+    else{eff='HARD';ec='color:var(--red);';hard++}
+    const gnDisp=m.active!=null?`${gn}<br><span style="font-size:10px;color:var(--text3)">${m.active} of ${gn} achievable</span>`:gn;
+    return `<tr style="cursor:pointer" onclick="document.getElementById('sim-sel').value='${m.id}';switchSimTab(document.querySelector('#pg-sim .dtabs .dt'),'single');updateSim()"><td><input type="checkbox" class="combo-chk" data-id="${m.id}" onclick="event.stopPropagation();updateCombo()" style="margin-right:6px"><span style="font-weight:600">${m.id}</span></td><td>${m.rate}%</td><td>${m.goal}%</td><td style="color:var(--red)">${(m.rate-m.goal).toFixed(1)}%</td><td>${m.gaps}</td><td>${gnDisp}</td><td style="${ec}font-weight:700;font-size:11px">${eff}</td><td style="color:var(--text3)">›</td></tr>`}).join('');
+  
+  // Effort criteria legend
+  const legend=`<div style="margin-top:14px;padding:12px 16px;background:#f5f4f0;border-radius:8px;font-size:11px;color:var(--text2);line-height:1.8">
+    <strong>Effort level criteria:</strong><br>
+    <span style="color:var(--gt);font-weight:700">EASY</span> = Gaps needed is less than 5% of denominator (small effort relative to population size)<br>
+    <span style="color:var(--amber);font-weight:700">MODERATE</span> = Gaps needed is 5-10% of denominator<br>
+    <span style="color:var(--red);font-weight:700">HARD</span> = Gaps needed exceeds 10% of denominator<br>
+    <span style="color:var(--amber);font-weight:700">LIMITED</span> = Episode-based measure where actionable gaps are fewer than gaps needed (most compliance windows expired — goal may not be fully achievable)
+  </div>`;
+  
+  document.getElementById('cross-summary').innerHTML=`${easy} measures Easy, ${mod} Moderate, ${hard} Hard/Limited. Select checkboxes to plan measure combinations.${legend}`;
+  
+  // Combo builder area
+  document.getElementById('combo-result').innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Select 2 or more measures using checkboxes to see combined effort analysis.</div>';
+}
+
+function updateCombo(){
+  const checks=document.querySelectorAll('.combo-chk:checked');
+  const ids=[...checks].map(c=>c.dataset.id);
+  if(ids.length<2){
+    document.getElementById('combo-result').innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Select 2 or more measures to see combined effort.</div>';
+    return;
+  }
+  const selected=ids.map(id=>allM.find(m=>m.id===id)).filter(Boolean);
+  const totalGapsNeeded=selected.reduce((s,m)=>s+Math.max(0,Math.ceil((m.goal/100*m.denom)-m.num)),0);
+  const totalOpenGaps=selected.reduce((s,m)=>s+m.gaps,0);
+  const measuresAtGoal=selected.filter(m=>m.rate>=m.goal).length;
+  // Estimate unique members (rough: 70% of total gaps are unique members, 30% overlap across measures)
+  const estUniqueMembers=Math.round(totalOpenGaps*0.7);
+  
+  document.getElementById('combo-result').innerHTML=`
+    <div style="padding:16px;background:var(--tbg);border-radius:var(--r);margin-top:14px">
+      <div style="font-size:13px;font-weight:600;color:#085041;margin-bottom:10px">Combined plan: ${ids.join(' + ')}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Measures selected</div><div style="font-size:20px;font-weight:700">${ids.length}</div></div>
+        <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Total gaps to close</div><div style="font-size:20px;font-weight:700">${totalGapsNeeded.toLocaleString()}</div></div>
+        <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Total open gaps</div><div style="font-size:20px;font-weight:700">${totalOpenGaps.toLocaleString()}</div></div>
+        <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Est. unique members</div><div style="font-size:20px;font-weight:700">~${estUniqueMembers.toLocaleString()}</div></div>
+      </div>
+      <div style="font-size:11px;color:#085041;margin-top:10px;line-height:1.6">
+        💡 Closing gaps across ${ids.length} measures simultaneously can reduce member abrasion — ${Math.round(totalOpenGaps*0.3).toLocaleString()} members likely have gaps in multiple selected measures and can be addressed in a single comprehensive outreach.
+      </div>
+    </div>`;
+}
+
+// ===== PROVIDER SCORES =====
+function renderProviders(){
+  document.getElementById('prov-list').innerHTML=CRSPs.map(c=>`
+    <div class="crsp-card">
+      <div class="crsp-head" onclick="this.nextElementSibling.classList.toggle('hidden')">
+        <div><div class="crsp-name">${c.name} (${c.id})</div><div class="crsp-meta">Panel: ${c.panel.toLocaleString()} · Providers: ${c.providers} · Avg: ${c.avg}%</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Open gaps — BCS-E: ${c.gaps.BCSE} | CBP: ${c.gaps.CBP} | GSD: ${c.gaps.GSD}</div></div>
+        <span style="color:var(--teal);font-size:12px;font-weight:600">View gaps →</span>
+      </div>
+      <div class="crsp-body hidden">
+        <table style="margin-top:10px"><thead><tr><th>Provider</th><th>Specialty</th><th>Panel</th><th>BCS-E Rate</th><th>CBP Rate</th><th>GSD Rate</th></tr></thead><tbody>
+        ${c.docs.map(d=>`<tr><td style="font-weight:600">${d.name}</td><td>${d.spec}</td><td>${d.panel}</td><td style="font-weight:600;color:${(d.bcs==='-'||d.bcs>=66)?'var(--gt)':'var(--red)'}">${d.bcs==='-'?'—':d.bcs+'%'}</td><td style="font-weight:600;color:${d.cbp>=65?'var(--gt)':'var(--red)'}">${d.cbp}%</td><td style="font-weight:600;color:${(d.gsd==='-'||d.gsd>=73)?'var(--gt)':'var(--red)'}">${d.gsd==='-'?'—':d.gsd+'%'}</td></tr>`).join('')}
+        </tbody></table>
+        ${c.providers>c.docs.length?`<div style="font-size:11px;color:var(--text3);padding:8px 0">+ ${c.providers-c.docs.length} more providers in this group</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ===== MODALS =====
+function openModal(type){
+  const m=document.getElementById('modal');
+  const c=document.getElementById('modal-content');
+  m.classList.add('open');
+  
+  if(type==='proactive'){
+    c.innerHTML=`<div class="modal-h"><div class="modal-t">Schedule Follow-up: Adams, Daisha</div><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-info"><strong>Member:</strong> Adams, Daisha · ID: 0094184633<br><strong>DOB:</strong> 07/14/1995 · <strong>PCP:</strong> Dr. Sarah Jenkins</div>
+    <div class="modal-info" style="background:var(--abg);color:var(--at)">FUH — Follow-Up After Hospitalization<br>Discharged: 03/25/2026 · Window: <strong>7-day</strong> · <strong>2 days remaining</strong></div>
+    <div class="fg"><label>Follow-up visit type</label><select><option>Behavioral health outpatient visit</option><option>Telehealth MH visit</option><option>Telephone visit with MH provider</option><option>Peer support services</option><option>Psychiatric collaborative care</option><option>Transitional care management</option></select></div>
+    <div class="fg"><label>Appointment date</label><input type="date" value="2026-04-05"></div>
+    <div class="fg"><label>Provider</label><select><option>Dr. Sarah Jenkins (Assigned PCP)</option><option>Dr. Patel — Behavioral Health</option></select></div>
+    <div class="fg"><label>Transportation needed?</label><select><option>No</option><option>Yes (Schedule Lyft)</option><option>Yes (Member arranges)</option></select></div>
+    <div class="fg"><label>Notes</label><textarea placeholder="Add scheduling notes..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="closeModal()">Schedule Visit</button></div>`;
+  }else if(type==='expired'){
+    c.innerHTML=`<div class="modal-h"><div class="modal-t">Episode Review: Brown, Lisa</div><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-info"><strong>Member:</strong> Brown, Lisa · ID: 0071758297<br><strong>DOB:</strong> 07/06/1972 · <strong>PCP:</strong> Dr. Sarah Jenkins</div>
+    <div class="modal-info" style="background:var(--rbg);color:var(--rt)">Follow-up window <strong>expired</strong> for discharge on <strong>03/08/2026</strong>.<br>This gap cannot be closed retroactively.</div>
+    <div class="fg"><label>Root cause of gap</label><select><option>Select root cause...</option><option>No appointment scheduled at discharge</option><option>Member unreachable</option><option>Member refused follow-up</option><option>Transportation barrier</option><option>Provider unavailable</option><option>Insurance/authorization issue</option><option>Readmitted before follow-up</option><option>Unknown</option></select></div>
+    <div class="fg"><label>QI action taken</label><select><option>Select action...</option><option>Flag for QI review</option><option>Notify provider group</option><option>Set auto-alert for future discharges</option><option>Add to care coordination caseload</option></select></div>
+    <div class="fg"><label>Review notes</label><textarea placeholder="Enter details on why follow-up was missed..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="closeModal()">Log Review</button></div>`;
+  }else if(type==='screening'){
+    c.innerHTML=`<div class="modal-h"><div class="modal-t">Assign Intervention</div><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-info"><strong>Measure:</strong> BCS-E — Breast Cancer Screening<br><strong>Status:</strong> Open gap (no mammogram on file)<br><strong>Deadline:</strong> Dec 31, 2026 (276 days remaining)</div>
+    <div class="fg"><label>Intervention type</label><select><option>Schedule mammogram appointment</option><option>Send mammogram reminder letter</option><option>Phone outreach — schedule mammogram</option><option>Provider notification — order at next visit</option><option>Mobile mammography van referral</option><option>+ Add custom intervention</option></select></div>
+    <div class="fg"><label>Assign to</label><select><option>Care Coordination Team A</option><option>Care Coordination Team B</option><option>Sarah Jenkins</option><option>Michael Chen</option></select></div>
+    <div class="fg"><label>Priority</label><select><option>Routine</option><option>High</option><option>Urgent</option></select></div>
+    <div class="fg"><label>Notes</label><textarea placeholder="Add notes..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn btn-o" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="closeModal()">Assign Intervention</button></div>`;
+  }
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+function togglePanel(){document.getElementById('ai-pnl').classList.toggle('open')}
+
+// ===== INIT =====
+renderPills();selectM('BCS-E');renderFTbl();
+</script>
+</body>
+</html>
