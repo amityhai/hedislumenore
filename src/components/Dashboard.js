@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import './Dashboard.css';
-import { fetchDashboardKPI, fetchChartMeasuresMeetingTarget, fetchAllMeasuresGrid } from '../services/workflowService';
+import { fetchDashboardKPI, fetchChartMeasuresMeetingTarget, fetchAllMeasuresGrid, fetchLowestPerformingMeasures, fetchCRSPsNeedingAttention, fetchEquityAlerts } from '../services/workflowService';
 
 const Dashboard = ({ onNavigate, token }) => {
   const [kpis, setKpis] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [measuresGrid, setMeasuresGrid] = useState([]);
+  const [lowestPerformingMeasures, setLowestPerformingMeasures] = useState([]);
+  const [crspNeedingAttention, setCRSPNeedingAttention] = useState([]);
+  const [equityAlerts, setEquityAlerts] = useState([]);
   const [currentMatrixPage, setCurrentMatrixPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Below Goal');
@@ -26,20 +29,29 @@ const Dashboard = ({ onNavigate, token }) => {
 
       console.log('Dashboard - fetchDashboardData called with token:', token ? `${token.substring(0, 50)}...` : 'NO TOKEN');
 
-      // Fetch KPI, Chart, and Measures Grid data in parallel
-      const [kpiData, chartDataResult, measuresGridData] = await Promise.all([
+      // Fetch KPI, Chart, Measures Grid, Lowest Performing Measures, CRSPs Needing Attention, and Equity Alerts data in parallel
+      const [kpiData, chartDataResult, measuresGridData, lowestMeasuresData, crspAttentionData, equityAlertsData] = await Promise.all([
         fetchDashboardKPI(token),
         fetchChartMeasuresMeetingTarget(token),
-        fetchAllMeasuresGrid(token)
+        fetchAllMeasuresGrid(token),
+        fetchLowestPerformingMeasures(token),
+        fetchCRSPsNeedingAttention(token),
+        fetchEquityAlerts(token)
       ]);
 
       console.log('KPI Data:', kpiData);
       console.log('Chart Data:', chartDataResult);
       console.log('Measures Grid Data:', measuresGridData);
+      console.log('Lowest Performing Measures:', lowestMeasuresData);
+      console.log('CRSPs Needing Attention:', crspAttentionData);
+      console.log('Equity Alerts:', equityAlertsData);
 
       setKpis(kpiData);
       setChartData(chartDataResult);
       setMeasuresGrid(measuresGridData);
+      setLowestPerformingMeasures(lowestMeasuresData);
+      setCRSPNeedingAttention(crspAttentionData);
+      setEquityAlerts(equityAlertsData);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       // Fallback to mock data
@@ -54,6 +66,9 @@ const Dashboard = ({ onNavigate, token }) => {
         { month: 'Feb-2026', value: 15 }
       ]);
       setMeasuresGrid([]);
+      setLowestPerformingMeasures([]);
+      setCRSPNeedingAttention([]);
+      setEquityAlerts([]);
     } finally {
       setLoading(false);
     }
@@ -396,57 +411,54 @@ const Dashboard = ({ onNavigate, token }) => {
         <div className="card">
           <h3>Lowest Performing Measures</h3>
           <div className="measure-list">
-            {['AIS-E', 'IET', 'CHL', 'CBP', 'COL-E'].map((id, idx) => (
-              <div key={idx} className="measure-item" onClick={() => onNavigate('detail', id)}>
-                <span>{id} — {['Adult Immunization', 'Initiation SUD Treatment', 'Chlamydia Screening', 'Controlling High BP', 'Colorectal Screening'][idx]}</span>
-                <span className="rate-bad">{[38.4, 45.0, 52.1, 58.0, 62.4][idx]}%</span>
+            {lowestPerformingMeasures.length > 0 ? (
+              lowestPerformingMeasures.map((measure, idx) => (
+                <div key={idx} className="measure-item" onClick={() => onNavigate('detail', measure.measure_id)}>
+                  <span>{measure.display_name}</span>
+                  <span className="rate-bad">{measure.rate}%</span>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '16px', textAlign: 'center', color: '#9c9a92', fontSize: '13px' }}>
+                Loading measures...
               </div>
-            ))}
+            )}
           </div>
         </div>
 
         <div className="card">
           <h3>CRSPs Needing Attention</h3>
           <div className="measure-list">
-            {[
-              { name: 'CRSP-004 Metro Health', rate: -9.8 },
-              { name: 'CRSP-007 South Valley', rate: -5.9 },
-              { name: 'CRSP-012 East Side Medical', rate: 3.2 },
-              { name: 'CRSP-002 North East', rate: '+6.4' },
-            ].map((item, idx) => (
-              <div key={idx} className="measure-item" onClick={() => onNavigate('prov')}>
-                <span>{item.name}</span>
-                <span className={item.rate < 0 ? 'rate-bad' : 'rate-ok'}>{item.rate}%</span>
+            {crspNeedingAttention.length > 0 ? (
+              crspNeedingAttention.map((item, idx) => (
+                <div key={idx} className="measure-item" onClick={() => onNavigate('prov')} style={{ fontSize: '12px' }}>
+                  <span style={{ fontSize: '12px' }}>{item.measure_id}: {item.crsp_name}</span>
+                  <span className="rate-bad" style={{ fontSize: '11px' }}>{item.rate}%</span>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '16px', textAlign: 'center', color: '#9c9a92', fontSize: '12px' }}>
+                Loading CRSPs...
               </div>
-            ))}
-            <div style={{ fontSize: '12px', color: '#0f6e56', marginTop: '12px', cursor: 'pointer', fontWeight: 600 }}>
-              View all CRSPs →
-            </div>
+            )}
           </div>
         </div>
 
         <div className="card">
-          <h3>Equity Alerts <span className="badge-alert">4 active</span></h3>
+          <h3>Equity Alerts <span className="badge-alert">{equityAlerts.length} active</span></h3>
           <div className="equity-list">
-            <div className="equity-item">
-              <span>CHL: AI/AN 42%</span>
-              <span className="equity-gap">-10.1 pts</span>
-            </div>
-            <div className="equity-item">
-              <span>CBP: Hispanic 52%</span>
-              <span className="equity-gap">-13 pts</span>
-            </div>
-            <div className="equity-item">
-              <span>BCS-E: Black 58%</span>
-              <span className="equity-gap">-17 pts</span>
-            </div>
-            <div className="equity-item">
-              <span>GSD: Black 64%</span>
-              <span className="equity-gap">-9 pts</span>
-            </div>
-          </div>
-          <div style={{ fontSize: '12px', color: '#0f6e56', marginTop: '12px', cursor: 'pointer', fontWeight: 600 }}>
-            View all alerts →
+            {equityAlerts.length > 0 ? (
+              equityAlerts.map((alert, idx) => (
+                <div key={idx} className="equity-item">
+                  <span style={{ fontSize: '12px' }}>{alert.measure_id}: {alert.race_strat}</span>
+                  <span className="equity-gap" style={{ fontSize: '11px' }}>{alert.rate}%</span>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '16px', textAlign: 'center', color: '#9c9a92', fontSize: '12px' }}>
+                Loading alerts...
+              </div>
+            )}
           </div>
         </div>
       </div>

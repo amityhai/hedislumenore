@@ -591,7 +591,7 @@
 .non-compliant-number {
   font-size: 16px;
   font-weight: 700;
-  color: #dc2626;
+  color: #a32d2d;
 }
 
 .non-compliant-percent {
@@ -871,7 +871,7 @@
 }
 
 .summary-card.border-below {
-  border-left-color: #dc2626;
+  border-left-color: #a32d2d;
 }
 
 .summary-card:hover {

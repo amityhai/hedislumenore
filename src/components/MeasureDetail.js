@@ -32,6 +32,11 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null);
   const [selectedRaceGroup, setSelectedRaceGroup] = useState(null);
   const [selectedEthnicityGroup, setSelectedEthnicityGroup] = useState(null);
+  const [carouselIndex, setCarouselIndex] = useState({
+    age: 0,
+    race: 0,
+    ethnicity: 0
+  });
 
   useEffect(() => {
     if (token && measureId) {
@@ -126,6 +131,9 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
       const measuresData = await fetchDashboardMeasures(token);
       setAllMeasures(measuresData);
       
+      // Collect all measures across all categories
+      const allMeasuresList = Object.values(measuresData).flat();
+
       let foundMeasure = null;
       for (const category in measuresData) {
         const found = measuresData[category].find(m => m.id === measureId);
@@ -136,23 +144,37 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
         }
       }
 
+      // If the requested measure isn't found, fall back to the first available measure
+      if (!foundMeasure && allMeasuresList.length > 0) {
+        foundMeasure = allMeasuresList[0];
+        const fallbackCategory = Object.keys(measuresData).find(cat =>
+          measuresData[cat].some(m => m.id === foundMeasure.id)
+        );
+        setCurrentDom(fallbackCategory || 'eoc');
+        console.warn(`Measure ${measureId} not found. Falling back to ${foundMeasure.id}`);
+      }
+
       if (!foundMeasure) {
-        throw new Error(`Measure ${measureId} not found`);
+        throw new Error(`No measures available`);
       }
 
       setMeasure(foundMeasure);
 
+      // Use the actual found measure's ID (may differ from the requested measureId if fallback occurred)
+      const activeMeasureId = foundMeasure.id;
+      setSelectedMeasureId(activeMeasureId);
+
       const [ageData, ethnicityData, raceData, crspLevelData] = await Promise.all([
-        fetchMeasureStratification(measureId, token),
-        fetchMeasureStratificationEthnicity(measureId, token),
-        fetchMeasureStratificationRace(measureId, token),
-        fetchCRSPLevelData(measureId, token)
+        fetchMeasureStratification(activeMeasureId, token),
+        fetchMeasureStratificationEthnicity(activeMeasureId, token),
+        fetchMeasureStratificationRace(activeMeasureId, token),
+        fetchCRSPLevelData(activeMeasureId, token)
       ]);
 
       const mergedStrat = {
-        age: ageData[measureId]?.age || [],
-        ethnicity: ethnicityData[measureId]?.ethnicity || [],
-        race: raceData[measureId]?.race || []
+        age: ageData[activeMeasureId]?.age || [],
+        ethnicity: ethnicityData[activeMeasureId]?.ethnicity || [],
+        race: raceData[activeMeasureId]?.race || []
       };
 
       setStratificationData(mergedStrat);
@@ -468,52 +490,75 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
                     Age
                   </h4>
                   {!collapsedSummaryGroups.age && (
-                    <div className="summary-cards-row">
-                      {stratificationData.age.map((row, idx) => {
-                        let borderClass = 'border-below';
-                        if (row.rate > measure?.goal) {
-                          borderClass = 'border-above';
-                        } else if (row.rate === measure?.goal) {
-                          borderClass = 'border-at';
-                        }
-                        return (
-                          <div 
-                            key={idx} 
-                            className={`summary-card ${borderClass}`}
-                            onClick={() => {
-                              setSelectedAgeGroup(selectedAgeGroup === row.group ? null : row.group);
-                              setExpandedAgeGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className="card-header-text">
-                              <strong>{row.group}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0px', minHeight: '200px' }}>
+                      {stratificationData.age.length > 4 && (
+                        <button
+                          onClick={() => setCarouselIndex(prev => ({ ...prev, age: Math.max(0, prev.age - 1) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px', flexShrink: 0 }}
+                          disabled={carouselIndex.age === 0}
+                        >
+                          ‹
+                        </button>
+                      )}
+                      {stratificationData.age.length <= 4 && (
+                        <div style={{ width: '36px', flexShrink: 0 }}></div>
+                      )}
+                      <div className="summary-cards-row" style={{ overflowX: 'auto', scrollBehavior: 'smooth', display: 'flex', gap: '12px', paddingBottom: '8px', flex: 1 }}>
+                        {stratificationData.age.slice(carouselIndex.age, carouselIndex.age + 4).map((row, idx) => {
+                          let borderClass = 'border-below';
+                          if (row.rate > measure?.goal) {
+                            borderClass = 'border-above';
+                          } else if (row.rate === measure?.goal) {
+                            borderClass = 'border-at';
+                          }
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`summary-card ${borderClass}`}
+                              onClick={() => {
+                                setSelectedAgeGroup(selectedAgeGroup === row.group ? null : row.group);
+                                setExpandedAgeGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
+                              }}
+                              style={{ cursor: 'pointer', flexShrink: 0 }}
+                            >
+                              <div className="card-header-text">
+                                <strong>{row.group}</strong>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Rate</span>
+                                <span className="card-value">{row.rate}%</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Numerator</span>
+                                <span className="card-value">{row.num.toLocaleString()}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Denominator</span>
+                                <span className="card-value">{row.denom.toLocaleString()}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Not Meeting</span>
+                                <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Disparity</span>
+                                <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
+                                  {row.disparity || '—'}
+                                </span>
+                              </div>
                             </div>
-                            <div className="card-row">
-                              <span className="card-label">Rate</span>
-                              <span className="card-value">{row.rate}%</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Numerator</span>
-                              <span className="card-value">{row.num.toLocaleString()}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Denominator</span>
-                              <span className="card-value">{row.denom.toLocaleString()}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Not Meeting</span>
-                              <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Disparity</span>
-                              <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
-                                {row.disparity || '—'}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                      {stratificationData.age.length > 4 && (
+                        <button
+                          onClick={() => setCarouselIndex(prev => ({ ...prev, age: Math.min(stratificationData.age.length - 4, prev.age + 1) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' }}
+                          disabled={carouselIndex.age >= stratificationData.age.length - 4}
+                        >
+                          ›
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -581,52 +626,75 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
                     Race
                   </h4>
                   {!collapsedSummaryGroups.race && (
-                    <div className="summary-cards-row">
-                      {stratificationData.race.map((row, idx) => {
-                        let borderClass = 'border-below';
-                        if (row.rate > measure?.goal) {
-                          borderClass = 'border-above';
-                        } else if (row.rate === measure?.goal) {
-                          borderClass = 'border-at';
-                        }
-                        return (
-                          <div 
-                            key={idx} 
-                            className={`summary-card ${borderClass}`}
-                            onClick={() => {
-                              setSelectedRaceGroup(selectedRaceGroup === row.group ? null : row.group);
-                              setExpandedRaceGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className="card-header-text">
-                              <strong>{row.group}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '200px' }}>
+                      {stratificationData.race.length > 4 && (
+                        <button
+                          onClick={() => setCarouselIndex(prev => ({ ...prev, race: Math.max(0, prev.race - 1) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px', flexShrink: 0 }}
+                          disabled={carouselIndex.race === 0}
+                        >
+                          ‹
+                        </button>
+                      )}
+                      {stratificationData.race.length <= 4 && (
+                        <div style={{ width: '36px', flexShrink: 0 }}></div>
+                      )}
+                      <div className="summary-cards-row" style={{ overflowX: 'auto', scrollBehavior: 'smooth', display: 'flex', gap: '12px', paddingBottom: '8px', flex: 1 }}>
+                        {stratificationData.race.slice(carouselIndex.race, carouselIndex.race + 4).map((row, idx) => {
+                          let borderClass = 'border-below';
+                          if (row.rate > measure?.goal) {
+                            borderClass = 'border-above';
+                          } else if (row.rate === measure?.goal) {
+                            borderClass = 'border-at';
+                          }
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`summary-card ${borderClass}`}
+                              onClick={() => {
+                                setSelectedRaceGroup(selectedRaceGroup === row.group ? null : row.group);
+                                setExpandedRaceGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
+                              }}
+                              style={{ cursor: 'pointer', flexShrink: 0 }}
+                            >
+                              <div className="card-header-text">
+                                <strong>{row.group}</strong>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Rate</span>
+                                <span className="card-value">{row.rate}%</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Numerator</span>
+                                <span className="card-value">{row.num.toLocaleString()}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Denominator</span>
+                                <span className="card-value">{row.denom.toLocaleString()}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Not Meeting</span>
+                                <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Disparity</span>
+                                <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
+                                  {row.disparity || '—'}
+                                </span>
+                              </div>
                             </div>
-                            <div className="card-row">
-                              <span className="card-label">Rate</span>
-                              <span className="card-value">{row.rate}%</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Numerator</span>
-                              <span className="card-value">{row.num.toLocaleString()}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Denominator</span>
-                              <span className="card-value">{row.denom.toLocaleString()}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Not Meeting</span>
-                              <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Disparity</span>
-                              <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
-                                {row.disparity || '—'}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                      {stratificationData.race.length > 4 && (
+                        <button
+                          onClick={() => setCarouselIndex(prev => ({ ...prev, race: Math.min(stratificationData.race.length - 4, prev.race + 1) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' }}
+                          disabled={carouselIndex.race >= stratificationData.race.length - 4}
+                        >
+                          ›
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -694,52 +762,75 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
                     Ethnicity
                   </h4>
                   {!collapsedSummaryGroups.ethnicity && (
-                    <div className="summary-cards-row">
-                      {stratificationData.ethnicity.map((row, idx) => {
-                        let borderClass = 'border-below';
-                        if (row.rate > measure?.goal) {
-                          borderClass = 'border-above';
-                        } else if (row.rate === measure?.goal) {
-                          borderClass = 'border-at';
-                        }
-                        return (
-                          <div 
-                            key={idx} 
-                            className={`summary-card ${borderClass}`}
-                            onClick={() => {
-                              setSelectedEthnicityGroup(selectedEthnicityGroup === row.group ? null : row.group);
-                              setExpandedEthnicityGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className="card-header-text">
-                              <strong>{row.group}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0px', minHeight: '200px' }}>
+                      {stratificationData.ethnicity.length > 4 && (
+                        <button
+                          onClick={() => setCarouselIndex(prev => ({ ...prev, ethnicity: Math.max(0, prev.ethnicity - 1) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px', flexShrink: 0 }}
+                          disabled={carouselIndex.ethnicity === 0}
+                        >
+                          ‹
+                        </button>
+                      )}
+                      {stratificationData.ethnicity.length <= 4 && (
+                        <div style={{ width: '36px', flexShrink: 0 }}></div>
+                      )}
+                      <div className="summary-cards-row" style={{ overflowX: 'auto', scrollBehavior: 'smooth', display: 'flex', gap: '12px', paddingBottom: '8px', flex: 1 }}>
+                        {stratificationData.ethnicity.slice(carouselIndex.ethnicity, carouselIndex.ethnicity + 4).map((row, idx) => {
+                          let borderClass = 'border-below';
+                          if (row.rate > measure?.goal) {
+                            borderClass = 'border-above';
+                          } else if (row.rate === measure?.goal) {
+                            borderClass = 'border-at';
+                          }
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`summary-card ${borderClass}`}
+                              onClick={() => {
+                                setSelectedEthnicityGroup(selectedEthnicityGroup === row.group ? null : row.group);
+                                setExpandedEthnicityGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
+                              }}
+                              style={{ cursor: 'pointer', flexShrink: 0 }}
+                            >
+                              <div className="card-header-text">
+                                <strong>{row.group}</strong>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Rate</span>
+                                <span className="card-value">{row.rate}%</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Numerator</span>
+                                <span className="card-value">{row.num.toLocaleString()}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Denominator</span>
+                                <span className="card-value">{row.denom.toLocaleString()}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Not Meeting</span>
+                                <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
+                              </div>
+                              <div className="card-row">
+                                <span className="card-label">Disparity</span>
+                                <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
+                                  {row.disparity || '—'}
+                                </span>
+                              </div>
                             </div>
-                            <div className="card-row">
-                              <span className="card-label">Rate</span>
-                              <span className="card-value">{row.rate}%</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Numerator</span>
-                              <span className="card-value">{row.num.toLocaleString()}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Denominator</span>
-                              <span className="card-value">{row.denom.toLocaleString()}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Not Meeting</span>
-                              <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
-                            </div>
-                            <div className="card-row">
-                              <span className="card-label">Disparity</span>
-                              <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
-                                {row.disparity || '—'}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                      {stratificationData.ethnicity.length > 4 && (
+                        <button
+                          onClick={() => setCarouselIndex(prev => ({ ...prev, ethnicity: Math.min(stratificationData.ethnicity.length - 4, prev.ethnicity + 1) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' }}
+                          disabled={carouselIndex.ethnicity >= stratificationData.ethnicity.length - 4}
+                        >
+                          ›
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -29,6 +29,9 @@ const WORKFLOW_IDS = {
   RATE_SIMULATOR: 'workflow-id-rate-simulator', // To be updated
   PROVIDER_SCORES: 'workflow-id-provider-scores', // To be updated
   MINI_CHART_MEASURE_TREND: 'ec62d64e-3c95-11f1-bbd1-bdc0a4f0d4d3', // Mini chart measure trend by month
+  LOWEST_PERFORMING_MEASURES: 'cb7946ab-529a-11f1-a096-5fdff526e7e2', // Lowest performing measures
+  CRSPS_NEEDING_ATTENTION: '1444eaf0-529d-11f1-a096-03ecb299c978', // CRSPs needing attention
+  EQUITY_ALERTS: '69ed8f07-529f-11f1-a096-dbe274b0ddea', // Equity alerts
 };
 
 /**
@@ -1098,6 +1101,120 @@ export const fetchMiniChartData = async (measureId, token) => {
 };
 
 /**
+ * Fetch Lowest Performing Measures
+ * Returns the 5 lowest performing measures by rate
+ * @param {string} token - Authorization token
+ * @returns {array} Array of lowest performing measures with measure_id, display_name, and rate
+ */
+export const fetchLowestPerformingMeasures = async (token) => {
+  try {
+    const result = await callWorkflow(
+      WORKFLOW_IDS.LOWEST_PERFORMING_MEASURES,
+      {
+        appId: APP_ID
+      },
+      token
+    );
+
+    console.log('Raw Lowest Performing Measures API Response:', result);
+
+    if (!result.data?.data?.resultSet) {
+      throw new Error('Invalid response format');
+    }
+
+    // Transform API response to measure format
+    // resultSet format: [measure_id, display_name, rate]
+    const measures = result.data.data.resultSet.map(row => ({
+      measure_id: row[0],
+      display_name: row[1],
+      rate: row[2]
+    }));
+
+    console.log('Transformed Lowest Performing Measures:', measures);
+    return measures;
+  } catch (error) {
+    console.error('Error fetching Lowest Performing Measures:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch CRSPs Needing Attention
+ * Returns CRSPs with performance issues (low rates)
+ * @param {string} token - Authorization token
+ * @returns {array} Array of CRSPs with measure_id, crsp_name, and rate
+ */
+export const fetchCRSPsNeedingAttention = async (token) => {
+  try {
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CRSPS_NEEDING_ATTENTION,
+      {
+        appId: APP_ID
+      },
+      token
+    );
+
+    console.log('Raw CRSPs Needing Attention API Response:', result);
+
+    if (!result.data?.data?.resultSet) {
+      throw new Error('Invalid response format');
+    }
+
+    // Transform API response to CRSP format
+    // resultSet format: [measure_id, crsp, rate]
+    const crsps = result.data.data.resultSet.map(row => ({
+      measure_id: row[0],
+      crsp_name: row[1],
+      rate: row[2]
+    }));
+
+    console.log('Transformed CRSPs Needing Attention:', crsps);
+    return crsps;
+  } catch (error) {
+    console.error('Error fetching CRSPs Needing Attention:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch Equity Alerts
+ * Returns equity alerts with measure, race/ethnicity, and rate disparities
+ * @param {string} token - Authorization token
+ * @returns {array} Array of equity alerts with measure_id, race_strat, and rate
+ */
+export const fetchEquityAlerts = async (token) => {
+  try {
+    const result = await callWorkflow(
+      WORKFLOW_IDS.EQUITY_ALERTS,
+      {
+        appId: APP_ID
+      },
+      token
+    );
+
+    console.log('Raw Equity Alerts API Response:', result);
+
+    if (!result.data?.data?.resultSet) {
+      throw new Error('Invalid response format');
+    }
+
+    // Transform API response to equity alert format
+    // resultSet format: [measure_id, race_strat, rate]
+    const alerts = result.data.data.resultSet.map(row => ({
+      measure_id: row[0],
+      race_strat: row[1],
+      rate: row[2]
+    }));
+
+    console.log('Transformed Equity Alerts:', alerts);
+    return alerts;
+  } catch (error) {
+    console.error('Error fetching Equity Alerts:', error);
+    throw error;
+  }
+};
+
+/**
  * Update Workflow ID for a feature
  * @param {string} feature - Feature name (DASHBOARD_KPI, MEASURE_DETAIL, etc.)
  * @param {string} workflowId - New workflow ID
@@ -1148,6 +1265,9 @@ export default {
   fetchRateSimulatorData,
   fetchProviderScores,
   fetchMiniChartData,
+  fetchLowestPerformingMeasures,
+  fetchCRSPsNeedingAttention,
+  fetchEquityAlerts,
   updateWorkflowId,
   getWorkflowIds,
   getApiConfig,

@@ -130,14 +130,14 @@
 }
 
 .pill.active.below-goal {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: #a32d2d;
+  border-color: #a32d2d;
   color: #ffffff;
 }
 
 .pill.active.below-goal:hover {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: #a32d2d;
+  border-color: #a32d2d;
 }
 
 .pill.active.at-goal {
@@ -168,14 +168,14 @@
 }
 
 .pill.outline-red {
-  border-color: #ef4444;
-  color: #dc2626;
+  border-color: #a32d2d;
+  color: #a32d2d;
   background: #fff;
 }
 
 .pill.outline-red:hover {
   background: #fef2f2;
-  border-color: #ef4444;
+  border-color: #a32d2d;
 }
 
 .pill.outline-blue {
@@ -319,7 +319,7 @@
 }
 
 .kpi-value.gap-negative {
-  color: var(--red) !important;
+  color: #a32d2d !important;
 }
 
 .kpi-value.positive {

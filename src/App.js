@@ -9,7 +9,7 @@ import { setToken, getToken, isTokenValid, setupTokenRefreshInterval } from './s
 
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [selectedMeasure, setSelectedMeasure] = useState('BCS-E');
+  const [selectedMeasure, setSelectedMeasure] = useState('');
   const [token, setTokenState] = useState(() => {
     // Initialize token from tokenService or use default
     const storedToken = getToken();
