@@ -1,0 +1,47 @@
+.month-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e8e6e1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.month-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.month-filter-select {
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.month-filter-select:hover {
+  border-color: #0f7a5a;
+  box-shadow: 0 2px 4px rgba(15, 122, 90, 0.1);
+}
+
+.month-filter-select:focus {
+  outline: none;
+  border-color: #0f7a5a;
+  box-shadow: 0 0 0 3px rgba(15, 122, 90, 0.1);
+}
+
+.month-filter-select option {
+  padding: 8px;
+  background-color: #ffffff;
+  color: #333;
+}

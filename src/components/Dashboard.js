@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './Dashboard.css';
+import MonthFilter from './MonthFilter';
 import { fetchDashboardKPI, fetchChartMeasuresMeetingTarget, fetchAllMeasuresGrid, fetchLowestPerformingMeasures, fetchCRSPsNeedingAttention, fetchEquityAlerts } from '../services/workflowService';
 
 const Dashboard = ({ onNavigate, token }) => {
@@ -13,6 +14,7 @@ const Dashboard = ({ onNavigate, token }) => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Below Goal');
   const [tableVisible, setTableVisible] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState('');
   const matrixPageSize = 6;
   const matrixRef = useRef(null);
 
@@ -92,9 +94,12 @@ const Dashboard = ({ onNavigate, token }) => {
 
   return (
     <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1>Quality Management Command Center</h1>
-        <p>Real-time performance snapshot, trends, and equity alerts. Data as of: March 30, 2026</p>
+      <div className="dashboard-header-with-filter">
+        <div className="dashboard-header">
+          <h1>Quality Management Command Center</h1>
+          <p>Real-time performance snapshot, trends, and equity alerts. Data as of: March 30, 2026</p>
+        </div>
+        <MonthFilter selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
       </div>
 
       {/* KPI Section - 4 Cards in One Row */}
@@ -119,7 +124,6 @@ const Dashboard = ({ onNavigate, token }) => {
                 <span className="kpi-value">{kpis[0]?.value}</span>
                 <span className="kpi-total">/ {kpis[0]?.total}</span>
               </div>
-              <p className="kpi-trend">{kpis[0]?.trend}</p>
             </div>
 
             <div className={`kpi-card kpi-card-blue`} onClick={() => {
@@ -140,7 +144,6 @@ const Dashboard = ({ onNavigate, token }) => {
                 <span className="kpi-value">{kpis[1]?.value}</span>
                 <span className="kpi-total">/ {kpis[1]?.total}</span>
               </div>
-              <p className="kpi-trend">{kpis[1]?.trend}</p>
             </div>
 
             <div className={`kpi-card kpi-card-red`} onClick={() => {
@@ -161,7 +164,6 @@ const Dashboard = ({ onNavigate, token }) => {
                 <span className="kpi-value">{kpis[2]?.value}</span>
                 <span className="kpi-total">need attention</span>
               </div>
-              <p className="kpi-trend">{kpis[2]?.trend}</p>
             </div>
 
             <div className={`kpi-card kpi-card-teal`}>
@@ -172,7 +174,6 @@ const Dashboard = ({ onNavigate, token }) => {
               <div className="kpi-main">
                 <span className="kpi-value">{chartData.length > 0 ? chartData[chartData.length - 1]?.value : '—'}</span>
               </div>
-              <p className="kpi-trend">+18% vs Feb</p>
             </div>
           </>
         )}

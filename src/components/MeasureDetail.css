@@ -619,7 +619,7 @@
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   background: #f9fafb;
-  min-height: 90px;
+  min-height: 65px;
   justify-content: flex-start;
 }
 
@@ -1245,4 +1245,95 @@
 
 .members-scroll-container {
   animation: slideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Members loading screen ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInRow {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.members-loading-fade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.members-fade-in {
+  animation: fadeIn 0.35s ease both;
+}
+
+.members-loading-screen {
+  background: transparent;
+  padding: 0;
+  overflow: hidden;
+}
+
+.members-loading-header {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #e8e5dd;
+  border-bottom: 1px solid #d8d5cd;
+}
+
+.members-loading-row {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0ede6;
+  animation: fadeInRow 0.3s ease both;
+}
+
+.skeleton-cell {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #dedad2 25%, #eceae4 50%, #dedad2 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-cell.wide   { flex: 2; min-width: 80px; }
+.skeleton-cell.narrow { flex: 1; min-width: 50px; }
+
+.members-loading-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.members-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #c8c4bc;
+  border-top-color: #0f7a5a;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './MeasurePerformanceSection.css';
+import MonthFilter from './MonthFilter';
 import { fetchDashboardMeasures, fetchMiniChartData } from '../services/workflowService';
 
 const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimulate, initialMeasureId }) => {
@@ -14,6 +15,7 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [miniChartData, setMiniChartData] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   // Fetch measures data on component mount
   useEffect(() => {
@@ -190,9 +192,7 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
     <section className="measure-performance">
       <div className="mp-header">
         <h2 className="mp-title">Measure performance</h2>
-        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500, whiteSpace: 'nowrap' }}>
-          Selected: <span style={{ color: '#0f7a5a', fontWeight: 600 }}>{activeDom.toUpperCase()}</span> / <span style={{ color: '#0f7a5a', fontWeight: 600 }}>{activePill || '—'}</span>
-        </div>
+        <MonthFilter selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
       </div>
 
       <div className="mp-tabs">

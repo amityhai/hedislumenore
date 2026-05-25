@@ -8,10 +8,21 @@
   overflow-x: hidden;
 }
 
-.dashboard-header {
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+.dashboard-header-with-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
   border-bottom: 2px solid rgba(15, 110, 86, 0.1);
+}
+
+.dashboard-header {
+  flex: 1;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .dashboard-header h1 {

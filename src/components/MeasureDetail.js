@@ -204,6 +204,7 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
 
     try {
       setLoadingMembers(prev => ({ ...prev, [key]: true }));
+      setExpandedCRSPRows(prev => ({ ...prev, [key]: true }));
       
       let data;
       if (stratType === 'race') {
@@ -253,6 +254,7 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
 
     try {
       setLoadingCRSPLevelMembers(prev => ({ ...prev, [key]: true }));
+      setExpandedCRSPLevelRows(prev => ({ ...prev, [key]: true }));
       
       const filters = {
         measureId: selectedMeasureId,
@@ -304,10 +306,10 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
     
     if (isLoading) {
       return (
-        <tr style={{ backgroundColor: '#ffffff', borderLeft: '1px solid #d0d0d0' }}>
-          <td colSpan="8" style={{ padding: '16px', textAlign: 'center', color: '#666', fontSize: '13px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <div style={{ width: '16px', height: '16px', border: '2px solid #0066cc', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+        <tr style={{ backgroundColor: 'transparent' }}>
+          <td colSpan="8" style={{ padding: '24px', textAlign: 'center', color: '#666', fontSize: '13px' }}>
+            <div className="members-loading-fade">
+              <div className="members-loading-spinner" />
               Loading members...
             </div>
           </td>
@@ -328,7 +330,7 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
     return (
       <tr style={{ backgroundColor: 'transparent', borderLeft: '1px solid #d0d0d0' }}>
         <td colSpan="8" style={{ padding: '0' }}>
-          <div className="members-scroll-container" style={{ maxHeight: '280px', overflowY: 'auto', backgroundColor: 'transparent' }}>
+          <div className="members-scroll-container members-fade-in" style={{ maxHeight: '280px', overflowY: 'auto', backgroundColor: 'transparent' }}>
             <table className="members-inner-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr style={{ backgroundColor: '#e8e5dd', borderBottom: '1px solid #e0e0e0' }}>

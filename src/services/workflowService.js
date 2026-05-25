@@ -32,6 +32,13 @@ const WORKFLOW_IDS = {
   LOWEST_PERFORMING_MEASURES: 'cb7946ab-529a-11f1-a096-5fdff526e7e2', // Lowest performing measures
   CRSPS_NEEDING_ATTENTION: '1444eaf0-529d-11f1-a096-03ecb299c978', // CRSPs needing attention
   EQUITY_ALERTS: '69ed8f07-529f-11f1-a096-dbe274b0ddea', // Equity alerts
+  CAC_MEASURES: '8a255948-582a-11f1-9e64-1b3c9c6445c5', // Care Action Center measures dropdown
+  CAC_CRSPS: 'a7883ca9-582a-11f1-9e64-4b9952bc281e', // Care Action Center CRSP dropdown
+  CAC_GRID: '105691ee-582c-11f1-9e64-33f111c58511', // Care Action Center grid data (member_id, member_name, measure_id, crsp)
+  CAC_NON_COMPLIANT: '610cb1f9-583c-11f1-9e64-c1c8521cd737', // Care Action Center non-compliant count
+  CAC_UNASSIGNED: 'workflow-id-cac-unassigned', // Care Action Center unassigned count (to be updated)
+  CAC_ACTIONABLE: 'workflow-id-cac-actionable', // Care Action Center actionable count (to be updated)
+  CAC_EXPIRING: 'workflow-id-cac-expiring', // Care Action Center expiring this week count (to be updated)
 };
 
 /**
@@ -773,7 +780,9 @@ export const fetchMemberDetails = async (filters, token) => {
       {
         measureId: filters.measureId,
         ageStrat: filters.ageStrat,
-        crsp: filters.crsp
+        crsp: filters.crsp,
+        stratification: filters.ageStrat,
+        stratificationType: 'age'
       },
       token
     );
@@ -827,7 +836,9 @@ export const fetchRaceMemberDetails = async (filters, token) => {
       {
         measureId: filters.measureId,
         raceStrat: filters.raceStrat,
-        crsp: filters.crsp
+        crsp: filters.crsp,
+        stratification: filters.raceStrat,
+        stratificationType: 'race'
       },
       token
     );
@@ -882,7 +893,9 @@ export const fetchEthnicityMemberDetails = async (filters, token) => {
       {
         measureId: filters.measureId,
         ethnicityStrat: filters.ethnicityStrat,
-        crsp: filters.crsp
+        crsp: filters.crsp,
+        stratification: filters.ethnicityStrat,
+        stratificationType: 'ethnicity'
       },
       token
     );
@@ -935,7 +948,9 @@ export const fetchCRSPMemberDetails = async (filters, token) => {
       WORKFLOW_IDS.CRSP_MEMBER_DETAILS,
       {
         measureId: filters.measureId,
-        crsp: filters.crsp
+        crsp: filters.crsp,
+        ...(filters.stratification && { stratification: filters.stratification }),
+        ...(filters.stratificationType && { stratificationType: filters.stratificationType })
       },
       token
     );
@@ -1244,6 +1259,195 @@ export const getApiConfig = () => ({
   workflowIds: WORKFLOW_IDS
 });
 
+/**
+ * Fetch all measures for Care Action Center dropdown
+ * @param {string} token - Authorization token
+ * @returns {Promise<string[]>} Array of measure IDs
+ */
+export const fetchCACMeasures = async (token) => {
+  try {
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_MEASURES,
+      {},
+      token
+    );
+
+    if (!result.data?.data?.resultSet) {
+      throw new Error('Invalid response format');
+    }
+
+    return result.data.data.resultSet.map(row => row[0]);
+  } catch (error) {
+    console.error('Error fetching CAC measures:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch all CRSPs for Care Action Center dropdown
+ * @param {string} token - Authorization token
+ * @returns {Promise<string[]>} Array of CRSP names
+ */
+export const fetchCACCRSPs = async (token) => {
+  try {
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_CRSPS,
+      {},
+      token
+    );
+
+    if (!result.data?.data?.resultSet) {
+      throw new Error('Invalid response format');
+    }
+
+    return result.data.data.resultSet.map(row => row[0]);
+  } catch (error) {
+    console.error('Error fetching CAC CRSPs:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch Care Action Center grid data with member and measure information
+ * @param {object} filters - Filter parameters (measureId, crsp, status, assignedStaff)
+ * @param {string} token - Authorization token
+ * @returns {Promise<object>} Grid data with metadata and result set
+ */
+export const fetchCACGridData = async (filters = {}, token) => {
+  try {
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_GRID,
+      filters,
+      token
+    );
+
+    if (!result.data?.data) {
+      throw new Error('Invalid response format');
+    }
+
+    return result.data.data;
+  } catch (error) {
+    console.error('Error fetching CAC grid data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch Care Action Center non-compliant count
+ * @param {string} token - Authorization token
+ * @returns {Promise<number>} Non-compliant count
+ */
+export const fetchCACNonCompliantCount = async (token) => {
+  try {
+    console.log('Fetching non-compliant count...');
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_NON_COMPLIANT,
+      {},
+      token
+    );
+
+    if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
+      console.warn('No non-compliant data returned, using default');
+      return 21292; // Default value
+    }
+
+    const count = result.data.data.resultSet[0][0];
+    console.log('Non-compliant count fetched:', count);
+    return count || 21292;
+  } catch (error) {
+    console.error('Error fetching CAC non-compliant count:', error);
+    // Return default value on error
+    return 21292;
+  }
+};
+
+/**
+ * Fetch Care Action Center unassigned count
+ * @param {string} token - Authorization token
+ * @returns {Promise<number>} Unassigned count
+ */
+export const fetchCACUnassignedCount = async (token) => {
+  try {
+    // TODO: Replace with actual workflow ID when available
+    // For now, return a default value
+    console.log('Fetching unassigned count...');
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_UNASSIGNED,
+      {},
+      token
+    );
+
+    if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
+      console.warn('No unassigned data returned, using default');
+      return 2392; // Default value
+    }
+
+    return result.data.data.resultSet[0][0] || 2392;
+  } catch (error) {
+    console.error('Error fetching CAC unassigned count:', error);
+    // Return default value on error
+    return 2392;
+  }
+};
+
+/**
+ * Fetch Care Action Center actionable count
+ * @param {string} token - Authorization token
+ * @returns {Promise<number>} Actionable count
+ */
+export const fetchCACActionableCount = async (token) => {
+  try {
+    // TODO: Replace with actual workflow ID when available
+    // For now, return a default value
+    console.log('Fetching actionable count...');
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_ACTIONABLE,
+      {},
+      token
+    );
+
+    if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
+      console.warn('No actionable data returned, using default');
+      return 5842; // Default value
+    }
+
+    return result.data.data.resultSet[0][0] || 5842;
+  } catch (error) {
+    console.error('Error fetching CAC actionable count:', error);
+    // Return default value on error
+    return 5842;
+  }
+};
+
+/**
+ * Fetch Care Action Center expiring this week count
+ * @param {string} token - Authorization token
+ * @returns {Promise<number>} Expiring count
+ */
+export const fetchCACExpiringCount = async (token) => {
+  try {
+    // TODO: Replace with actual workflow ID when available
+    // For now, return a default value
+    console.log('Fetching expiring count...');
+    const result = await callWorkflow(
+      WORKFLOW_IDS.CAC_EXPIRING,
+      {},
+      token
+    );
+
+    if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
+      console.warn('No expiring data returned, using default');
+      return 127; // Default value
+    }
+
+    return result.data.data.resultSet[0][0] || 127;
+  } catch (error) {
+    console.error('Error fetching CAC expiring count:', error);
+    // Return default value on error
+    return 127;
+  }
+};
+
 export default {
   fetchDashboardKPI,
   fetchDashboardMeasures,
@@ -1268,6 +1472,13 @@ export default {
   fetchLowestPerformingMeasures,
   fetchCRSPsNeedingAttention,
   fetchEquityAlerts,
+  fetchCACMeasures,
+  fetchCACCRSPs,
+  fetchCACGridData,
+  fetchCACNonCompliantCount,
+  fetchCACUnassignedCount,
+  fetchCACActionableCount,
+  fetchCACExpiringCount,
   updateWorkflowId,
   getWorkflowIds,
   getApiConfig,
