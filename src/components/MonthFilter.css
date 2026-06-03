@@ -1,47 +1,68 @@
+/* ── Month filter ────────────────────────────────────────────── */
 .month-filter-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 16px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e8e6e1;
+  padding: 8px 8px 8px 16px;
+  background: var(--c-surface);
+  border-radius: var(--r-lg);
+  border: none;
+  box-shadow: var(--sh-sm);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .month-filter-label {
   font-size: 13px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 400;
+  color: var(--c-text-3);
   white-space: nowrap;
+  user-select: none;
 }
 
 .month-filter-select {
-  padding: 8px 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  background-color: #ffffff;
-  font-size: 13px;
-  color: #333;
+  appearance: none;
+  padding: 8px 32px 8px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: #F8FAFC;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--c-text);
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 150px;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 144px;
+  height: 38px;
 }
 
 .month-filter-select:hover {
-  border-color: #0f7a5a;
-  box-shadow: 0 2px 4px rgba(15, 122, 90, 0.1);
+  border-color: var(--c-text-4);
 }
 
 .month-filter-select:focus {
-  outline: none;
-  border-color: #0f7a5a;
-  box-shadow: 0 0 0 3px rgba(15, 122, 90, 0.1);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-ring);
 }
 
 .month-filter-select option {
-  padding: 8px;
-  background-color: #ffffff;
-  color: #333;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 300;
+}
+
+.month-filter-select--year {
+  min-width: 94px;
+}
+
+.month-filter-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--c-border);
+  flex-shrink: 0;
+  opacity: 0.6;
 }

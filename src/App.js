@@ -5,11 +5,31 @@ import MeasureDetail from './components/MeasureDetail';
 import CareActionCenter from './components/CareActionCenter';
 import RateSimulator from './components/RateSimulator';
 import ProviderScores from './components/ProviderScores';
+import logoImage from './assets/logo.png';
+import { getCurrentMonthValue } from './components/MonthFilter';
 import { setToken, getToken, isTokenValid, setupTokenRefreshInterval } from './services/tokenService';
+import { setSelectedWorkflowMonth, fetchAvailableMonths } from './services/workflowService';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedMeasure, setSelectedMeasure] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Selected MonthFilter value (`YYYY-MM`) is owned here so it survives
+  // page-to-page navigation (e.g. Dashboard → Deep Dive → MeasureDetail).
+  // Each page receives it as a controlled prop and any MonthFilter changes
+  // bubble back up via `setSelectedMonth`.
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue);
+  // List of months returned by the AVAILABLE_MONTHS workflow. Format:
+  //   [{ value: "YYYY-MM", label: "Mon YYYY", monYear: "Mon-YYYY" }, ...]
+  // Sorted most-recent first. Fetched once per token and passed down to every
+  // MonthFilter via props so all of them stay in sync without duplicate calls.
+  const [availableMonths, setAvailableMonths] = useState([]);
+
+  // Sync the workflow service synchronously during render — this is the single
+  // source of truth for the month that ends up in every workflow payload. Doing
+  // it in App (the top of the tree) guarantees the service is updated before
+  // any descendant's render-phase code or effects run.
+  setSelectedWorkflowMonth(selectedMonth);
   const [token, setTokenState] = useState(() => {
     // Initialize token from tokenService or use default
     const storedToken = getToken();
@@ -26,7 +46,6 @@ function App() {
     // If no token in session storage, store the default one
     if (!isTokenValid()) {
       setToken(token, 15);
-      console.log('Default token stored in session storage');
     }
 
     // Setup auto-refresh interval (every 14 minutes)
@@ -45,11 +64,37 @@ function App() {
       const storedToken = getToken();
       if (storedToken && storedToken !== token) {
         setTokenState(storedToken);
-        console.log('Token updated from session storage');
       }
     }, 1000);
 
     return () => clearInterval(checkInterval);
+  }, [token]);
+
+  // Load the list of months that actually have data from the AVAILABLE_MONTHS
+  // workflow, then snap the current selection to the most recent month from
+  // that list if today's month isn't part of it. This makes sure the dropdown
+  // shows real options and the first round of workflow calls hits a month the
+  // backend has data for.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    fetchAvailableMonths(token)
+      .then((months) => {
+        if (cancelled || !months || months.length === 0) return;
+        setAvailableMonths(months);
+        const isCurrentInList = months.some((m) => m.value === selectedMonth);
+        if (!isCurrentInList) {
+          setSelectedMonth(months[0].value); // already sorted most-recent-first
+        }
+      })
+      .catch(() => {
+        // Swallow: the MonthFilter falls back to a generated 12-month list.
+      });
+    return () => { cancelled = true; };
+    // We intentionally do not depend on `selectedMonth` — we only snap on the
+    // initial load (or when the token changes). User-driven changes after that
+    // should not be overridden.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleNavigate = (page, measure = null) => {
@@ -65,58 +110,65 @@ function App() {
   const updateToken = (newToken) => {
     setToken(newToken, 15); // Store with 15-minute expiry
     setTokenState(newToken);
-    console.log('Token updated in session storage');
   };
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="logo">QualityPulse</div>
+      <aside 
+        className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="sidebar-header">
+          <div className="logo">
+            <img src={logoImage} alt="QualityPulse Logo" className="logo-icon" />
+            <span className="logo-text">QualityPulse</span>
+          </div>
+        </div>
         <nav className="nav-menu">
           <div
             className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
-            onClick={() => handleNavigate('dashboard')}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigate('dashboard');
+            }}
           >
-            Dashboard
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-4h2v18h-2z"/>
+            </svg>
+            <span className="nav-item-text">Overview</span>
           </div>
           <div
             className={`nav-item ${currentPage === 'detail' ? 'active' : ''}`}
-            onClick={() => handleNavigate('detail')}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigate('detail');
+            }}
           >
-            Measure detail
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.5v2.71h2v-2.71h2.5l-2.75-3.54z"/>
+            </svg>
+            <span className="nav-item-text">Measure Detail</span>
           </div>
           <div
             className={`nav-item ${currentPage === 'cac' ? 'active' : ''}`}
-            onClick={() => handleNavigate('cac')}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigate('cac');
+            }}
           >
-            Care Action Center
-          </div>
-          <div
-            className={`nav-item ${currentPage === 'sim' ? 'active' : ''}`}
-            onClick={() => handleNavigate('sim')}
-          >
-            Rate Simulator
-          </div>
-          <div
-            className={`nav-item ${currentPage === 'prov' ? 'active' : ''}`}
-            onClick={() => handleNavigate('prov')}
-          >
-            Provider scores
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+            </svg>
+            <span className="nav-item-text">Care Action Center</span>
           </div>
         </nav>
-        <div className="user-profile">
-          <div className="user-avatar">JM</div>
-          <div>
-            <div className="user-name">Jennifer Martin</div>
-            <div className="user-role">Quality Director</div>
-          </div>
-        </div>
       </aside>
 
-      <main className="main-content">
+      <main className={`main-content ${sidebarOpen ? '' : 'main-content-expanded'}`}>
         <div className="content">
-          {currentPage === 'dashboard' && <Dashboard onNavigate={handleNavigate} token={token} />}
-          {currentPage === 'detail' && <MeasureDetail measureId={selectedMeasure} onBack={handleBack} onNavigate={handleNavigate} token={token} />}
+          {currentPage === 'dashboard' && <Dashboard onNavigate={handleNavigate} token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />}
+          {currentPage === 'detail' && <MeasureDetail measureId={selectedMeasure} onBack={handleBack} onNavigate={handleNavigate} token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />}
           {currentPage === 'cac' && <CareActionCenter onBack={handleBack} token={token} />}
           {currentPage === 'sim' && <RateSimulator onBack={handleBack} token={token} />}
           {currentPage === 'prov' && <ProviderScores onBack={handleBack} token={token} />}

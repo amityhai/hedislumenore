@@ -14,7 +14,6 @@ const TOKEN_EXPIRY_KEY = 'appAccessTokenExpiry';
 export const setToken = (token, expiryMinutes = 15) => {
   try {
     if (!token) {
-      console.warn('Token is empty');
       return false;
     }
 
@@ -25,10 +24,8 @@ export const setToken = (token, expiryMinutes = 15) => {
     const expiryTime = new Date().getTime() + (expiryMinutes * 60 * 1000);
     sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
 
-    console.log(`Token stored in session storage. Expires in ${expiryMinutes} minutes.`);
     return true;
   } catch (error) {
-    console.error('Error storing token:', error);
     return false;
   }
 };
@@ -43,7 +40,6 @@ export const getToken = () => {
     const expiry = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
 
     if (!token) {
-      console.warn('No token found in session storage');
       return null;
     }
 
@@ -53,7 +49,6 @@ export const getToken = () => {
       const currentTime = new Date().getTime();
 
       if (currentTime > expiryTime) {
-        console.warn('Token has expired');
         clearToken();
         return null;
       }
@@ -61,13 +56,11 @@ export const getToken = () => {
       // Warn if token is expiring soon (within 1 minute)
       const timeUntilExpiry = expiryTime - currentTime;
       if (timeUntilExpiry < 60000) {
-        console.warn('Token expiring soon. Please refresh.');
       }
     }
 
     return token;
   } catch (error) {
-    console.error('Error retrieving token:', error);
     return null;
   }
 };
@@ -87,9 +80,7 @@ export const clearToken = () => {
   try {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
-    console.log('Token cleared from session storage');
   } catch (error) {
-    console.error('Error clearing token:', error);
   }
 };
 
@@ -103,7 +94,6 @@ export const refreshToken = (expiryMinutes = 15) => {
     const token = sessionStorage.getItem(TOKEN_KEY);
 
     if (!token) {
-      console.warn('No token to refresh');
       return false;
     }
 
@@ -111,10 +101,8 @@ export const refreshToken = (expiryMinutes = 15) => {
     const expiryTime = new Date().getTime() + (expiryMinutes * 60 * 1000);
     sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
 
-    console.log(`Token refreshed. New expiry in ${expiryMinutes} minutes.`);
     return true;
   } catch (error) {
-    console.error('Error refreshing token:', error);
     return false;
   }
 };
@@ -133,7 +121,6 @@ export const getTokenExpiry = () => {
 
     return new Date(parseInt(expiry, 10));
   } catch (error) {
-    console.error('Error getting token expiry:', error);
     return null;
   }
 };
@@ -156,7 +143,6 @@ export const getTimeUntilExpiry = () => {
 
     return timeRemaining > 0 ? timeRemaining : 0;
   } catch (error) {
-    console.error('Error calculating time until expiry:', error);
     return null;
   }
 };
@@ -180,7 +166,6 @@ export const getTokenInfo = () => {
       tokenPreview: token ? `${token.substring(0, 20)}...${token.substring(token.length - 20)}` : null
     };
   } catch (error) {
-    console.error('Error getting token info:', error);
     return null;
   }
 };
@@ -194,14 +179,11 @@ export const setupTokenRefreshInterval = (refreshIntervalMinutes = 14) => {
   const intervalId = setInterval(() => {
     if (isTokenValid()) {
       refreshToken(15); // Refresh for another 15 minutes
-      console.log('Token auto-refreshed');
     } else {
       clearInterval(intervalId);
-      console.log('Token invalid, stopping auto-refresh');
     }
   }, refreshIntervalMinutes * 60 * 1000);
 
-  console.log(`Token auto-refresh setup. Will refresh every ${refreshIntervalMinutes} minutes.`);
   return intervalId;
 };
 

@@ -30,7 +30,7 @@ const RateSimulator = ({ onBack }) => {
 
   return (
     <div className="simulator-container">
-      <button className="back-btn" onClick={onBack}>← Back to Dashboard</button>
+      <button className="back-btn" onClick={onBack}>← Back to Overview</button>
 
       <div className="simulator-header">
         <h1>Rate Simulator</h1>

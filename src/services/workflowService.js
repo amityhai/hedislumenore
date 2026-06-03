@@ -39,6 +39,197 @@ const WORKFLOW_IDS = {
   CAC_UNASSIGNED: 'workflow-id-cac-unassigned', // Care Action Center unassigned count (to be updated)
   CAC_ACTIONABLE: 'workflow-id-cac-actionable', // Care Action Center actionable count (to be updated)
   CAC_EXPIRING: 'workflow-id-cac-expiring', // Care Action Center expiring this week count (to be updated)
+  AVAILABLE_MONTHS: '53dc3a92-5e5c-11f1-9f6b-adfc4f5915e5', // List of months available across all measures (Mon-YYYY)
+};
+
+// --- Selected-month state (shared across every workflow call) -----------------
+//
+// The UI's MonthFilter exposes values in `YYYY-MM` form (e.g. "2026-01"). Every
+// workflow request body must include the chosen month in `Mon-YYYY` form
+// (e.g. "Jan-2026"). Rather than threading the month through ~30 fetch functions,
+// we keep it as module state and merge it into the payload inside `callWorkflow`.
+// Components are expected to call `setSelectedWorkflowMonth(...)` whenever the
+// MonthFilter changes (empty string / null clears it).
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_FULL_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+let currentSelectedMonth = null; // formatted as "Mon-YYYY" or null when "All Months"
+
+/**
+ * Convert a MonthFilter value (`YYYY-MM`) to API form (`Mon-YYYY`).
+ * Returns null for empty / invalid inputs.
+ */
+const formatMonthForPayload = (monthValue) => {
+  if (!monthValue || typeof monthValue !== 'string') return null;
+  const parts = monthValue.split('-');
+  if (parts.length !== 2) return null;
+  const [year, monthNum] = parts;
+  const idx = parseInt(monthNum, 10) - 1;
+  if (Number.isNaN(idx) || idx < 0 || idx > 11 || !year) return null;
+  return `${MONTH_NAMES[idx]}-${year}`;
+};
+
+/**
+ * Set the currently-selected month for every subsequent workflow call.
+ * Accepts the raw MonthFilter value (`YYYY-MM`) or empty/null to clear.
+ * Components should call this whenever the MonthFilter changes so that
+ * downstream workflow requests pick up the new month automatically.
+ */
+export const setSelectedWorkflowMonth = (monthValue) => {
+  const formatted = formatMonthForPayload(monthValue);
+  if (formatted === currentSelectedMonth) return;
+  currentSelectedMonth = formatted;
+};
+
+/**
+ * Returns the currently-active month in API form (`Mon-YYYY`), or null.
+ */
+export const getSelectedWorkflowMonth = () => currentSelectedMonth;
+
+/**
+ * Lookup tables for converting between the various month-name shapes the
+ * AVAILABLE_MONTHS workflow has returned over its lifetime.
+ *
+ * Supported inputs:
+ *   - Short:   "Jan", "Feb", ..., "Dec"
+ *   - Full:    "January", "February", ..., "December"
+ *   - Mixed case (e.g. "january", "JAN") is normalised by lowercasing the key.
+ */
+const MONTH_NAME_TO_NUMBER = {
+  jan: '01', january: '01',
+  feb: '02', february: '02',
+  mar: '03', march: '03',
+  apr: '04', april: '04',
+  may: '05',
+  jun: '06', june: '06',
+  jul: '07', july: '07',
+  aug: '08', august: '08',
+  sep: '09', sept: '09', september: '09',
+  oct: '10', october: '10',
+  nov: '11', november: '11',
+  dec: '12', december: '12'
+};
+
+const monthNameToNumber = (name) => {
+  if (!name || typeof name !== 'string') return null;
+  return MONTH_NAME_TO_NUMBER[name.trim().toLowerCase()] || null;
+};
+
+/**
+ * Convert an API-format month string (`Mon-YYYY` or `Month-YYYY`) back to the
+ * MonthFilter internal value (`YYYY-MM`). Returns null for unparseable input.
+ */
+const monYearToValue = (monYear) => {
+  if (!monYear || typeof monYear !== 'string') return null;
+  const parts = monYear.split('-');
+  if (parts.length !== 2) return null;
+  const [mon, year] = parts;
+  const monthNum = monthNameToNumber(mon);
+  if (!monthNum || !/^\d{4}$/.test(year)) return null;
+  return `${year}-${monthNum}`;
+};
+
+// --- Available-months cache (workflow returns a small fixed list per tenant) --
+let availableMonthsCache = { token: null, data: null, promise: null };
+
+export const resetAvailableMonthsCache = () => {
+  availableMonthsCache = { token: null, data: null, promise: null };
+};
+
+/**
+ * Fetch the list of months that have data, cached + in-flight deduped per token.
+ *
+ * Returns an array of `{ value, label, monthName, monYear }` objects sorted
+ * most-recent-first:
+ *   - value:     "YYYY-MM"        — used as the MonthFilter <option value="...">
+ *   - label:     "Month YYYY"     — display label (full month name as returned by API)
+ *   - monthName: "Month"          — just the month part (full name) for compact display
+ *   - monYear:   "Mon-YYYY"       — raw API payload form (always short, backend contract)
+ */
+export const fetchAvailableMonths = async (token) => {
+  if (availableMonthsCache.token === token && availableMonthsCache.data) {
+    return availableMonthsCache.data;
+  }
+  if (availableMonthsCache.token === token && availableMonthsCache.promise) {
+    return availableMonthsCache.promise;
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const result = await callWorkflow(
+        WORKFLOW_IDS.AVAILABLE_MONTHS,
+        {},
+        token
+      );
+
+      if (!result.data?.data?.resultSet) {
+        throw new Error('Invalid response format');
+      }
+
+      // The workflow has shipped two response shapes over time:
+      //   v1 (legacy):  resultSet rows = ["Mon-YYYY"]                e.g. ["Dec-2025"]
+      //   v2 (current): resultSet rows = ["FullMonthName", yearNum]  e.g. ["December", 2025]
+      // Handle both so a future server-side rollback doesn't break the dropdown.
+      const months = result.data.data.resultSet
+        .map((row) => {
+          let monthName;
+          let year;
+
+          if (Array.isArray(row)) {
+            if (row.length >= 2 && (typeof row[1] === 'number' || /^\d{4}$/.test(String(row[1])))) {
+              // v2 shape: separate month name + year columns.
+              monthName = row[0];
+              year = String(row[1]);
+            } else {
+              // v1 shape: single "Mon-YYYY" cell.
+              const [m, y] = String(row[0] || '').split('-');
+              monthName = m;
+              year = y;
+            }
+          } else if (typeof row === 'string') {
+            const [m, y] = row.split('-');
+            monthName = m;
+            year = y;
+          }
+
+          const monthNum = monthNameToNumber(monthName);
+          if (!monthNum || !year || !/^\d{4}$/.test(year)) return null;
+
+          // Prefer the full month name from the API response. If the legacy
+          // shape (`"Dec-2025"`) was used, the source only has the short form;
+          // derive a full name from the month number so display stays consistent.
+          const monthIdx = parseInt(monthNum, 10) - 1;
+          const shortMon = MONTH_NAMES[monthIdx];
+          const looksFull = typeof monthName === 'string' && monthName.length > 3;
+          const fullMon = looksFull
+            ? monthName.charAt(0).toUpperCase() + monthName.slice(1).toLowerCase()
+            : MONTH_FULL_NAMES[monthIdx];
+
+          return {
+            value: `${year}-${monthNum}`,   // "YYYY-MM" — MonthFilter <option value>
+            label: `${fullMon} ${year}`,     // "Month YYYY" — display label (full name)
+            monthName: fullMon,              // "Month" — full name for compact display
+            monYear: `${shortMon}-${year}`   // "Mon-YYYY" — backend payload form (unchanged)
+          };
+        })
+        .filter(Boolean)
+        // Most recent first — `value` is `YYYY-MM` so string compare works.
+        .sort((a, b) => (a.value < b.value ? 1 : a.value > b.value ? -1 : 0));
+
+      if (availableMonthsCache.token === token) {
+        availableMonthsCache = { token, data: months, promise: null };
+      }
+      return months;
+    } catch (error) {
+      if (availableMonthsCache.token === token) {
+        availableMonthsCache = { token: null, data: null, promise: null };
+      }
+      throw error;
+    }
+  })();
+
+  availableMonthsCache = { token, data: null, promise: fetchPromise };
+  return fetchPromise;
 };
 
 /**
@@ -79,6 +270,9 @@ const callWorkflow = async (workflowId, data, token) => {
       workflowId,
       data: {
         appId: APP_ID,
+        // Inject the globally-selected month first so any caller can override
+        // by passing `month` explicitly inside `data` if it ever needs to.
+        ...(currentSelectedMonth ? { month: currentSelectedMonth } : {}),
         ...data
       }
     }));
@@ -105,7 +299,6 @@ const callWorkflow = async (workflowId, data, token) => {
 
     return result;
   } catch (error) {
-    console.error('Workflow API Error:', error);
     throw error;
   }
 };
@@ -113,19 +306,21 @@ const callWorkflow = async (workflowId, data, token) => {
 /**
  * Fetch Ethnicity-CRSP Drill-down Data
  * @param {string} measureId - Measure ID to filter by
+ * @param {string} ethnicityStrat - Specific ethnicity stratification (e.g. "Hispanic"). Optional — when omitted the API returns all groups for the measure.
  * @param {string} token - Authorization token
  * @returns {Promise} Transformed ethnicity-CRSP drill-down data
  */
-export const fetchEthnicityCRSPDrilldown = async (measureId, token) => {
+export const fetchEthnicityCRSPDrilldown = async (measureId, ethnicityStrat, token) => {
   try {
+    const payload = { measureId };
+    if (ethnicityStrat) payload.ethnicityStrat = ethnicityStrat;
+
     const result = await callWorkflow(
       WORKFLOW_IDS.ETHNICITY_CRSP_DRILLDOWN,
-      {},
+      payload,
       token
     );
 
-    console.log('Raw Ethnicity-CRSP Drilldown API Response:', result);
-    console.log('Filtering for measureId:', measureId);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -140,7 +335,6 @@ export const fetchEthnicityCRSPDrilldown = async (measureId, token) => {
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing: measure=${rowMeasureId}, ethnicity=${ethnicityStrat}, crsp=${crsp}, rate=${rate}`);
         
         // Initialize ethnicity group if not exists
         if (!ethnicityGroupMap[ethnicityStrat]) {
@@ -172,10 +366,8 @@ export const fetchEthnicityCRSPDrilldown = async (measureId, token) => {
       data.totalRate = data.totalDenom > 0 ? Math.round((data.totalNum / data.totalDenom) * 100) : 0;
     });
 
-    console.log('Transformed Ethnicity-CRSP Drilldown Data:', ethnicityGroupMap);
     return ethnicityGroupMap;
   } catch (error) {
-    console.error('Error fetching Ethnicity-CRSP Drilldown Data:', error);
     throw error;
   }
 };
@@ -183,19 +375,21 @@ export const fetchEthnicityCRSPDrilldown = async (measureId, token) => {
 /**
  * Fetch Race-CRSP Drill-down Data
  * @param {string} measureId - Measure ID to filter by
+ * @param {string} raceStrat - Specific race stratification (e.g. "White"). Optional — when omitted the API returns all groups for the measure.
  * @param {string} token - Authorization token
  * @returns {Promise} Transformed race-CRSP drill-down data
  */
-export const fetchRaceCRSPDrilldown = async (measureId, token) => {
+export const fetchRaceCRSPDrilldown = async (measureId, raceStrat, token) => {
   try {
+    const payload = { measureId };
+    if (raceStrat) payload.raceStrat = raceStrat;
+
     const result = await callWorkflow(
       WORKFLOW_IDS.RACE_CRSP_DRILLDOWN,
-      {},
+      payload,
       token
     );
 
-    console.log('Raw Race-CRSP Drilldown API Response:', result);
-    console.log('Filtering for measureId:', measureId);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -210,7 +404,6 @@ export const fetchRaceCRSPDrilldown = async (measureId, token) => {
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing: measure=${rowMeasureId}, race=${raceStrat}, crsp=${crsp}, rate=${rate}`);
         
         // Initialize race group if not exists
         if (!raceGroupMap[raceStrat]) {
@@ -242,10 +435,8 @@ export const fetchRaceCRSPDrilldown = async (measureId, token) => {
       data.totalRate = data.totalDenom > 0 ? Math.round((data.totalNum / data.totalDenom) * 100) : 0;
     });
 
-    console.log('Transformed Race-CRSP Drilldown Data:', raceGroupMap);
     return raceGroupMap;
   } catch (error) {
-    console.error('Error fetching Race-CRSP Drilldown Data:', error);
     throw error;
   }
 };
@@ -253,19 +444,21 @@ export const fetchRaceCRSPDrilldown = async (measureId, token) => {
 /**
  * Fetch Age-CRSP Drill-down Data
  * @param {string} measureId - Measure ID to filter by
+ * @param {string} ageStrat - Specific age stratification (e.g. "65+"). Optional — when omitted the API returns all groups for the measure.
  * @param {string} token - Authorization token
  * @returns {Promise} Transformed age-CRSP drill-down data
  */
-export const fetchAgeCRSPDrilldown = async (measureId, token) => {
+export const fetchAgeCRSPDrilldown = async (measureId, ageStrat, token) => {
   try {
+    const payload = { measureId };
+    if (ageStrat) payload.ageStrat = ageStrat;
+
     const result = await callWorkflow(
       WORKFLOW_IDS.AGE_CRSP_DRILLDOWN,
-      {},
+      payload,
       token
     );
 
-    console.log('Raw Age-CRSP Drilldown API Response:', result);
-    console.log('Filtering for measureId:', measureId);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -280,7 +473,6 @@ export const fetchAgeCRSPDrilldown = async (measureId, token) => {
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing: measure=${rowMeasureId}, age=${ageStrat}, crsp=${crsp}, rate=${rate}`);
         
         // Initialize age group if not exists
         if (!ageGroupMap[ageStrat]) {
@@ -312,10 +504,8 @@ export const fetchAgeCRSPDrilldown = async (measureId, token) => {
       data.totalRate = data.totalDenom > 0 ? Math.round((data.totalNum / data.totalDenom) * 100) : 0;
     });
 
-    console.log('Transformed Age-CRSP Drilldown Data:', ageGroupMap);
     return ageGroupMap;
   } catch (error) {
-    console.error('Error fetching Age-CRSP Drilldown Data:', error);
     throw error;
   }
 };
@@ -334,8 +524,6 @@ export const fetchCRSPLevelData = async (measureId, token) => {
       token
     );
 
-    console.log('Raw CRSP Level API Response:', result);
-    console.log('Filtering for measureId:', measureId);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -346,15 +534,12 @@ export const fetchCRSPLevelData = async (measureId, token) => {
 
     result.data.data.resultSet.forEach((row) => {
       // Log each row to debug the structure
-      console.log('CRSP Row:', row);
       
       const [rowMeasureId, crsp, numerator, denominator, rate] = row;
       
-      console.log(`Comparing: rowMeasureId="${rowMeasureId}" vs measureId="${measureId}", match: ${rowMeasureId === measureId}`);
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing CRSP: ${rowMeasureId}, CRSP: ${crsp}, rate: ${rate}`);
         
         crspData.push({
           crsp: crsp,
@@ -365,10 +550,8 @@ export const fetchCRSPLevelData = async (measureId, token) => {
       }
     });
 
-    console.log('Transformed CRSP Level Data for measure', measureId, ':', crspData);
     return crspData;
   } catch (error) {
-    console.error('Error fetching CRSP Level Data:', error);
     throw error;
   }
 };
@@ -386,7 +569,6 @@ export const fetchAllMeasuresGrid = async (token) => {
       token
     );
 
-    console.log('Raw All Measures Grid API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -410,10 +592,8 @@ export const fetchAllMeasuresGrid = async (token) => {
       };
     });
 
-    console.log('Transformed Measures Grid:', measuresGrid);
     return measuresGrid;
   } catch (error) {
-    console.error('Error fetching All Measures Grid:', error);
     throw error;
   }
 };
@@ -451,7 +631,7 @@ export const fetchDashboardKPI = async (token) => {
         return {
           label: label === 'Above Goal' ? 'Above goal / target' :
                  label === 'At Goal' ? 'At goal / target' :
-                 'Below benchmark / critical',
+                 'Below Goal / Target',
           value: value,
           total: targetValue,
           trend: label === 'Above Goal' ? '+5 vs MY 2025' :
@@ -463,7 +643,6 @@ export const fetchDashboardKPI = async (token) => {
 
     return kpiData;
   } catch (error) {
-    console.error('Error fetching Dashboard KPI:', error);
     throw error;
   }
 };
@@ -481,7 +660,6 @@ export const fetchDashboardMeasures = async (token) => {
       token
     );
 
-    console.log('Raw API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -498,11 +676,9 @@ export const fetchDashboardMeasures = async (token) => {
     result.data.data.resultSet.forEach((row) => {
       const [measureId, category, displayName, numerator, denominator, rate, gapToGoal, goal50th, kpiStatus] = row;
       
-      console.log(`Processing measure: ${measureId}, category: ${category}, rate: ${rate}, goal: ${goal50th}, gap: ${gapToGoal}`);
       
       // Validate required fields
       if (!measureId || !category || !displayName || denominator === null || denominator === undefined) {
-        console.warn(`Skipping invalid measure row:`, row);
         return;
       }
       
@@ -547,14 +723,11 @@ export const fetchDashboardMeasures = async (token) => {
           gapToGoal: gapValue
         });
       } else {
-        console.warn(`Unknown category: ${category}. Available categories: ${Object.keys(measuresMap).join(', ')}`);
       }
     });
 
-    console.log('Transformed Measures:', measuresMap);
     return measuresMap;
   } catch (error) {
-    console.error('Error fetching Dashboard Measures:', error);
     throw error;
   }
 };
@@ -569,11 +742,10 @@ export const fetchMeasureStratification = async (measureId, token) => {
   try {
     const result = await callWorkflow(
       WORKFLOW_IDS.MEASURE_STRATIFICATION_AGE,
-      {},
+      { measureId },
       token
     );
 
-    console.log('Raw Age Stratification API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -588,7 +760,6 @@ export const fetchMeasureStratification = async (measureId, token) => {
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing age stratification: ${rowMeasureId}, age: ${ageStrat}, rate: ${rateAge}, not_meeting: ${notMeeting}, disparity: ${disparity}`);
         
         ageGroups.push({
           group: ageStrat,
@@ -607,10 +778,8 @@ export const fetchMeasureStratification = async (measureId, token) => {
       }
     };
 
-    console.log('Transformed Age Stratification Data:', stratificationMap);
     return stratificationMap;
   } catch (error) {
-    console.error('Error fetching Measure Age Stratification:', error);
     throw error;
   }
 };
@@ -625,11 +794,10 @@ export const fetchMeasureStratificationEthnicity = async (measureId, token) => {
   try {
     const result = await callWorkflow(
       WORKFLOW_IDS.MEASURE_STRATIFICATION_ETHNICITY,
-      {},
+      { measureId },
       token
     );
 
-    console.log('Raw Ethnicity Stratification API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -644,7 +812,6 @@ export const fetchMeasureStratificationEthnicity = async (measureId, token) => {
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing ethnicity stratification: ${rowMeasureId}, ethnicity: ${ethnicityStrat}, rate: ${rateEthnicity}, not_meeting: ${notMeeting}, disparity: ${disparity}`);
         
         ethnicityGroups.push({
           group: ethnicityStrat,
@@ -663,10 +830,8 @@ export const fetchMeasureStratificationEthnicity = async (measureId, token) => {
       }
     };
 
-    console.log('Transformed Ethnicity Stratification Data:', stratificationMap);
     return stratificationMap;
   } catch (error) {
-    console.error('Error fetching Measure Ethnicity Stratification:', error);
     throw error;
   }
 };
@@ -681,11 +846,10 @@ export const fetchMeasureStratificationRace = async (measureId, token) => {
   try {
     const result = await callWorkflow(
       WORKFLOW_IDS.MEASURE_STRATIFICATION_RACE,
-      {},
+      { measureId },
       token
     );
 
-    console.log('Raw Race Stratification API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -700,7 +864,6 @@ export const fetchMeasureStratificationRace = async (measureId, token) => {
       
       // Only include rows for the requested measure
       if (rowMeasureId === measureId) {
-        console.log(`Processing race stratification: ${rowMeasureId}, race: ${raceStrat}, rate: ${rateRace}, not_meeting: ${notMeeting}, disparity: ${disparity}`);
         
         raceGroups.push({
           group: raceStrat,
@@ -719,10 +882,8 @@ export const fetchMeasureStratificationRace = async (measureId, token) => {
       }
     };
 
-    console.log('Transformed Race Stratification Data:', stratificationMap);
     return stratificationMap;
   } catch (error) {
-    console.error('Error fetching Measure Race Stratification:', error);
     throw error;
   }
 };
@@ -740,7 +901,6 @@ export const fetchChartMeasuresMeetingTarget = async (token) => {
       token
     );
 
-    console.log('Raw Chart Data API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -755,10 +915,8 @@ export const fetchChartMeasuresMeetingTarget = async (token) => {
       };
     });
 
-    console.log('Transformed Chart Data:', chartData);
     return chartData;
   } catch (error) {
-    console.error('Error fetching Chart Data:', error);
     throw error;
   }
 };
@@ -780,9 +938,7 @@ export const fetchMemberDetails = async (filters, token) => {
       {
         measureId: filters.measureId,
         ageStrat: filters.ageStrat,
-        crsp: filters.crsp,
-        stratification: filters.ageStrat,
-        stratificationType: 'age'
+        crsp: filters.crsp
       },
       token
     );
@@ -814,7 +970,6 @@ export const fetchMemberDetails = async (filters, token) => {
 
     return memberDetails;
   } catch (error) {
-    console.error('Error fetching Member Details:', error);
     throw error;
   }
 };
@@ -836,9 +991,7 @@ export const fetchRaceMemberDetails = async (filters, token) => {
       {
         measureId: filters.measureId,
         raceStrat: filters.raceStrat,
-        crsp: filters.crsp,
-        stratification: filters.raceStrat,
-        stratificationType: 'race'
+        crsp: filters.crsp
       },
       token
     );
@@ -871,7 +1024,6 @@ export const fetchRaceMemberDetails = async (filters, token) => {
 
     return memberDetails;
   } catch (error) {
-    console.error('Error fetching Race Member Details:', error);
     throw error;
   }
 };
@@ -893,9 +1045,7 @@ export const fetchEthnicityMemberDetails = async (filters, token) => {
       {
         measureId: filters.measureId,
         ethnicityStrat: filters.ethnicityStrat,
-        crsp: filters.crsp,
-        stratification: filters.ethnicityStrat,
-        stratificationType: 'ethnicity'
+        crsp: filters.crsp
       },
       token
     );
@@ -928,7 +1078,6 @@ export const fetchEthnicityMemberDetails = async (filters, token) => {
 
     return memberDetails;
   } catch (error) {
-    console.error('Error fetching Ethnicity Member Details:', error);
     throw error;
   }
 };
@@ -948,9 +1097,7 @@ export const fetchCRSPMemberDetails = async (filters, token) => {
       WORKFLOW_IDS.CRSP_MEMBER_DETAILS,
       {
         measureId: filters.measureId,
-        crsp: filters.crsp,
-        ...(filters.stratification && { stratification: filters.stratification }),
-        ...(filters.stratificationType && { stratificationType: filters.stratificationType })
+        crsp: filters.crsp
       },
       token
     );
@@ -979,7 +1126,6 @@ export const fetchCRSPMemberDetails = async (filters, token) => {
 
     return memberDetails;
   } catch (error) {
-    console.error('Error fetching CRSP Member Details:', error);
     throw error;
   }
 };
@@ -1000,7 +1146,6 @@ export const fetchMeasureDetail = async (measureId, token) => {
 
     return result.data?.data || {};
   } catch (error) {
-    console.error('Error fetching Measure Detail:', error);
     throw error;
   }
 };
@@ -1021,7 +1166,6 @@ export const fetchCareActionData = async (filters, token) => {
 
     return result.data?.data || {};
   } catch (error) {
-    console.error('Error fetching Care Action Data:', error);
     throw error;
   }
 };
@@ -1042,7 +1186,6 @@ export const fetchRateSimulatorData = async (measureId, token) => {
 
     return result.data?.data || {};
   } catch (error) {
-    console.error('Error fetching Rate Simulator Data:', error);
     throw error;
   }
 };
@@ -1063,7 +1206,6 @@ export const fetchProviderScores = async (filters, token) => {
 
     return result.data?.data || {};
   } catch (error) {
-    console.error('Error fetching Provider Scores:', error);
     throw error;
   }
 };
@@ -1085,7 +1227,6 @@ export const fetchMiniChartData = async (measureId, token) => {
       token
     );
 
-    console.log('Raw Mini Chart API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -1107,10 +1248,8 @@ export const fetchMiniChartData = async (measureId, token) => {
         return monthOrder.indexOf(aMonth) - monthOrder.indexOf(bMonth);
       });
 
-    console.log('Transformed Mini Chart Data:', chartData);
     return chartData;
   } catch (error) {
-    console.error('Error fetching Mini Chart Data:', error);
     throw error;
   }
 };
@@ -1131,7 +1270,6 @@ export const fetchLowestPerformingMeasures = async (token) => {
       token
     );
 
-    console.log('Raw Lowest Performing Measures API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -1145,10 +1283,8 @@ export const fetchLowestPerformingMeasures = async (token) => {
       rate: row[2]
     }));
 
-    console.log('Transformed Lowest Performing Measures:', measures);
     return measures;
   } catch (error) {
-    console.error('Error fetching Lowest Performing Measures:', error);
     throw error;
   }
 };
@@ -1169,7 +1305,6 @@ export const fetchCRSPsNeedingAttention = async (token) => {
       token
     );
 
-    console.log('Raw CRSPs Needing Attention API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -1183,10 +1318,8 @@ export const fetchCRSPsNeedingAttention = async (token) => {
       rate: row[2]
     }));
 
-    console.log('Transformed CRSPs Needing Attention:', crsps);
     return crsps;
   } catch (error) {
-    console.error('Error fetching CRSPs Needing Attention:', error);
     throw error;
   }
 };
@@ -1207,7 +1340,6 @@ export const fetchEquityAlerts = async (token) => {
       token
     );
 
-    console.log('Raw Equity Alerts API Response:', result);
 
     if (!result.data?.data?.resultSet) {
       throw new Error('Invalid response format');
@@ -1221,10 +1353,8 @@ export const fetchEquityAlerts = async (token) => {
       rate: row[2]
     }));
 
-    console.log('Transformed Equity Alerts:', alerts);
     return alerts;
   } catch (error) {
-    console.error('Error fetching Equity Alerts:', error);
     throw error;
   }
 };
@@ -1237,9 +1367,7 @@ export const fetchEquityAlerts = async (token) => {
 export const updateWorkflowId = (feature, workflowId) => {
   if (WORKFLOW_IDS[feature]) {
     WORKFLOW_IDS[feature] = workflowId;
-    console.log(`Updated ${feature} workflow ID to: ${workflowId}`);
   } else {
-    console.warn(`Feature ${feature} not found in WORKFLOW_IDS`);
   }
 };
 
@@ -1278,7 +1406,6 @@ export const fetchCACMeasures = async (token) => {
 
     return result.data.data.resultSet.map(row => row[0]);
   } catch (error) {
-    console.error('Error fetching CAC measures:', error);
     throw error;
   }
 };
@@ -1302,7 +1429,6 @@ export const fetchCACCRSPs = async (token) => {
 
     return result.data.data.resultSet.map(row => row[0]);
   } catch (error) {
-    console.error('Error fetching CAC CRSPs:', error);
     throw error;
   }
 };
@@ -1327,7 +1453,6 @@ export const fetchCACGridData = async (filters = {}, token) => {
 
     return result.data.data;
   } catch (error) {
-    console.error('Error fetching CAC grid data:', error);
     throw error;
   }
 };
@@ -1339,7 +1464,6 @@ export const fetchCACGridData = async (filters = {}, token) => {
  */
 export const fetchCACNonCompliantCount = async (token) => {
   try {
-    console.log('Fetching non-compliant count...');
     const result = await callWorkflow(
       WORKFLOW_IDS.CAC_NON_COMPLIANT,
       {},
@@ -1347,15 +1471,12 @@ export const fetchCACNonCompliantCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      console.warn('No non-compliant data returned, using default');
       return 21292; // Default value
     }
 
     const count = result.data.data.resultSet[0][0];
-    console.log('Non-compliant count fetched:', count);
     return count || 21292;
   } catch (error) {
-    console.error('Error fetching CAC non-compliant count:', error);
     // Return default value on error
     return 21292;
   }
@@ -1370,7 +1491,6 @@ export const fetchCACUnassignedCount = async (token) => {
   try {
     // TODO: Replace with actual workflow ID when available
     // For now, return a default value
-    console.log('Fetching unassigned count...');
     const result = await callWorkflow(
       WORKFLOW_IDS.CAC_UNASSIGNED,
       {},
@@ -1378,13 +1498,11 @@ export const fetchCACUnassignedCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      console.warn('No unassigned data returned, using default');
       return 2392; // Default value
     }
 
     return result.data.data.resultSet[0][0] || 2392;
   } catch (error) {
-    console.error('Error fetching CAC unassigned count:', error);
     // Return default value on error
     return 2392;
   }
@@ -1399,7 +1517,6 @@ export const fetchCACActionableCount = async (token) => {
   try {
     // TODO: Replace with actual workflow ID when available
     // For now, return a default value
-    console.log('Fetching actionable count...');
     const result = await callWorkflow(
       WORKFLOW_IDS.CAC_ACTIONABLE,
       {},
@@ -1407,13 +1524,11 @@ export const fetchCACActionableCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      console.warn('No actionable data returned, using default');
       return 5842; // Default value
     }
 
     return result.data.data.resultSet[0][0] || 5842;
   } catch (error) {
-    console.error('Error fetching CAC actionable count:', error);
     // Return default value on error
     return 5842;
   }
@@ -1428,7 +1543,6 @@ export const fetchCACExpiringCount = async (token) => {
   try {
     // TODO: Replace with actual workflow ID when available
     // For now, return a default value
-    console.log('Fetching expiring count...');
     const result = await callWorkflow(
       WORKFLOW_IDS.CAC_EXPIRING,
       {},
@@ -1436,13 +1550,11 @@ export const fetchCACExpiringCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      console.warn('No expiring data returned, using default');
       return 127; // Default value
     }
 
     return result.data.data.resultSet[0][0] || 127;
   } catch (error) {
-    console.error('Error fetching CAC expiring count:', error);
     // Return default value on error
     return 127;
   }
@@ -1451,6 +1563,10 @@ export const fetchCACExpiringCount = async (token) => {
 export default {
   fetchDashboardKPI,
   fetchDashboardMeasures,
+  setSelectedWorkflowMonth,
+  getSelectedWorkflowMonth,
+  fetchAvailableMonths,
+  resetAvailableMonthsCache,
   fetchAllMeasuresGrid,
   fetchCRSPLevelData,
   fetchAgeCRSPDrilldown,

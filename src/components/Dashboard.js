@@ -3,7 +3,10 @@ import './Dashboard.css';
 import MonthFilter from './MonthFilter';
 import { fetchDashboardKPI, fetchChartMeasuresMeetingTarget, fetchAllMeasuresGrid, fetchLowestPerformingMeasures, fetchCRSPsNeedingAttention, fetchEquityAlerts } from '../services/workflowService';
 
-const Dashboard = ({ onNavigate, token }) => {
+// `selectedMonth` / `onMonthChange` are controlled props from App so the user's
+// selection survives page navigation (and so the workflow-service month stays
+// in sync from a single source of truth at the top of the tree).
+const Dashboard = ({ onNavigate, token, selectedMonth, onMonthChange, availableMonths }) => {
   const [kpis, setKpis] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [measuresGrid, setMeasuresGrid] = useState([]);
@@ -14,22 +17,21 @@ const Dashboard = ({ onNavigate, token }) => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Below Goal');
   const [tableVisible, setTableVisible] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState('');
   const matrixPageSize = 6;
   const matrixRef = useRef(null);
 
-  // Fetch KPI data from workflow
+  // Fetch KPI data from workflow (refetches whenever the selected month changes).
   useEffect(() => {
     if (token) {
       fetchDashboardData();
     }
-  }, [token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, selectedMonth]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
 
-      console.log('Dashboard - fetchDashboardData called with token:', token ? `${token.substring(0, 50)}...` : 'NO TOKEN');
 
       // Fetch KPI, Chart, Measures Grid, Lowest Performing Measures, CRSPs Needing Attention, and Equity Alerts data in parallel
       const [kpiData, chartDataResult, measuresGridData, lowestMeasuresData, crspAttentionData, equityAlertsData] = await Promise.all([
@@ -41,12 +43,6 @@ const Dashboard = ({ onNavigate, token }) => {
         fetchEquityAlerts(token)
       ]);
 
-      console.log('KPI Data:', kpiData);
-      console.log('Chart Data:', chartDataResult);
-      console.log('Measures Grid Data:', measuresGridData);
-      console.log('Lowest Performing Measures:', lowestMeasuresData);
-      console.log('CRSPs Needing Attention:', crspAttentionData);
-      console.log('Equity Alerts:', equityAlertsData);
 
       setKpis(kpiData);
       setChartData(chartDataResult);
@@ -55,13 +51,11 @@ const Dashboard = ({ onNavigate, token }) => {
       setCRSPNeedingAttention(crspAttentionData);
       setEquityAlerts(equityAlertsData);
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
       // Fallback to mock data
-      console.log('Using fallback mock data');
       setKpis([
         { label: 'Above goal / target', value: 35, total: 88, trend: '+5 vs MY 2025', type: 'above' },
         { label: 'At goal / target', value: 7, total: 88, trend: 'Stable vs MY 2025', type: 'at' },
-        { label: 'Below benchmark / critical', value: 46, total: 88, trend: '7 critical, 39 below target', type: 'below' },
+        { label: 'Below Goal / Target', value: 46, total: 88, trend: '7 critical, 39 below target', type: 'below' },
       ]);
       setChartData([
         { month: 'Jan-2026', value: 19 },
@@ -97,25 +91,37 @@ const Dashboard = ({ onNavigate, token }) => {
       <div className="dashboard-header-with-filter">
         <div className="dashboard-header">
           <h1>Quality Management Command Center</h1>
-          <p>Real-time performance snapshot, trends, and equity alerts. Data as of: March 30, 2026</p>
         </div>
-        <MonthFilter selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+        <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
       </div>
 
-      {/* KPI Section - 4 Cards in One Row */}
-      <div className="kpi-grid">
+      {/* KPI Section - Tab-like Selection */}
+      <div className="kpi-grid" role="tablist" aria-label="Measure status filters">
         {kpis.length >= 3 && (
           <>
-            <div className={`kpi-card kpi-card-green`} onClick={() => {
-              if (statusFilter === 'Above Goal' && tableVisible) {
-                setTableVisible(false);
-              } else {
+            <div 
+              className={`kpi-card kpi-card-green ${statusFilter === 'Above Goal' ? 'kpi-card-active' : ''}`}
+              role="tab"
+              aria-selected={statusFilter === 'Above Goal'}
+              tabIndex={statusFilter === 'Above Goal' ? 0 : -1}
+              onClick={() => {
                 setStatusFilter('Above Goal');
                 setTableVisible(true);
                 setCurrentMatrixPage(1);
                 setTimeout(() => matrixRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-              }
-            }}>
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  document.querySelector('[role="tab"][aria-selected="false"]')?.focus();
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setStatusFilter('Above Goal');
+                  setTableVisible(true);
+                  setCurrentMatrixPage(1);
+                }
+              }}
+            >
               <div className="kpi-header">
                 <span className="kpi-label">{kpis[0]?.label}</span>
                 <span className="kpi-status-dot kpi-status-green"></span>
@@ -126,16 +132,32 @@ const Dashboard = ({ onNavigate, token }) => {
               </div>
             </div>
 
-            <div className={`kpi-card kpi-card-blue`} onClick={() => {
-              if (statusFilter === 'At Goal' && tableVisible) {
-                setTableVisible(false);
-              } else {
+            <div 
+              className={`kpi-card kpi-card-blue ${statusFilter === 'At Goal' ? 'kpi-card-active' : ''}`}
+              role="tab"
+              aria-selected={statusFilter === 'At Goal'}
+              tabIndex={statusFilter === 'At Goal' ? 0 : -1}
+              onClick={() => {
                 setStatusFilter('At Goal');
                 setTableVisible(true);
                 setCurrentMatrixPage(1);
                 setTimeout(() => matrixRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-              }
-            }}>
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  document.querySelectorAll('[role="tab"]')[2]?.focus();
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  document.querySelectorAll('[role="tab"]')[0]?.focus();
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setStatusFilter('At Goal');
+                  setTableVisible(true);
+                  setCurrentMatrixPage(1);
+                }
+              }}
+            >
               <div className="kpi-header">
                 <span className="kpi-label">{kpis[1]?.label}</span>
                 <span className="kpi-status-dot kpi-status-blue"></span>
@@ -146,16 +168,29 @@ const Dashboard = ({ onNavigate, token }) => {
               </div>
             </div>
 
-            <div className={`kpi-card kpi-card-red`} onClick={() => {
-              if (statusFilter === 'Below Goal' && tableVisible) {
-                setTableVisible(false);
-              } else {
+            <div 
+              className={`kpi-card kpi-card-red ${statusFilter === 'Below Goal' ? 'kpi-card-active' : ''}`}
+              role="tab"
+              aria-selected={statusFilter === 'Below Goal'}
+              tabIndex={statusFilter === 'Below Goal' ? 0 : -1}
+              onClick={() => {
                 setStatusFilter('Below Goal');
                 setTableVisible(true);
                 setCurrentMatrixPage(1);
                 setTimeout(() => matrixRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-              }
-            }}>
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  document.querySelectorAll('[role="tab"]')[1]?.focus();
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setStatusFilter('Below Goal');
+                  setTableVisible(true);
+                  setCurrentMatrixPage(1);
+                }
+              }}
+            >
               <div className="kpi-header">
                 <span className="kpi-label">{kpis[2]?.label}</span>
                 <span className="kpi-status-dot kpi-status-red"></span>
@@ -166,39 +201,17 @@ const Dashboard = ({ onNavigate, token }) => {
               </div>
             </div>
 
-            <div className={`kpi-card kpi-card-teal`}>
-              <div className="kpi-header">
-                <span className="kpi-label">Gaps Closed (MTD)</span>
-                <span className="kpi-status-dot kpi-status-teal"></span>
-              </div>
-              <div className="kpi-main">
-                <span className="kpi-value">{chartData.length > 0 ? chartData[chartData.length - 1]?.value : '—'}</span>
-              </div>
-            </div>
-          </>
+            </>
         )}
       </div>
 
       {/* Measure Health Matrix Section - Right after KPI cards */}
       {tableVisible && (
-      <div className="measure-health-matrix-section" ref={matrixRef}>
-        <div style={{ marginBottom: '16px', padding: '12px 20px', backgroundColor: '#d1ebe5', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '16px', width: 'fit-content' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#0f7a5a' }}>
-            Showing: {filteredMeasures.length} measure{filteredMeasures.length !== 1 ? 's' : ''} {statusFilter}
-          </div>
-          <button 
-            onClick={() => setTableVisible(false)}
-            style={{ padding: '0', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontSize: '18px', fontWeight: '600', color: '#0f7a5a', lineHeight: '1' }}
-          >
-            ×
-          </button>
-        </div>
+      <div className="measure-health-matrix-section" ref={matrixRef} role="tabpanel">
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#6b6a66' }}>
-            Loading measures...
-          </div>
+          <div className="matrix-empty-state">Loading measures…</div>
         ) : filteredMeasures.length > 0 ? (
-          <div className="measure-table-wrapper">
+          <div className="measure-table-wrapper" key={statusFilter}>
             <div className="measure-grid-table">
               <div className="measure-grid-header">
                 <div className="measure-grid-cell measure-grid-chevron"></div>
@@ -211,10 +224,10 @@ const Dashboard = ({ onNavigate, token }) => {
                 <div className="measure-grid-cell measure-grid-action">Action</div>
               </div>
 
-              <div className="measure-grid-body">
+              <div className="measure-grid-body" key={`body-${statusFilter}`}>
                 {paginatedMeasures.map((measure, idx) => {
                   const statusClass = measure.kpi_status === 'Above Goal' ? 'above' : measure.kpi_status === 'At Goal' ? 'at' : 'below';
-                  const measureId = measure.measure_id || 'N/A';
+                  const measureId = (measure.measure_id || 'N/A').replace(/_/g, ' ');
 
                   return (
                     <div key={idx} className={`measure-grid-row measure-row-${statusClass}`}>
@@ -246,7 +259,7 @@ const Dashboard = ({ onNavigate, token }) => {
                         <button
                           type="button"
                           className="view-details-button"
-                          onClick={() => onNavigate && onNavigate('detail', measureId)}
+                          onClick={() => onNavigate && onNavigate('detail', measure.measure_id)}
                         >
                           Deep Dive →
                         </button>
@@ -297,115 +310,11 @@ const Dashboard = ({ onNavigate, token }) => {
             </div>
           </div>
         ) : (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#6b6a66' }}>
-            No measures available
-          </div>
+          <div className="matrix-empty-state">No measures available</div>
         )}
       </div>
       )}
 
-      {/* Chart Section - Full Width */}
-      <div className="chart-card-modern">
-        <div className="chart-header-modern">
-          <div className="chart-title-section">
-            <h3 className="chart-title">📊 Measures Meeting Target</h3>
-            <p className="chart-subtitle">Monthly trend of measures meeting target</p>
-          </div>
-          <div className="chart-legend-modern">
-            <div className="legend-item">
-              <span className="legend-dot" style={{ backgroundColor: '#27500a' }}></span>
-              <span className="legend-label">Current Year</span>
-            </div>
-          </div>
-        </div>
-
-        {chartData.length > 0 ? (
-          <div className="chart-container-modern">
-            <svg viewBox="0 0 800 180" style={{ width: '100%', height: 'auto', minHeight: '140px' }}>
-              <defs>
-                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#27500a" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#27500a" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-
-              {/* Subtle grid lines */}
-              <line x1="70" y1="160" x2="750" y2="160" stroke="#e8e6e1" strokeWidth="1" />
-              <line x1="70" y1="110" x2="750" y2="110" stroke="#f0efe8" strokeWidth="1" />
-              <line x1="70" y1="60" x2="750" y2="60" stroke="#f0efe8" strokeWidth="1" />
-
-              {/* Y-axis labels */}
-              <text x="45" y="165" fontSize="11" fill="#9c9a92" textAnchor="end">0</text>
-              <text x="45" y="115" fontSize="11" fill="#9c9a92" textAnchor="end">10</text>
-              <text x="45" y="65" fontSize="11" fill="#9c9a92" textAnchor="end">20</text>
-              <text x="45" y="15" fontSize="11" fill="#9c9a92" textAnchor="end">30</text>
-
-              {/* Calculate points for current year line */}
-              {(() => {
-                const maxValue = Math.max(...chartData.map(d => d.value), 20);
-                const points = chartData.map((d, idx) => {
-                  const x = 100 + (idx * 650 / (chartData.length - 1 || 1));
-                  const y = 160 - ((d.value / maxValue) * 120);
-                  return `${x},${y}`;
-                }).join(' ');
-
-                // Create gradient fill path
-                const fillPoints = `${points} 750,160 70,160`;
-
-                return (
-                  <>
-                    {/* Gradient fill under line */}
-                    <polyline
-                      points={fillPoints}
-                      fill="url(#chartGradient)"
-                    />
-                    {/* Main line - smooth and thicker */}
-                    <polyline
-                      points={points}
-                      fill="none"
-                      stroke="#27500a"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* Data point circles and values */}
-                    {chartData.map((d, idx) => {
-                      const x = 100 + (idx * 650 / (chartData.length - 1 || 1));
-                      const y = 160 - ((d.value / maxValue) * 120);
-                      return (
-                        <g key={idx} className="chart-point">
-                          {/* Outer circle for hover effect */}
-                          <circle cx={x} cy={y} r="7" fill="#27500a" opacity="0.1" />
-                          {/* Main point */}
-                          <circle cx={x} cy={y} r="5" fill="#fff" stroke="#27500a" strokeWidth="2.5" />
-                          {/* Value label */}
-                          <text x={x} y={y - 12} fontSize="12" fontWeight="600" fill="#27500a" textAnchor="middle">
-                            {d.value}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </>
-                );
-              })()}
-
-              {/* X-axis labels */}
-              {chartData.map((d, idx) => {
-                const x = 100 + (idx * 650 / (chartData.length - 1 || 1));
-                return (
-                  <text key={idx} x={x} y="175" fontSize="11" fill="#9c9a92" textAnchor="middle">
-                    {d.month}
-                  </text>
-                );
-              })}
-            </svg>
-          </div>
-        ) : (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#6b6a66' }}>
-            Loading chart data...
-          </div>
-        )}
-      </div>
 
       {/* Insights Section - 3 Cards */}
       <div className="three-col-grid">
@@ -432,8 +341,8 @@ const Dashboard = ({ onNavigate, token }) => {
           <div className="measure-list">
             {crspNeedingAttention.length > 0 ? (
               crspNeedingAttention.map((item, idx) => (
-                <div key={idx} className="measure-item" onClick={() => onNavigate('prov')} style={{ fontSize: '12px' }}>
-                  <span style={{ fontSize: '12px' }}>{item.measure_id}: {item.crsp_name}</span>
+                <div key={idx} className="measure-item" onClick={() => onNavigate('detail', item.measure_id)}>
+                  <span style={{ fontSize: '12px' }}>{item.measure_id.replace(/_/g, ' ')}: {item.crsp_name}</span>
                   <span className="rate-bad" style={{ fontSize: '11px' }}>{item.rate}%</span>
                 </div>
               ))
@@ -451,7 +360,7 @@ const Dashboard = ({ onNavigate, token }) => {
             {equityAlerts.length > 0 ? (
               equityAlerts.map((alert, idx) => (
                 <div key={idx} className="equity-item">
-                  <span style={{ fontSize: '12px' }}>{alert.measure_id}: {alert.race_strat}</span>
+                  <span style={{ fontSize: '12px' }}>{alert.measure_id.replace(/_/g, ' ')}: {alert.race_strat}</span>
                   <span className="equity-gap" style={{ fontSize: '11px' }}>{alert.rate}%</span>
                 </div>
               ))

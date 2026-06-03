@@ -3,7 +3,19 @@ import './MeasurePerformanceSection.css';
 import MonthFilter from './MonthFilter';
 import { fetchDashboardMeasures, fetchMiniChartData } from '../services/workflowService';
 
-const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimulate, initialMeasureId }) => {
+const MeasurePerformanceSection = ({
+  token,
+  onMeasureSelect,
+  onDeepDive,
+  onSimulate,
+  initialMeasureId,
+  // Controlled month props. If omitted, the component falls back to its own
+  // internal state so it still works when rendered without a parent that
+  // cares about the month.
+  selectedMonth: selectedMonthProp,
+  onMonthChange: onMonthChangeProp,
+  availableMonths
+}) => {
   const [activePill, setActivePill] = useState(null);
   const [activeDom, setActiveDom] = useState('eoc');
   const [domMeasures, setDomMeasures] = useState({
@@ -15,9 +27,16 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [miniChartData, setMiniChartData] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [internalSelectedMonth, setInternalSelectedMonth] = useState('');
 
-  // Fetch measures data on component mount
+  const isMonthControlled = selectedMonthProp !== undefined;
+  const selectedMonth = isMonthControlled ? selectedMonthProp : internalSelectedMonth;
+  const handleMonthChange = (value) => {
+    if (onMonthChangeProp) onMonthChangeProp(value);
+    if (!isMonthControlled) setInternalSelectedMonth(value);
+  };
+
+  // Fetch measures data on component mount and when initialMeasureId changes
   useEffect(() => {
     const loadMeasures = async () => {
       try {
@@ -46,7 +65,6 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
           onMeasureSelect && onMeasureSelect(data.eoc[0].id);
         }
       } catch (err) {
-        console.error('Error loading measures:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -56,7 +74,26 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
     if (token) {
       loadMeasures();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, initialMeasureId]);
+
+  // Refetch measures data when month changes (to keep data current)
+  // but preserve the currently selected pill
+  useEffect(() => {
+    const refetchMeasures = async () => {
+      try {
+        const data = await fetchDashboardMeasures(token);
+        setDomMeasures(data);
+      } catch (err) {
+        // Silent fail - keep existing data
+      }
+    };
+
+    if (token && selectedMonth) {
+      refetchMeasures();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, selectedMonth]);
 
   // Notify parent when selected measure changes
   useEffect(() => {
@@ -65,7 +102,7 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
     }
   }, [activePill, onMeasureSelect]);
 
-  // Fetch mini chart data when active pill changes
+  // Fetch mini chart data when active pill or selected month changes
   useEffect(() => {
     const loadMiniChartData = async () => {
       if (activePill && token) {
@@ -73,14 +110,13 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
           const data = await fetchMiniChartData(activePill, token);
           setMiniChartData(data);
         } catch (err) {
-          console.error('Error loading mini chart data:', err);
           setMiniChartData([]);
         }
       }
     };
 
     loadMiniChartData();
-  }, [activePill, token]);
+  }, [activePill, token, selectedMonth]);
 
   const domLabels = {
     eoc: 'EOC',
@@ -192,7 +228,7 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
     <section className="measure-performance">
       <div className="mp-header">
         <h2 className="mp-title">Measure performance</h2>
-        <MonthFilter selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+        <MonthFilter selectedMonth={selectedMonth} onMonthChange={handleMonthChange} availableMonths={availableMonths} />
       </div>
 
       <div className="mp-tabs">
@@ -245,7 +281,7 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
                   onMeasureSelect && onMeasureSelect(m.id);
                 }}
               >
-                {m.id}
+                {m.id.replace(/_/g, ' ')}
               </button>
             );
           })
@@ -260,8 +296,7 @@ const MeasurePerformanceSection = ({ token, onMeasureSelect, onDeepDive, onSimul
         <div className="mp-card">
           <div className="mp-left">
             <div className="measure-row">
-              <h3 className="measure-name">{selectedMeasure.id} — {selectedMeasure.name}</h3>
-              <span className="badge">{selectedMeasure.actionable ? 'Actionable' : 'On Track'}</span>
+              <h3 className="measure-name">{selectedMeasure.id.replace(/_/g, ' ')} — {selectedMeasure.name}</h3>
             </div>
             <p className="measure-desc">{selectedMeasure.name}</p>
 

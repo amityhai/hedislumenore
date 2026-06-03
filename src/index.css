@@ -1,13 +1,126 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  /* Brand — Figma blue primary */
+  --c-primary:        #5C88DD;
+  --c-primary-dark:   #4A71C0;
+  --c-primary-light:  #EEF3FC;
+  --c-primary-subtle: #D4E2F7;
+  --c-primary-ring:   rgba(92, 136, 221, 0.15);
+
+  /* Status — muted, not screaming */
+  --c-success:        #22C55E;
+  --c-success-bg:     #F0FDF4;
+  --c-success-text:   #166534;
+
+  --c-info:           #6366F1;
+  --c-info-bg:        #EEF2FF;
+  --c-info-text:      #3730A3;
+
+  --c-error:          #F43F5E;
+  --c-error-bg:       #FFF1F2;
+  --c-error-text:     #9F1239;
+
+  --c-warn:           #F59E0B;
+  --c-warn-bg:        #FFFBEB;
+  --c-warn-text:      #92400E;
+
+  /* Neutrals — white base, borders visible */
+  --c-bg:             #FFFFFF;
+  --c-surface:        #FFFFFF;
+  --c-border:         #CBD5E1;
+  --c-border-light:   #E2E8F0;
+  --c-text:           #111827;
+  --c-text-2:         #1F2937;
+  --c-text-3:         #374151;
+  --c-text-4:         #4B5563;
+
+  /* Sidebar */
+  --sidebar-bg:       #111827;
+  --sidebar-w:        240px;
+
+  /* Border radius — rounder, more premium */
+  --r-xs:   6px;
+  --r-sm:   8px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-xl:   20px;
+  --r-full: 9999px;
+
+  /* Shadows — layered, soft, no harsh edges */
+  --sh-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --sh-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --sh-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --sh-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --sh-xl: 0 20px 60px rgba(0, 0, 0, 0.10), 0 8px 20px rgba(0, 0, 0, 0.04);
+
+  /* Font — Readex Pro (from Figma) */
+  --font: 'Readex Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--c-text);
+  background: #FFFFFF;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01';
+  text-rendering: optimizeLegibility;
 }
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--c-border); border-radius: var(--r-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--c-text-4); }
+
+/* ── Global utilities ───────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--r-md);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.btn-primary {
+  background: var(--c-primary);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(92, 136, 221, 0.2);
+}
+.btn-primary:hover {
+  background: var(--c-primary-dark);
+  box-shadow: 0 4px 12px rgba(92, 136, 221, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+.btn-secondary:hover {
+  background: #F8FAFC;
+  color: var(--c-text);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--c-text-3);
+}
+.btn-ghost:hover { background: #F8FAFC; color: var(--c-text-2); }

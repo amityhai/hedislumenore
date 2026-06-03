@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './MeasureDetail.css';
 import MeasurePerformanceSection from './MeasurePerformanceSection';
 import { fetchDashboardMeasures, fetchMeasureStratification, fetchMeasureStratificationEthnicity, fetchMeasureStratificationRace, fetchCRSPLevelData, fetchAgeCRSPDrilldown, fetchRaceCRSPDrilldown, fetchEthnicityCRSPDrilldown, fetchMemberDetails, fetchRaceMemberDetails, fetchEthnicityMemberDetails, fetchCRSPMemberDetails } from '../services/workflowService';
 
-const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
+// `selectedMonth` / `onMonthChange` are controlled props from App so the user's
+// MonthFilter selection persists across page navigation (e.g. Dashboard →
+// Deep Dive → MeasureDetail). All fetches below depend on `selectedMonth`,
+// so they automatically refetch when the user picks a different month.
+const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, onMonthChange, availableMonths }) => {
   const [measure, setMeasure] = useState(null);
   const [stratificationData, setStratificationData] = useState({});
   const [crspData, setCRSPData] = useState([]);
@@ -42,7 +46,16 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
     if (token && measureId) {
       fetchMeasureDetailData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, measureId]);
+
+  // Load default measure when accessing Measure Detail page directly without a measureId
+  useEffect(() => {
+    if (token && !measureId && !selectedMeasureId) {
+      fetchMeasureDetailData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   useEffect(() => {
     setSelectedMeasureId(measureId);
@@ -90,7 +103,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
           setSelectedRaceGroup(null);
           setSelectedEthnicityGroup(null);
         } catch (err) {
-          console.error('Error fetching stratification data:', err);
           setStratificationData({ age: [], ethnicity: [], race: [] });
           setCRSPData([]);
         }
@@ -98,30 +110,77 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
 
       fetchStrat();
     }
-  }, [selectedMeasureId, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMeasureId, token, selectedMonth]);
 
-  // Load CRSP drilldown data only when needed (lazy loading)
+  // Per-(measureId, stratification, month) fetch-dedupe refs. Keep the targeted
+  // CRSP drilldowns from firing twice under React.StrictMode and avoid
+  // refetching the same group when unrelated state (e.g. callback refs) changes.
+  // Including `selectedMonth` in the key ensures a month change bypasses the
+  // guard and refetches.
+  const lastAgeDrilldownKeyRef = useRef(null);
+  const lastRaceDrilldownKeyRef = useRef(null);
+  const lastEthnicityDrilldownKeyRef = useRef(null);
+
+  // Load Age CRSP drilldown only for the currently-selected age group.
   useEffect(() => {
-    if (selectedMeasureId && token && (Object.keys(expandedAgeGroups).length > 0 || Object.keys(expandedRaceGroups).length > 0 || Object.keys(expandedEthnicityGroups).length > 0)) {
-      const loadCRSPData = async () => {
-        try {
-          const [ageCrspDrilldownData, raceCrspDrilldownData, ethnicityCrspDrilldownData] = await Promise.all([
-            fetchAgeCRSPDrilldown(selectedMeasureId, token),
-            fetchRaceCRSPDrilldown(selectedMeasureId, token),
-            fetchEthnicityCRSPDrilldown(selectedMeasureId, token)
-          ]);
+    if (!selectedMeasureId || !token || !selectedAgeGroup) return;
 
-          setAgeCRSPData(ageCrspDrilldownData || {});
-          setRaceCRSPData(raceCrspDrilldownData || {});
-          setEthnicityCRSPData(ethnicityCrspDrilldownData || {});
-        } catch (err) {
-          console.error('Error fetching CRSP drilldown data:', err);
+    const key = `${selectedMeasureId}::${selectedAgeGroup}::${selectedMonth || ''}`;
+    if (lastAgeDrilldownKeyRef.current === key) return;
+    lastAgeDrilldownKeyRef.current = key;
+
+    (async () => {
+      try {
+        const data = await fetchAgeCRSPDrilldown(selectedMeasureId, selectedAgeGroup, token);
+        setAgeCRSPData(data || {});
+      } catch (err) {
+        if (lastAgeDrilldownKeyRef.current === key) {
+          lastAgeDrilldownKeyRef.current = null;
         }
-      };
+      }
+    })();
+  }, [selectedMeasureId, token, selectedAgeGroup, selectedMonth]);
 
-      loadCRSPData();
-    }
-  }, [selectedMeasureId, token, expandedAgeGroups, expandedRaceGroups, expandedEthnicityGroups]);
+  // Load Race CRSP drilldown only for the currently-selected race group.
+  useEffect(() => {
+    if (!selectedMeasureId || !token || !selectedRaceGroup) return;
+
+    const key = `${selectedMeasureId}::${selectedRaceGroup}::${selectedMonth || ''}`;
+    if (lastRaceDrilldownKeyRef.current === key) return;
+    lastRaceDrilldownKeyRef.current = key;
+
+    (async () => {
+      try {
+        const data = await fetchRaceCRSPDrilldown(selectedMeasureId, selectedRaceGroup, token);
+        setRaceCRSPData(data || {});
+      } catch (err) {
+        if (lastRaceDrilldownKeyRef.current === key) {
+          lastRaceDrilldownKeyRef.current = null;
+        }
+      }
+    })();
+  }, [selectedMeasureId, token, selectedRaceGroup, selectedMonth]);
+
+  // Load Ethnicity CRSP drilldown only for the currently-selected ethnicity group.
+  useEffect(() => {
+    if (!selectedMeasureId || !token || !selectedEthnicityGroup) return;
+
+    const key = `${selectedMeasureId}::${selectedEthnicityGroup}::${selectedMonth || ''}`;
+    if (lastEthnicityDrilldownKeyRef.current === key) return;
+    lastEthnicityDrilldownKeyRef.current = key;
+
+    (async () => {
+      try {
+        const data = await fetchEthnicityCRSPDrilldown(selectedMeasureId, selectedEthnicityGroup, token);
+        setEthnicityCRSPData(data || {});
+      } catch (err) {
+        if (lastEthnicityDrilldownKeyRef.current === key) {
+          lastEthnicityDrilldownKeyRef.current = null;
+        }
+      }
+    })();
+  }, [selectedMeasureId, token, selectedEthnicityGroup, selectedMonth]);
 
   const fetchMeasureDetailData = async () => {
     try {
@@ -151,7 +210,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
           measuresData[cat].some(m => m.id === foundMeasure.id)
         );
         setCurrentDom(fallbackCategory || 'eoc');
-        console.warn(`Measure ${measureId} not found. Falling back to ${foundMeasure.id}`);
       }
 
       if (!foundMeasure) {
@@ -160,27 +218,12 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
 
       setMeasure(foundMeasure);
 
-      // Use the actual found measure's ID (may differ from the requested measureId if fallback occurred)
+      // Use the actual found measure's ID (may differ from the requested measureId if fallback occurred).
+      // The stratification + CRSP-level data is fetched by the selectedMeasureId useEffect,
+      // so we just sync the id here and avoid duplicate API calls.
       const activeMeasureId = foundMeasure.id;
       setSelectedMeasureId(activeMeasureId);
-
-      const [ageData, ethnicityData, raceData, crspLevelData] = await Promise.all([
-        fetchMeasureStratification(activeMeasureId, token),
-        fetchMeasureStratificationEthnicity(activeMeasureId, token),
-        fetchMeasureStratificationRace(activeMeasureId, token),
-        fetchCRSPLevelData(activeMeasureId, token)
-      ]);
-
-      const mergedStrat = {
-        age: ageData[activeMeasureId]?.age || [],
-        ethnicity: ethnicityData[activeMeasureId]?.ethnicity || [],
-        race: raceData[activeMeasureId]?.race || []
-      };
-
-      setStratificationData(mergedStrat);
-      setCRSPData(crspLevelData || []);
     } catch (err) {
-      console.error('Error fetching measure detail:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -233,7 +276,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
       setMembersByKey(prev => ({ ...prev, [key]: data }));
       setExpandedCRSPRows(prev => ({ ...prev, [key]: true }));
     } catch (err) {
-      console.error('Error fetching members:', err);
     } finally {
       setLoadingMembers(prev => ({ ...prev, [key]: false }));
     }
@@ -265,7 +307,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
       setCRSPLevelMembersByKey(prev => ({ ...prev, [key]: data }));
       setExpandedCRSPLevelRows(prev => ({ ...prev, [key]: true }));
     } catch (err) {
-      console.error('Error fetching CRSP level members:', err);
     } finally {
       setLoadingCRSPLevelMembers(prev => ({ ...prev, [key]: false }));
     }
@@ -291,6 +332,43 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
   const filterMembersByEthnicity = (members, ethnicity) => {
     if (!ethnicity) return members;
     return members.filter(member => member.ethnicityStrat === ethnicity);
+  };
+
+  const downloadMembersAsExcel = (members, fileName = 'members.csv') => {
+    if (!members || members.length === 0) {
+      alert('No members to download');
+      return;
+    }
+
+    // Create CSV header
+    const headers = ['Member ID', 'Member Name', 'Age', 'Status'];
+    
+    // Create CSV rows
+    const rows = members.map(member => [
+      member.memberId,
+      member.memberName,
+      member.age || '—',
+      member.status || '—'
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const renderMembersDropdown = (members, isLoading, stratGroup, stratType = 'age') => {
@@ -333,11 +411,36 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
           <div className="members-scroll-container members-fade-in" style={{ maxHeight: '280px', overflowY: 'auto', backgroundColor: 'transparent' }}>
             <table className="members-inner-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                <tr style={{ backgroundColor: '#e8e5dd', borderBottom: '1px solid #e0e0e0' }}>
+                <tr style={{ backgroundColor: '#e8e5dd', borderBottom: '1px solid #e0e0e0', position: 'relative' }}>
                   <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>MEMBER ID</th>
                   <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>MEMBER NAME</th>
                   <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>AGE</th>
                   <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>STATUS</th>
+                  <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', width: '50px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => downloadMembersAsExcel(filteredMembers, 'members-list.csv')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px 8px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#0066cc',
+                        transition: 'transform 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      title="Download as Excel"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -353,7 +456,7 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
-                    <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: '#0066cc', fontWeight: 600, textAlign: 'center' }}>
+                    <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: '#333', fontWeight: 600, textAlign: 'center' }}>
                       {member.memberId}
                     </td>
                     <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: '#333', textAlign: 'center' }}>
@@ -441,12 +544,15 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token }) => {
 
   return (
     <div className="measure-detail-container">
-      <button className="back-btn" onClick={onBack}>← Back to Dashboard</button>
+      <button className="back-btn" onClick={onBack}>← Back to Overview</button>
 
       {!loading && measure && (
         <MeasurePerformanceSection
           token={token}
           initialMeasureId={measureId}
+          selectedMonth={selectedMonth}
+          onMonthChange={onMonthChange}
+          availableMonths={availableMonths}
           onMeasureSelect={(measureId) => {
             setSelectedMeasureId(measureId);
           }}

@@ -43,7 +43,6 @@ const CareActionCenter = ({ onBack, token }) => {
   const paginatedData = gridData.slice(startIndex, endIndex);
 
   const handleOpenModal = (row) => {
-    console.log('Opening modal for row:', row);
     setSelectedAction({
       memberId: row[0],
       name: row[1],
@@ -57,7 +56,6 @@ const CareActionCenter = ({ onBack, token }) => {
   };
 
   const handleCloseModal = () => {
-    console.log('Closing modal');
     setSelectedAction(null);
     setActionType('');
     setAssignedStaff('');
@@ -65,15 +63,6 @@ const CareActionCenter = ({ onBack, token }) => {
   };
 
   const handleSaveAction = () => {
-    console.log('Saving action:', {
-      memberId: selectedAction.memberId,
-      name: selectedAction.name,
-      measure: selectedAction.measure,
-      crsp: selectedAction.crsp,
-      assignedStaff,
-      actionType,
-      notes
-    });
     // TODO: Send to backend API
     handleCloseModal();
   };
@@ -96,7 +85,6 @@ const CareActionCenter = ({ onBack, token }) => {
         const data = await fetchCACMeasures(token);
         setMeasures(data);
       } catch (err) {
-        console.error('Error loading CAC measures:', err);
         setError('Failed to load measures');
       } finally {
         setLoadingMeasures(false);
@@ -109,7 +97,6 @@ const CareActionCenter = ({ onBack, token }) => {
         const data = await fetchCACCRSPs(token);
         setCrsps(data);
       } catch (err) {
-        console.error('Error loading CAC CRSPs:', err);
         setError('Failed to load CRSPs');
       } finally {
         setLoadingCrsps(false);
@@ -126,7 +113,6 @@ const CareActionCenter = ({ onBack, token }) => {
         const data = await fetchCACGridData(filters, token);
         setGridData(data.resultSet || []);
       } catch (err) {
-        console.error('Error loading CAC grid data:', err);
         setError('Failed to load grid data');
       } finally {
         setLoadingGrid(false);
@@ -136,7 +122,6 @@ const CareActionCenter = ({ onBack, token }) => {
     const loadKpiData = async () => {
       try {
         setLoadingKpi(true);
-        console.log('Loading KPI data...');
         const [nonCompliant, unassigned, actionable, expiring] = await Promise.all([
           fetchCACNonCompliantCount(token),
           fetchCACUnassignedCount(token),
@@ -144,7 +129,6 @@ const CareActionCenter = ({ onBack, token }) => {
           fetchCACExpiringCount(token)
         ]);
         
-        console.log('KPI data loaded:', { nonCompliant, unassigned, actionable, expiring });
         
         setKpiData({
           nonCompliant: nonCompliant || 0,
@@ -153,7 +137,6 @@ const CareActionCenter = ({ onBack, token }) => {
           expiring: expiring || 0
         });
       } catch (err) {
-        console.error('Error loading KPI data:', err);
         // Set default values on error
         setKpiData({
           nonCompliant: 21292,
@@ -178,12 +161,11 @@ const CareActionCenter = ({ onBack, token }) => {
     { label: 'Total non-compliant', value: kpiData.nonCompliant },
     { label: 'Unassigned', value: kpiData.unassigned, color: '#EF9F27' },
     { label: 'Actionable now', value: kpiData.actionable, color: '#85b7eb' },
-    { label: 'Expiring this week', value: kpiData.expiring, color: '#f09595' },
   ];
 
   return (
     <div className="cac-container">
-      <button className="back-btn" onClick={onBack}>← Back to Dashboard</button>
+      <button className="back-btn" onClick={onBack}>← Back to Overview</button>
 
       <div className="cac-header">
         <h1>Care Action Center</h1>

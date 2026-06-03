@@ -54,7 +54,7 @@ const ProviderScores = ({ onBack }) => {
 
   return (
     <div className="provider-container">
-      <button className="back-btn" onClick={onBack}>← Back to Dashboard</button>
+      <button className="back-btn" onClick={onBack}>← Back to Overview</button>
 
       <div className="provider-header">
         <h1>Provider Scores</h1>
