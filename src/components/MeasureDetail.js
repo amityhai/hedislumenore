@@ -675,9 +675,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
                 {selectedAgeGroup && (
                   <div className="stratification-table-section">
                     <h3 className="stratification-table-title">By Age</h3>
-                    <div className="ai-insight">
-                      ✨ <strong>AI Insight:</strong> Age stratification data shows performance variations across age groups. Click on a CRSP to see members.
-                    </div>
                     <table className="detail-table">
                       <thead>
                         <tr>
@@ -811,9 +808,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
                 {selectedRaceGroup && (
                   <div className="stratification-table-section">
                     <h3 className="stratification-table-title">By Race</h3>
-                    <div className="ai-insight">
-                      ✨ <strong>AI Insight:</strong> Race stratification data shows performance variations across racial groups. Click on a CRSP to see members.
-                    </div>
                     <table className="detail-table">
                       <thead>
                         <tr>
@@ -947,9 +941,6 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
                 {selectedEthnicityGroup && (
                   <div className="stratification-table-section">
                     <h3 className="stratification-table-title">By Ethnicity</h3>
-                    <div className="ai-insight">
-                      ✨ <strong>AI Insight:</strong> Ethnicity stratification data shows performance variations across ethnic groups. Click on a CRSP to see members.
-                    </div>
                     <table className="detail-table">
                       <thead>
                         <tr>
