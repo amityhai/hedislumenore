@@ -1,60 +1,70 @@
-/* ── Design tokens ─────────────────────────────────────────── */
+/* ── Design tokens — QualityPulse redesign ─────────────────────
+   Brand is deliberately distinct from every semantic status color
+   so "action" never reads as "status". Font: Inter.            */
 :root {
-  /* Brand — Figma blue primary */
-  --c-primary:        #5C88DD;
-  --c-primary-dark:   #4A71C0;
-  --c-primary-light:  #EEF3FC;
-  --c-primary-subtle: #D4E2F7;
-  --c-primary-ring:   rgba(92, 136, 221, 0.15);
+  /* ── Direction A · Clarity ───────────────────────────────────
+     Cooler, calmer clinical palette (teal + slate), light theme. */
 
-  /* Status — muted, not screaming */
-  --c-success:        #22C55E;
-  --c-success-bg:     #F0FDF4;
-  --c-success-text:   #166534;
+  /* Brand — Teal */
+  --c-primary:        #0e8a8c;
+  --c-primary-dark:   #0a6e70;
+  --c-primary-light:  #e6f3f3;
+  --c-primary-subtle: #cfe7e7;
+  --c-primary-ring:   rgba(14, 138, 140, 0.18);
 
-  --c-info:           #6366F1;
-  --c-info-bg:        #EEF2FF;
-  --c-info-text:      #3730A3;
+  /* Status — Above goal (green) */
+  --c-success:        #1f9d6b;
+  --c-success-bg:     #e3f4ec;
+  --c-success-text:   #0a8a5f;
 
-  --c-error:          #F43F5E;
-  --c-error-bg:       #FFF1F2;
-  --c-error-text:     #9F1239;
+  /* Status — At goal (blue) */
+  --c-info:           #3f74c9;
+  --c-info-bg:        #e8f0fb;
+  --c-info-text:      #2f63b8;
 
-  --c-warn:           #F59E0B;
-  --c-warn-bg:        #FFFBEB;
-  --c-warn-text:      #92400E;
+  /* Status — Below goal (red) */
+  --c-error:          #d9544d;
+  --c-error-bg:       #fbeae8;
+  --c-error-text:     #c4453d;
 
-  /* Neutrals — white base, borders visible */
-  --c-bg:             #FFFFFF;
-  --c-surface:        #FFFFFF;
-  --c-border:         #CBD5E1;
-  --c-border-light:   #E2E8F0;
-  --c-text:           #111827;
-  --c-text-2:         #1F2937;
-  --c-text-3:         #374151;
-  --c-text-4:         #4B5563;
+  /* Caution / attention (amber) */
+  --c-warn:           #c98a1a;
+  --c-warn-bg:        #f7efdf;
+  --c-warn-text:      #9a6a16;
 
-  /* Sidebar */
-  --sidebar-bg:       #111827;
-  --sidebar-w:        240px;
+  /* Neutrals — slate */
+  --c-bg:             #e9edee;
+  --c-bg-subtle:      #f6f8f9;
+  --c-surface:        #ffffff;
+  --c-border:         #e2e8ea;
+  --c-border-light:   #eef2f3;
+  --c-text:           #16212b;
+  --c-text-2:         #1f2a33;
+  --c-text-3:         #6b7785;
+  --c-text-4:         #9aa6ad;
 
-  /* Border radius — rounder, more premium */
+  /* Sidebar — light */
+  --sidebar-bg:       #ffffff;
+  --sidebar-w:        232px;
+
+  /* Radius */
   --r-xs:   6px;
   --r-sm:   8px;
   --r-md:   10px;
   --r-lg:   14px;
-  --r-xl:   20px;
+  --r-xl:   18px;
   --r-full: 9999px;
 
-  /* Shadows — layered, soft, no harsh edges */
-  --sh-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --sh-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --sh-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
-  --sh-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --sh-xl: 0 20px 60px rgba(0, 0, 0, 0.10), 0 8px 20px rgba(0, 0, 0, 0.04);
+  /* Shadows — soft, cool-tinted */
+  --sh-xs: 0 1px 2px rgba(20, 40, 50, 0.04);
+  --sh-sm: 0 1px 3px rgba(20, 40, 50, 0.05), 0 1px 2px rgba(20, 40, 50, 0.03);
+  --sh-md: 0 6px 18px rgba(20, 40, 50, 0.07), 0 2px 6px rgba(20, 40, 50, 0.04);
+  --sh-lg: 0 14px 36px rgba(20, 40, 50, 0.08), 0 1px 3px rgba(20, 40, 50, 0.05);
+  --sh-xl: 0 24px 60px rgba(20, 40, 50, 0.12), 0 8px 20px rgba(20, 40, 50, 0.06);
 
-  /* Font — Readex Pro (from Figma) */
-  --font: 'Readex Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Fonts — Hanken Grotesk (UI) + Spline Sans Mono (codes / eyebrows) */
+  --font:      'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ── Reset ──────────────────────────────────────────────────── */
@@ -62,65 +72,93 @@
 
 body {
   font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--c-text);
-  background: #FFFFFF;
+  background: var(--c-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'cv11', 'ss01';
   text-rendering: optimizeLegibility;
 }
 
+/* Tabular numerals for any tabulated figures */
+.num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+
+/* Monospace (Spline Sans Mono) — codes, IDs */
+.mono { font-family: var(--font-mono); }
+
+/* Eyebrow label — mono, uppercase, teal (Direction A signature) */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  color: var(--c-primary);
+  text-transform: uppercase;
+}
+
+/* "Preview / sample data" tag for pages not yet wired to live data */
+.preview-tag {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 10px;
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  background: var(--c-warn-bg);
+  color: var(--c-warn-text);
+  border: 1px solid #FDE68A;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 /* ── Scrollbar ──────────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar        { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: var(--c-border); border-radius: var(--r-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-text-4); }
 
-/* ── Global utilities ───────────────────────────────────────── */
+/* ── Buttons ────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 20px;
+  height: 38px;
+  padding: 0 18px;
   border-radius: var(--r-md);
   font-family: var(--font);
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  border: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease;
   white-space: nowrap;
   text-decoration: none;
   letter-spacing: -0.01em;
 }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
 
-.btn-primary {
-  background: var(--c-primary);
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(92, 136, 221, 0.2);
-}
-.btn-primary:hover {
-  background: var(--c-primary-dark);
-  box-shadow: 0 4px 12px rgba(92, 136, 221, 0.25);
-  transform: translateY(-1px);
+.btn-primary { background: var(--c-primary); color: #fff; }
+.btn-primary:hover { background: var(--c-primary-dark); }
+
+.btn-secondary { background: var(--c-surface); color: var(--c-text-2); border-color: var(--c-border); }
+.btn-secondary:hover { background: var(--c-bg-subtle); border-color: var(--c-text-4); }
+
+.btn-ghost { background: transparent; color: var(--c-text-3); }
+.btn-ghost:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
+
+/* ── Global focus ring for interactive elements ─────────────── */
+a:focus-visible,
+button:focus-visible,
+[role="tab"]:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--c-primary-ring);
+  border-radius: var(--r-sm);
 }
 
-.btn-secondary {
-  background: var(--c-surface);
-  color: var(--c-text-2);
-  border: 1px solid var(--c-border);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
-.btn-secondary:hover {
-  background: #F8FAFC;
-  color: var(--c-text);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--c-text-3);
-}
-.btn-ghost:hover { background: #F8FAFC; color: var(--c-text-2); }

@@ -1,0 +1,197 @@
+/* ── Overview · Bubble map (v2) ───────────────────────────────
+   Layout/flow from the Figma redesign, styled with the app's existing
+   Direction A · Clarity tokens (teal brand + status colors + Hanken Grotesk). */
+
+/* Fill the available viewport height — the card stretches to the bottom. */
+.ov2 { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 0; }
+
+/* Header */
+.ov2-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.ov2-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 2px; }
+
+/* Sample-data notice */
+.ov2-notice {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; background: var(--c-warn-bg); color: var(--c-warn-text);
+  border: 1px solid #f1dcae; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 500;
+  animation: ov2-fade 0.3s ease both;
+}
+.ov2-notice-retry {
+  margin-left: auto; background: transparent; border: 1px solid currentColor; color: inherit;
+  border-radius: var(--r-full); padding: 3px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+
+/* Card shell — flexes to fill the remaining viewport height */
+.ov2-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-xl); box-shadow: var(--sh-sm); overflow: hidden;
+  animation: ov2-fade 0.35s ease both;
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+}
+
+/* Toolbar */
+.ov2-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 20px; border-bottom: 1px solid var(--c-border-light); flex-wrap: wrap;
+}
+
+/* Lens segmented control */
+.ov2-lenses { display: inline-flex; gap: 4px; padding: 4px; background: var(--c-bg-subtle); border-radius: var(--r-md); }
+.ov2-lens {
+  border: none; background: transparent; padding: 7px 16px; border-radius: var(--r-sm);
+  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--c-text-3); cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.ov2-lens:hover { color: var(--c-text-2); }
+.ov2-lens.is-active { background: var(--c-surface); color: var(--c-primary-dark); box-shadow: var(--sh-xs); }
+
+/* Status pills */
+.ov2-pills { display: inline-flex; gap: 8px; }
+.ov2-pill {
+  border: 1px solid var(--c-border); background: var(--c-surface); padding: 7px 16px; border-radius: var(--r-full);
+  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--c-text-3); cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+.ov2-pill:hover { border-color: var(--c-text-4); }
+.ov2-pill:active { transform: scale(0.96); }
+.ov2-pill-below.is-active { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error); }
+.ov2-pill-at.is-active    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info); }
+.ov2-pill-above.is-active { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success); }
+
+/* Body: bubble field + detail panel — fills the card height */
+.ov2-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; flex: 1; min-height: 0; }
+.ov2-field-wrap {
+  position: relative; border-right: 1px solid var(--c-border-light); padding: 16px;
+  display: flex; align-items: center; justify-content: center; min-height: 420px; overflow: hidden;
+  background:
+    radial-gradient(620px 380px at 42% 44%, rgba(14, 138, 140, 0.05), transparent 70%),
+    radial-gradient(var(--c-border-light) 1px, transparent 1px);
+  background-size: auto, 22px 22px;
+}
+
+/* Bubble field — fills the wrap so packing uses the full available area */
+.ov2-field { position: relative; width: 100%; height: 100%; }
+.ov2-bubbles { position: absolute; inset: 0; }
+.ov2-field-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 24px; }
+.ov2-field-caption {
+  position: absolute; left: 0; bottom: -4px; font-size: 11px; color: var(--c-text-4);
+  font-weight: 500; letter-spacing: 0.01em;
+}
+
+/* Bubbles */
+.ov2-bubble {
+  position: absolute; border: none; border-radius: var(--r-full); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: #fff; text-align: center; padding: 6px;
+  transition: transform 0.2s cubic-bezier(.34,1.4,.64,1), box-shadow 0.2s ease, opacity 0.25s ease;
+  box-shadow: var(--sh-sm), inset 0 2px 6px rgba(255,255,255,0.18);
+  animation: ov2-pop 0.5s cubic-bezier(.34,1.56,.64,1) backwards;
+}
+.ov2-bubble:hover { transform: scale(1.06); box-shadow: var(--sh-md), inset 0 2px 6px rgba(255,255,255,0.2); z-index: 3; }
+.ov2-bubble.is-selected { box-shadow: 0 0 0 4px var(--c-surface), 0 0 0 7px currentColor, var(--sh-md); z-index: 4; }
+.ov2-bubble.is-dim { opacity: 0.32; }
+
+.ov2-bubble-id { font-weight: 700; font-size: 13px; letter-spacing: -0.01em; line-height: 1.05; }
+.ov2-bubble-rate { font-weight: 600; font-size: 12px; opacity: 0.92; }
+
+.ov2-bubble-below { background: radial-gradient(circle at 35% 28%, #ec8b84, var(--c-error)); color: var(--c-error); }
+.ov2-bubble-at    { background: radial-gradient(circle at 35% 28%, #6f97d9, var(--c-info));  color: var(--c-info); }
+.ov2-bubble-above { background: radial-gradient(circle at 35% 28%, #54c293, var(--c-success)); color: var(--c-success); }
+.ov2-bubble-below .ov2-bubble-id, .ov2-bubble-below .ov2-bubble-rate,
+.ov2-bubble-at .ov2-bubble-id, .ov2-bubble-at .ov2-bubble-rate,
+.ov2-bubble-above .ov2-bubble-id, .ov2-bubble-above .ov2-bubble-rate { color: #fff; }
+
+/* Detail panel — scrolls internally if its content exceeds the card height */
+.ov2-panel { padding: 22px 22px 26px; min-width: 0; overflow-y: auto; }
+.ov2-panel-anim { animation: ov2-panel-in 0.32s cubic-bezier(.22,1,.36,1) both; }
+.ov2-panel-inner { display: flex; flex-direction: column; }
+.ov2-panel-sub { margin-top: 22px; margin-bottom: 10px; }
+
+/* Default panel */
+.ov2-bench { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ov2-bench-num { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; color: var(--c-text); line-height: 1; }
+.ov2-bench-total { font-size: 18px; font-weight: 600; color: var(--c-text-4); }
+.ov2-bench-tag { margin-left: 4px; padding: 4px 10px; border-radius: var(--r-full); background: var(--c-error-bg); color: var(--c-error-text); font-size: 11px; font-weight: 700; }
+.ov2-bench-sub { margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--c-error-text); }
+
+/* List rows */
+.ov2-list { display: flex; flex-direction: column; }
+.ov2-list-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  text-align: left; background: transparent; border: none; border-bottom: 1px solid var(--c-border-light);
+  padding: 11px 8px; margin: 0 -8px; cursor: pointer; font-family: var(--font);
+  border-radius: var(--r-sm); transition: background 0.14s ease, transform 0.14s ease;
+  animation: ov2-rise 0.35s ease both;
+}
+.ov2-list-row:last-child { border-bottom: none; }
+.ov2-list-row:not(.ov2-list-static):hover { background: var(--c-bg-subtle); }
+.ov2-list-row:not(.ov2-list-static):active { transform: scale(0.99); }
+.ov2-list-static { cursor: default; animation: none; }
+.ov2-list-label { font-size: 13px; font-weight: 500; color: var(--c-text-2); line-height: 1.35; }
+.ov2-list-rate {
+  flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--c-error-text);
+  background: var(--c-error-bg); padding: 3px 9px; border-radius: var(--r-xs);
+}
+
+/* Selected panel — measure card */
+.ov2-chip { align-self: flex-start; padding: 4px 10px; border-radius: var(--r-xs); font-size: 12px; font-weight: 600; border: 1px solid; }
+.ov2-chip-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: #f0c4c0; }
+.ov2-chip-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: #c4d6f0; }
+.ov2-chip-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: #b7e0cd; }
+
+.ov2-measure-name { margin-top: 12px; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; color: var(--c-text); }
+.ov2-measure-def { margin-top: 8px; font-size: 13px; color: var(--c-text-3); line-height: 1.5; }
+
+.ov2-measure-rate { display: flex; align-items: baseline; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.ov2-measure-rate > .num { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); }
+.ov2-gap { font-size: 13px; font-weight: 600; }
+.ov2-gap-neg { color: var(--c-error-text); }
+.ov2-gap-pos { color: var(--c-success-text); }
+
+.ov2-trend { width: 100%; height: 70px; margin-top: 14px; overflow: visible; }
+.ov2-trend-line { fill: none; stroke: var(--c-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 600; stroke-dashoffset: 600; animation: ov2-draw 0.9s ease forwards 0.1s; }
+.ov2-trend-area { fill: var(--c-primary); opacity: 0.08; }
+.ov2-trend-empty {
+  height: 70px; margin-top: 14px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--c-text-4); border: 1px dashed var(--c-border); border-radius: var(--r-sm);
+}
+
+/* Rate-vs-goal bar with goal marker */
+.ov2-goalbar {
+  position: relative; height: 8px; margin-top: 16px;
+  background: var(--c-bg-subtle); border-radius: var(--r-full); overflow: visible;
+}
+.ov2-goalbar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: var(--r-full); transition: width 0.5s cubic-bezier(.22,1,.36,1); }
+.ov2-goalbar-below { background: var(--c-error); }
+.ov2-goalbar-at { background: var(--c-info); }
+.ov2-goalbar-above { background: var(--c-success); }
+.ov2-goalbar-marker { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--c-text-2); border-radius: 1px; }
+
+.ov2-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--c-border-light);
+}
+.ov2-stats-3 { margin-top: 16px; }
+.ov2-stats > div { display: flex; flex-direction: column; gap: 4px; }
+.ov2-stat-k { font-size: 12px; color: var(--c-text-3); font-weight: 500; }
+.ov2-stat-v { font-size: 18px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
+.ov2-stat-v.is-neg { color: var(--c-error-text); }
+.ov2-stat-v.is-pos { color: var(--c-success-text); }
+
+.ov2-investigate { width: 100%; margin-top: 20px; height: 42px; }
+.ov2-investigate:active { transform: scale(0.99); }
+
+/* ── Motion keyframes ────────────────────────────────────────── */
+@keyframes ov2-pop { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes ov2-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ov2-panel-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ov2-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ov2-draw { to { stroke-dashoffset: 0; } }
+
+/* Responsive */
+@media (max-width: 980px) {
+  .ov2-body { grid-template-columns: 1fr; }
+  .ov2-field-wrap { border-right: none; border-bottom: 1px solid var(--c-border-light); min-height: 440px; }
+}

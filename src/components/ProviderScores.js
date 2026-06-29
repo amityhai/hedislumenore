@@ -48,8 +48,8 @@ const ProviderScores = ({ onBack }) => {
   };
 
   const getRateColor = (rate, threshold = 66) => {
-    if (rate === '-') return '#9c9a92';
-    return rate >= threshold ? '#27500a' : '#a32d2d';
+    if (rate === '-') return 'var(--c-text-4)';
+    return rate >= threshold ? 'var(--c-success-text)' : 'var(--c-error)';
   };
 
   return (
@@ -57,7 +57,7 @@ const ProviderScores = ({ onBack }) => {
       <button className="back-btn" onClick={onBack}>← Back to Overview</button>
 
       <div className="provider-header">
-        <h1>Provider Scores</h1>
+        <h1>Provider Scores <span className="preview-tag">Preview · sample data</span></h1>
         <p>Performance metrics by provider group and individual clinician.</p>
       </div>
 

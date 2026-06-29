@@ -40,6 +40,7 @@ const WORKFLOW_IDS = {
   CAC_ACTIONABLE: 'workflow-id-cac-actionable', // Care Action Center actionable count (to be updated)
   CAC_EXPIRING: 'workflow-id-cac-expiring', // Care Action Center expiring this week count (to be updated)
   AVAILABLE_MONTHS: '53dc3a92-5e5c-11f1-9f6b-adfc4f5915e5', // List of months available across all measures (Mon-YYYY)
+  CAC_SAVE_ACTION: 'workflow-id-cac-save-action', // Persist a care action (assign/notes) — to be updated
 };
 
 // --- Selected-month state (shared across every workflow call) -----------------
@@ -1560,7 +1561,32 @@ export const fetchCACExpiringCount = async (token) => {
   }
 };
 
+/**
+ * Persist a care action (assign staff + action type + notes) for a member.
+ * Closes the "act" half of the gap-closing loop.
+ *
+ * The backend workflow id for saving isn't configured yet (`CAC_SAVE_ACTION`
+ * below is a placeholder). Until it is, this resolves successfully so the UI's
+ * optimistic update + success toast work end-to-end; swap the id and this call
+ * goes live with no component change.
+ *
+ * @param {Object} action - { memberId, measureId, crsp, assignedTo, actionType, notes }
+ * @param {string} token
+ * @returns {Promise<{ ok: boolean, simulated?: boolean }>}
+ */
+export const saveCareAction = async (action, token) => {
+  const saveId = WORKFLOW_IDS.CAC_SAVE_ACTION;
+  // No real endpoint wired yet — resolve so the loop is demonstrable.
+  if (!saveId || saveId.startsWith('workflow-id-')) {
+    await new Promise((r) => setTimeout(r, 450)); // mimic network latency
+    return { ok: true, simulated: true };
+  }
+  await callWorkflow(saveId, action, token);
+  return { ok: true };
+};
+
 export default {
+  saveCareAction,
   fetchDashboardKPI,
   fetchDashboardMeasures,
   setSelectedWorkflowMonth,

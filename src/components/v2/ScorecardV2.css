@@ -1,0 +1,14 @@
+/* ── v2 flow shell ───────────────────────────────────────────── */
+.sc2 { padding: 28px 32px 44px; min-height: 100vh; display: flex; flex-direction: column; gap: 18px; }
+
+/* Breadcrumb */
+.sc2-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; animation: ov2-fade 0.3s ease both; }
+.sc2-crumb-wrap { display: inline-flex; align-items: center; }
+.sc2-crumb-sep { color: var(--c-text-4); margin: 0 8px; font-size: 13px; }
+.sc2-crumb {
+  background: transparent; border: none; cursor: pointer; font-family: var(--font);
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--c-text-3); padding: 2px 0; transition: color 0.14s ease;
+}
+.sc2-crumb:hover { color: var(--c-primary); }
+.sc2-crumb.is-current { color: var(--c-text); cursor: default; }

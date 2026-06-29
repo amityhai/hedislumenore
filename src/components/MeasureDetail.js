@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './MeasureDetail.css';
 import MeasurePerformanceSection from './MeasurePerformanceSection';
+import MonthFilter from './MonthFilter';
+import { Skeleton } from './ui/Feedback';
 import { fetchDashboardMeasures, fetchMeasureStratification, fetchMeasureStratificationEthnicity, fetchMeasureStratificationRace, fetchCRSPLevelData, fetchAgeCRSPDrilldown, fetchRaceCRSPDrilldown, fetchEthnicityCRSPDrilldown, fetchMemberDetails, fetchRaceMemberDetails, fetchEthnicityMemberDetails, fetchCRSPMemberDetails } from '../services/workflowService';
 
 // `selectedMonth` / `onMonthChange` are controlled props from App so the user's
@@ -28,19 +30,10 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
   const [allMeasures, setAllMeasures] = useState({ eoc: [], ecds: [], aac: [], uru: [] });
   const [currentDom, setCurrentDom] = useState('eoc');
   const [selectedMeasureId, setSelectedMeasureId] = useState(measureId);
-  const [collapsedSummaryGroups, setCollapsedSummaryGroups] = useState({
-    age: false,
-    race: false,
-    ethnicity: false
-  });
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null);
   const [selectedRaceGroup, setSelectedRaceGroup] = useState(null);
   const [selectedEthnicityGroup, setSelectedEthnicityGroup] = useState(null);
-  const [carouselIndex, setCarouselIndex] = useState({
-    age: 0,
-    race: 0,
-    ethnicity: 0
-  });
+  const [loadingDrill, setLoadingDrill] = useState({}); // `${stratType}-${group}` → bool
 
   useEffect(() => {
     if (token && measureId) {
@@ -66,11 +59,9 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
       const fetchStrat = async () => {
         try {
           // Find the measure in allMeasures to set it
-          let foundMeasure = null;
           for (const category in allMeasures) {
             const found = allMeasures[category].find(m => m.id === selectedMeasureId);
             if (found) {
-              foundMeasure = found;
               setCurrentDom(category);
               setMeasure(found);
               break;
@@ -113,97 +104,19 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMeasureId, token, selectedMonth]);
 
-  // Per-(measureId, stratification, month) fetch-dedupe refs. Keep the targeted
-  // CRSP drilldowns from firing twice under React.StrictMode and avoid
-  // refetching the same group when unrelated state (e.g. callback refs) changes.
-  // Including `selectedMonth` in the key ensures a month change bypasses the
-  // guard and refetches.
-  const lastAgeDrilldownKeyRef = useRef(null);
-  const lastRaceDrilldownKeyRef = useRef(null);
-  const lastEthnicityDrilldownKeyRef = useRef(null);
-
-  // Load Age CRSP drilldown only for the currently-selected age group.
-  useEffect(() => {
-    if (!selectedMeasureId || !token || !selectedAgeGroup) return;
-
-    const key = `${selectedMeasureId}::${selectedAgeGroup}::${selectedMonth || ''}`;
-    if (lastAgeDrilldownKeyRef.current === key) return;
-    lastAgeDrilldownKeyRef.current = key;
-
-    (async () => {
-      try {
-        const data = await fetchAgeCRSPDrilldown(selectedMeasureId, selectedAgeGroup, token);
-        setAgeCRSPData(data || {});
-      } catch (err) {
-        if (lastAgeDrilldownKeyRef.current === key) {
-          lastAgeDrilldownKeyRef.current = null;
-        }
-      }
-    })();
-  }, [selectedMeasureId, token, selectedAgeGroup, selectedMonth]);
-
-  // Load Race CRSP drilldown only for the currently-selected race group.
-  useEffect(() => {
-    if (!selectedMeasureId || !token || !selectedRaceGroup) return;
-
-    const key = `${selectedMeasureId}::${selectedRaceGroup}::${selectedMonth || ''}`;
-    if (lastRaceDrilldownKeyRef.current === key) return;
-    lastRaceDrilldownKeyRef.current = key;
-
-    (async () => {
-      try {
-        const data = await fetchRaceCRSPDrilldown(selectedMeasureId, selectedRaceGroup, token);
-        setRaceCRSPData(data || {});
-      } catch (err) {
-        if (lastRaceDrilldownKeyRef.current === key) {
-          lastRaceDrilldownKeyRef.current = null;
-        }
-      }
-    })();
-  }, [selectedMeasureId, token, selectedRaceGroup, selectedMonth]);
-
-  // Load Ethnicity CRSP drilldown only for the currently-selected ethnicity group.
-  useEffect(() => {
-    if (!selectedMeasureId || !token || !selectedEthnicityGroup) return;
-
-    const key = `${selectedMeasureId}::${selectedEthnicityGroup}::${selectedMonth || ''}`;
-    if (lastEthnicityDrilldownKeyRef.current === key) return;
-    lastEthnicityDrilldownKeyRef.current = key;
-
-    (async () => {
-      try {
-        const data = await fetchEthnicityCRSPDrilldown(selectedMeasureId, selectedEthnicityGroup, token);
-        setEthnicityCRSPData(data || {});
-      } catch (err) {
-        if (lastEthnicityDrilldownKeyRef.current === key) {
-          lastEthnicityDrilldownKeyRef.current = null;
-        }
-      }
-    })();
-  }, [selectedMeasureId, token, selectedEthnicityGroup, selectedMonth]);
-
   const fetchMeasureDetailData = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const measuresData = await fetchDashboardMeasures(token);
       setAllMeasures(measuresData);
-      
-      // Collect all measures across all categories
       const allMeasuresList = Object.values(measuresData).flat();
 
       let foundMeasure = null;
       for (const category in measuresData) {
         const found = measuresData[category].find(m => m.id === measureId);
-        if (found) {
-          foundMeasure = found;
-          setCurrentDom(category);
-          break;
-        }
+        if (found) { foundMeasure = found; setCurrentDom(category); break; }
       }
-
-      // If the requested measure isn't found, fall back to the first available measure
       if (!foundMeasure && allMeasuresList.length > 0) {
         foundMeasure = allMeasuresList[0];
         const fallbackCategory = Object.keys(measuresData).find(cat =>
@@ -211,18 +124,10 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
         );
         setCurrentDom(fallbackCategory || 'eoc');
       }
-
-      if (!foundMeasure) {
-        throw new Error(`No measures available`);
-      }
+      if (!foundMeasure) throw new Error(`No measures available`);
 
       setMeasure(foundMeasure);
-
-      // Use the actual found measure's ID (may differ from the requested measureId if fallback occurred).
-      // The stratification + CRSP-level data is fetched by the selectedMeasureId useEffect,
-      // so we just sync the id here and avoid duplicate API calls.
-      const activeMeasureId = foundMeasure.id;
-      setSelectedMeasureId(activeMeasureId);
+      setSelectedMeasureId(foundMeasure.id);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -230,91 +135,38 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
     }
   };
 
-  const tabs = ['By age', 'By race', 'By ethnicity', 'CRSP level'];
-
+  // Expand/collapse a CRSP row → fetch its members (age/race/ethnicity).
   const handleCRSPClick = async (stratGroup, crspName, stratType = 'age') => {
     const key = `${stratType}-${stratGroup}-${crspName}`;
-    
     if (expandedCRSPRows[key]) {
       setExpandedCRSPRows(prev => ({ ...prev, [key]: false }));
       return;
     }
-
     if (membersByKey[key]) {
       setExpandedCRSPRows(prev => ({ ...prev, [key]: true }));
       return;
     }
-
     try {
       setLoadingMembers(prev => ({ ...prev, [key]: true }));
       setExpandedCRSPRows(prev => ({ ...prev, [key]: true }));
-      
       let data;
       if (stratType === 'race') {
-        const filters = {
-          measureId: selectedMeasureId,
-          raceStrat: stratGroup,
-          crsp: crspName
-        };
-        data = await fetchRaceMemberDetails(filters, token);
+        data = await fetchRaceMemberDetails({ measureId: selectedMeasureId, raceStrat: stratGroup, crsp: crspName }, token);
       } else if (stratType === 'ethnicity') {
-        const filters = {
-          measureId: selectedMeasureId,
-          ethnicityStrat: stratGroup,
-          crsp: crspName
-        };
-        data = await fetchEthnicityMemberDetails(filters, token);
+        data = await fetchEthnicityMemberDetails({ measureId: selectedMeasureId, ethnicityStrat: stratGroup, crsp: crspName }, token);
       } else {
-        const filters = {
-          measureId: selectedMeasureId,
-          ageStrat: stratGroup,
-          crsp: crspName
-        };
-        data = await fetchMemberDetails(filters, token);
+        data = await fetchMemberDetails({ measureId: selectedMeasureId, ageStrat: stratGroup, crsp: crspName }, token);
       }
-      
       setMembersByKey(prev => ({ ...prev, [key]: data }));
-      setExpandedCRSPRows(prev => ({ ...prev, [key]: true }));
     } catch (err) {
+      // leave row open with empty state
     } finally {
       setLoadingMembers(prev => ({ ...prev, [key]: false }));
     }
   };
 
-  const handleCRSPLevelClick = async (crspName) => {
-    const key = `crsp-${crspName}`;
-    
-    if (expandedCRSPLevelRows[key]) {
-      setExpandedCRSPLevelRows(prev => ({ ...prev, [key]: false }));
-      return;
-    }
-
-    if (crspLevelMembersByKey[key]) {
-      setExpandedCRSPLevelRows(prev => ({ ...prev, [key]: true }));
-      return;
-    }
-
-    try {
-      setLoadingCRSPLevelMembers(prev => ({ ...prev, [key]: true }));
-      setExpandedCRSPLevelRows(prev => ({ ...prev, [key]: true }));
-      
-      const filters = {
-        measureId: selectedMeasureId,
-        crsp: crspName
-      };
-      const data = await fetchCRSPMemberDetails(filters, token);
-      
-      setCRSPLevelMembersByKey(prev => ({ ...prev, [key]: data }));
-      setExpandedCRSPLevelRows(prev => ({ ...prev, [key]: true }));
-    } catch (err) {
-    } finally {
-      setLoadingCRSPLevelMembers(prev => ({ ...prev, [key]: false }));
-    }
-  };
-
   const filterMembersByAgeGroup = (members, ageGroup) => {
     if (!ageGroup) return members;
-    
     return members.filter(member => {
       const age = member.age;
       if (ageGroup === '0-17') return age >= 0 && age <= 17;
@@ -324,667 +176,287 @@ const MeasureDetail = ({ measureId, onBack, onNavigate, token, selectedMonth, on
     });
   };
 
-  const filterMembersByRace = (members, race) => {
-    if (!race) return members;
-    return members.filter(member => member.raceStrat === race);
+  // ── Generic stratification drill-down (age / race / ethnicity) ──
+  const DRILL = {
+    age:       { fetcher: fetchAgeCRSPDrilldown,       data: ageCRSPData,       setData: setAgeCRSPData,       expanded: expandedAgeGroups,       setExpanded: setExpandedAgeGroups },
+    race:      { fetcher: fetchRaceCRSPDrilldown,      data: raceCRSPData,      setData: setRaceCRSPData,      expanded: expandedRaceGroups,      setExpanded: setExpandedRaceGroups },
+    ethnicity: { fetcher: fetchEthnicityCRSPDrilldown, data: ethnicityCRSPData, setData: setEthnicityCRSPData, expanded: expandedEthnicityGroups, setExpanded: setExpandedEthnicityGroups },
   };
 
-  const filterMembersByEthnicity = (members, ethnicity) => {
-    if (!ethnicity) return members;
-    return members.filter(member => member.ethnicityStrat === ethnicity);
+  // Toggle a stratification group row; fetch its CRSP breakdown on first open.
+  const toggleGroup = async (stratType, group) => {
+    const d = DRILL[stratType];
+    const willOpen = !d.expanded[group];
+    d.setExpanded(prev => ({ ...prev, [group]: willOpen }));
+    if (!willOpen || d.data[group]) return; // already loaded
+    const dkey = `${stratType}-${group}`;
+    try {
+      setLoadingDrill(prev => ({ ...prev, [dkey]: true }));
+      const data = await d.fetcher(selectedMeasureId, group, token);
+      d.setData(prev => ({ ...prev, ...(data || {}) })); // merge so multiple rows stay open
+    } catch (err) {
+      // leave row open; empty state shows
+    } finally {
+      setLoadingDrill(prev => ({ ...prev, [dkey]: false }));
+    }
+  };
+
+  const slugify = (s) => String(s).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  const rowId = (stratType, group) => `drill-${stratType}-${slugify(group)}`;
+
+  // Clicking a summary stat card opens that group in its drill-down table and
+  // scrolls it into view.
+  const openInDrill = (stratType, group) => {
+    if (!DRILL[stratType].expanded[group]) toggleGroup(stratType, group); // open + fetch
+    setTimeout(() => {
+      const el = document.getElementById(rowId(stratType, group));
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 90);
   };
 
   const downloadMembersAsExcel = (members, fileName = 'members.csv') => {
-    if (!members || members.length === 0) {
-      alert('No members to download');
-      return;
-    }
-
-    // Create CSV header
+    if (!members || members.length === 0) { alert('No members to download'); return; }
     const headers = ['Member ID', 'Member Name', 'Age', 'Status'];
-    
-    // Create CSV rows
-    const rows = members.map(member => [
-      member.memberId,
-      member.memberName,
-      member.age || '—',
-      member.status || '—'
-    ]);
-
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    // Create blob and download
+    const rows = members.map(member => [member.memberId, member.memberName, member.age || '—', member.status || '—']);
+    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
     link.setAttribute('href', url);
     link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const renderMembersDropdown = (members, isLoading, stratGroup, stratType = 'age') => {
-    // Filter members based on stratification type
-    let filteredMembers = members;
-    if (stratType === 'age') {
-      filteredMembers = filterMembersByAgeGroup(members, stratGroup);
-    } else if (stratType === 'race') {
-      filteredMembers = filterMembersByRace(members, stratGroup);
-    } else if (stratType === 'ethnicity') {
-      filteredMembers = filterMembersByEthnicity(members, stratGroup);
-    }
-    
-    if (isLoading) {
-      return (
-        <tr style={{ backgroundColor: 'transparent' }}>
-          <td colSpan="8" style={{ padding: '24px', textAlign: 'center', color: '#666', fontSize: '13px' }}>
-            <div className="members-loading-fade">
-              <div className="members-loading-spinner" />
-              Loading members...
-            </div>
-          </td>
-        </tr>
-      );
-    }
+  // ── Direction A presentation helpers ─────────────────────────
+  const goal = measure?.goal ?? 0;
+  const statusOf = (rate) => (rate > goal ? 'above' : rate === goal ? 'at' : 'below');
+  const sevPill = (rate) => {
+    const n = Number(rate);
+    if (Number.isNaN(n) || n < 25) return 'md-pill-red';
+    if (n < 50) return 'md-pill-amber';
+    return 'md-pill-green';
+  };
+  const isNoDisparity = (d) => !d || /no disparity|none/i.test(String(d));
 
-    if (filteredMembers.length === 0) {
-      return (
-        <tr style={{ backgroundColor: '#ffffff', borderLeft: '1px solid #d0d0d0' }}>
-          <td colSpan="8" style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '13px' }}>
-            No members found
-          </td>
-        </tr>
-      );
-    }
-
+  const renderMemberTable = (key, group, stratType) => {
+    const raw = membersByKey[key] || [];
+    const members = stratType === 'age' ? filterMembersByAgeGroup(raw, group) : raw;
+    if (loadingMembers[key]) return <div className="md-members-state">Loading members…</div>;
+    if (members.length === 0) return <div className="md-members-state">No members found</div>;
     return (
-      <tr style={{ backgroundColor: 'transparent', borderLeft: '1px solid #d0d0d0' }}>
-        <td colSpan="8" style={{ padding: '0' }}>
-          <div className="members-scroll-container members-fade-in" style={{ maxHeight: '280px', overflowY: 'auto', backgroundColor: 'transparent' }}>
-            <table className="members-inner-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                <tr style={{ backgroundColor: '#e8e5dd', borderBottom: '1px solid #e0e0e0', position: 'relative' }}>
-                  <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>MEMBER ID</th>
-                  <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>MEMBER NAME</th>
-                  <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>AGE</th>
-                  <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#333', textAlign: 'center', letterSpacing: '0.5px' }}>STATUS</th>
-                  <th style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '16px', width: '50px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => downloadMembersAsExcel(filteredMembers, 'members-list.csv')}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px 8px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#0066cc',
-                        transition: 'transform 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                      title="Download as Excel"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.map((member, mIdx) => (
-                  <tr 
-                    key={`member-${mIdx}`} 
-                    className="member-row"
-                    style={{ 
-                      borderBottom: '1px solid #f0f0f0',
-                      backgroundColor: 'transparent',
-                      transition: 'background-color 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: '#333', fontWeight: 600, textAlign: 'center' }}>
-                      {member.memberId}
-                    </td>
-                    <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: '#333', textAlign: 'center' }}>
-                      {member.memberName}
-                    </td>
-                    <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: '#333', textAlign: 'center' }}>
-                      {member.age || '—'}
-                    </td>
-                    <td style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', color: member.status === 'Compliant' ? '#27500a' : '#a32d2d', fontWeight: 600, textAlign: 'center' }}>
-                      {member.status || '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="md-members">
+        <div className="md-members-head">
+          <span>MEMBER ID</span>
+          <span>MEMBER NAME</span>
+          <span>AGE</span>
+          <span className="ta-r">
+            <button className="md-dl" title="Download CSV" onClick={() => downloadMembersAsExcel(members, 'members.csv')}>↓</button>
+          </span>
+        </div>
+        {members.map((m, i) => (
+          <div className="md-members-row" key={i}>
+            <span className="num">{m.memberId}</span>
+            <span>{m.memberName}</span>
+            <span className="num">{m.age || '—'}</span>
+            <span className="ta-r">
+              <span className={`md-mstatus ${m.status === 'Compliant' ? 'ok' : 'bad'}`}>{m.status || '—'}</span>
+            </span>
           </div>
-        </td>
-      </tr>
+        ))}
+      </div>
     );
   };
 
-  const renderCRSPRows = (crspList, stratGroup, stratType) => {
-    return crspList.map((crspRow, crspIdx) => {
-      const crspKey = `${stratType}-${stratGroup}-${crspRow.crsp}`;
-      const isExpanded = expandedCRSPRows[crspKey];
-      const members = membersByKey[crspKey] || [];
-      const isLoading = loadingMembers[crspKey];
-
-      return (
-        <React.Fragment key={`crsp-${crspIdx}`}>
-          <tr 
-            style={{ backgroundColor: 'transparent', borderLeft: 'none', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }} 
-            onClick={() => handleCRSPClick(stratGroup, crspRow.crsp, stratType)}
-          >
-            <td style={{ textAlign: 'center', width: '30px', paddingLeft: '40px' }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" style={{ display: 'inline-block', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                <path d="M3 2L13 8L3 14V2Z" fill="#0f7a5a" />
-              </svg>
-            </td>
-            <td style={{ paddingLeft: '0px', color: '#666', fontWeight: 500 }}>{crspRow.crsp}</td>
-            <td>{crspRow.denominator.toLocaleString()}</td>
-            <td>{crspRow.numerator.toLocaleString()}</td>
-            <td style={{ color: '#a32d2d', fontWeight: 600 }}>{(crspRow.denominator - crspRow.numerator).toLocaleString()}</td>
-            <td style={{ fontWeight: 600, color: crspRow.rate >= measure?.goal ? '#27500a' : '#a32d2d', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <span>{crspRow.rate}%</span>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate && onNavigate('cac', selectedMeasureId);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#1F9D8B',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(31, 157, 139, 0.08)';
-                  e.currentTarget.style.color = '#0f6e56';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = '#1F9D8B';
-                }}
-              >
-                Care Action Center →
-              </button>
-            </td>
-          </tr>
-          {isExpanded && renderMembersDropdown(members, isLoading, stratGroup, stratType)}
-        </React.Fragment>
-      );
-    });
+  const StatCard = ({ row, size, selected, onClick }) => {
+    const st = statusOf(row.rate);
+    const notMeeting = row.notMeeting ?? (row.denom - row.num);
+    return (
+      <div className={`stat-card stat-${size} stat-${st} ${selected ? 'is-selected' : ''}`} onClick={onClick}>
+        <div className={`stat-accent stat-accent-${st}`} />
+        <div className="stat-pad">
+          <div className="stat-top">
+            <span className="stat-name">{row.group}</span>
+            <span className={`stat-rate num stat-rate-${st}`}>{row.rate}%</span>
+          </div>
+          {size === 'lg' ? (
+            <div className="stat-metrics">
+              <div><span className="stat-ml">Numerator</span><span className="stat-mv num">{(row.num ?? 0).toLocaleString()}</span></div>
+              <div><span className="stat-ml">Denominator</span><span className="stat-mv num">{(row.denom ?? 0).toLocaleString()}</span></div>
+              <div><span className="stat-ml">Not meeting</span><span className="stat-mv num">{(notMeeting ?? 0).toLocaleString()}</span></div>
+            </div>
+          ) : (
+            <div className="stat-sub num">{row.num} / {row.denom} · {notMeeting} not meeting</div>
+          )}
+          <div className="stat-disp">
+            <span className="stat-disp-l">Disparity</span>
+            {isNoDisparity(row.disparity)
+              ? <span className="md-pill-neutral">None</span>
+              : <span className="md-pill-red">{row.disparity}</span>}
+          </div>
+        </div>
+      </div>
+    );
   };
 
+  // Generic member drill-down table for a stratification (age / race / ethnicity).
+  const renderDrill = (stratType, rows, label, headLabel) => {
+    const d = DRILL[stratType];
+    return (
+      <>
+        <div className="md-section-head">
+          <span className="md-section-title">Member drill-down by {label}</span>
+          <span className="md-section-sub-right">Expand a row to reach the worklist</span>
+        </div>
+        <div className="md-table">
+          <div className="md-table-head">
+            <span>{headLabel} / CRSP</span>
+            <span className="ta-r">DENOM</span>
+            <span className="ta-r">NUMER</span>
+            <span className="ta-r">NOT MEETING</span>
+            <span className="ta-r">RATE</span>
+            <span />
+          </div>
+          {rows.map((row, ri) => {
+            const open = d.expanded[row.group];
+            const gStatus = statusOf(row.rate);
+            const crspList = d.data[row.group]?.crspList || [];
+            const gNot = row.notMeeting ?? (row.denom - row.num);
+            const drilling = loadingDrill[`${stratType}-${row.group}`];
+            return (
+              <React.Fragment key={ri}>
+                <div id={rowId(stratType, row.group)} className={`md-row md-row-age ${open ? 'is-open' : ''}`} onClick={() => toggleGroup(stratType, row.group)}>
+                  <span className="md-name"><span className={`md-chev ${open ? 'open' : ''}`}>▶</span><strong>{row.group}</strong></span>
+                  <span className="ta-r num">{(row.denom ?? 0).toLocaleString()}</span>
+                  <span className="ta-r num">{(row.num ?? 0).toLocaleString()}</span>
+                  <span className="ta-r num md-notmeet">{(gNot ?? 0).toLocaleString()}</span>
+                  <span className={`ta-r num md-rate-${gStatus}`}>{row.rate}%</span>
+                  <span />
+                </div>
+                {open && (
+                  <div className="md-children">
+                    {drilling ? (
+                      <div className="md-row-empty">Loading CRSP breakdown…</div>
+                    ) : crspList.length > 0 ? (
+                      crspList.map((c, ci) => {
+                        const ckey = `${stratType}-${row.group}-${c.crsp}`;
+                        const copen = expandedCRSPRows[ckey];
+                        const cNot = c.denominator - c.numerator;
+                        return (
+                          <React.Fragment key={ci}>
+                            <div className={`md-row md-row-crsp ${copen ? 'is-open' : ''}`} onClick={() => handleCRSPClick(row.group, c.crsp, stratType)}>
+                              <span className="md-name md-name-crsp"><span className={`md-chev sm ${copen ? 'open' : ''}`}>▶</span>{c.crsp}</span>
+                              <span className="ta-r num">{(c.denominator ?? 0).toLocaleString()}</span>
+                              <span className="ta-r num">{(c.numerator ?? 0).toLocaleString()}</span>
+                              <span className="ta-r num md-notmeet">{(cNot ?? 0).toLocaleString()}</span>
+                              <span className="ta-r"><span className={`md-rate-pill ${sevPill(c.rate)}`}>{c.rate}%</span></span>
+                              <span className="ta-r">
+                                <button className="md-cac" onClick={(e) => { e.stopPropagation(); onNavigate && onNavigate('cac', selectedMeasureId); }}>Care Action Center →</button>
+                              </span>
+                            </div>
+                            {copen && <div className="md-member-wrap">{renderMemberTable(ckey, row.group, stratType)}</div>}
+                          </React.Fragment>
+                        );
+                      })
+                    ) : (
+                      <div className="md-row-empty">No CRSP breakdown available for this group.</div>
+                    )}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
+  const age = stratificationData.age || [];
+  const race = stratificationData.race || [];
+  const ethnicity = stratificationData.ethnicity || [];
+  const hasStrat = age.length > 0 || race.length > 0 || ethnicity.length > 0;
+
   return (
-    <div className="measure-detail-container">
+    <div className="md">
       <button className="back-btn" onClick={onBack}>← Back to Overview</button>
+
+      <header className="md-head">
+        <div>
+          <div className="eyebrow">MEASURE DETAIL</div>
+          <h1 className="md-title">Deep Dive</h1>
+          <p className="md-sub">Performance and equity breakdown{measure?.name ? ` · ${measure.name}` : ''}.</p>
+        </div>
+        <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+      </header>
+
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Skeleton width="100%" height={150} radius={14} />
+          <Skeleton width="100%" height={180} radius={14} />
+        </div>
+      )}
+
+      {error && <div className="md-error">Error: {error}. Showing fallback data.</div>}
 
       {!loading && measure && (
         <MeasurePerformanceSection
           token={token}
           initialMeasureId={measureId}
           selectedMonth={selectedMonth}
-          onMonthChange={onMonthChange}
-          availableMonths={availableMonths}
-          onMeasureSelect={(measureId) => {
-            setSelectedMeasureId(measureId);
-          }}
-          onDeepDive={() => {
-            // Scroll to the detailed section below
-            const detailsSection = document.querySelector('.stratification-tables-container');
-            if (detailsSection) {
-              detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }}
-          onSimulate={() => {
-            onNavigate && onNavigate('rateSimulator', selectedMeasureId);
-          }}
+          onMeasureSelect={(id) => setSelectedMeasureId(id)}
+          onDeepDive={() => {}}
+          onSimulate={() => onNavigate && onNavigate('sim', selectedMeasureId)}
         />
       )}
 
-      {loading && (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#6b6a66', fontSize: '14px' }}>
-          <div style={{ marginBottom: '12px' }}>Loading measure details...</div>
-        </div>
-      )}
-
-      {error && (
-        <div style={{ padding: '16px', backgroundColor: '#fff3cd', color: '#856404', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', border: '1px solid #ffeaa7' }}>
-          <strong>Error:</strong> {error}. Showing fallback data.
-        </div>
-      )}
-
-      {!loading && (
+      {!loading && hasStrat && (
         <>
-          <div className="stratification-tables-container">
-            {/* AGE: Cards + Table */}
-            {stratificationData.age && stratificationData.age.length > 0 && (
-              <>
-                {/* Age Summary Cards */}
-                <div className="summary-group">
-                  <h4 
-                    className="summary-group-title"
-                    onClick={() => setCollapsedSummaryGroups(prev => ({ ...prev, age: !prev.age }))}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span style={{ display: 'inline-block', marginRight: '8px', transition: 'transform 0.2s ease', transform: collapsedSummaryGroups.age ? 'rotate(0deg)' : 'rotate(90deg)' }}>▶</span>
-                    Age
-                  </h4>
-                  {!collapsedSummaryGroups.age && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0px', minHeight: '200px' }}>
-                      {stratificationData.age.length > 4 && (
-                        <button
-                          onClick={() => setCarouselIndex(prev => ({ ...prev, age: Math.max(0, prev.age - 1) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px', flexShrink: 0 }}
-                          disabled={carouselIndex.age === 0}
-                        >
-                          ‹
-                        </button>
-                      )}
-                      {stratificationData.age.length <= 4 && (
-                        <div style={{ width: '36px', flexShrink: 0 }}></div>
-                      )}
-                      <div className="summary-cards-row" style={{ overflowX: 'auto', scrollBehavior: 'smooth', display: 'flex', gap: '12px', paddingBottom: '8px', flex: 1 }}>
-                        {stratificationData.age.slice(carouselIndex.age, carouselIndex.age + 4).map((row, idx) => {
-                          let borderClass = 'border-below';
-                          if (row.rate > measure?.goal) {
-                            borderClass = 'border-above';
-                          } else if (row.rate === measure?.goal) {
-                            borderClass = 'border-at';
-                          }
-                          return (
-                            <div 
-                              key={idx} 
-                              className={`summary-card ${borderClass}`}
-                              onClick={() => {
-                                setSelectedAgeGroup(selectedAgeGroup === row.group ? null : row.group);
-                                setExpandedAgeGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
-                              }}
-                              style={{ cursor: 'pointer', flexShrink: 0 }}
-                            >
-                              <div className="card-header-text">
-                                <strong>{row.group}</strong>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Rate</span>
-                                <span className="card-value">{row.rate}%</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Numerator</span>
-                                <span className="card-value">{row.num.toLocaleString()}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Denominator</span>
-                                <span className="card-value">{row.denom.toLocaleString()}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Not Meeting</span>
-                                <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Disparity</span>
-                                <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
-                                  {row.disparity || '—'}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {stratificationData.age.length > 4 && (
-                        <button
-                          onClick={() => setCarouselIndex(prev => ({ ...prev, age: Math.min(stratificationData.age.length - 4, prev.age + 1) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' }}
-                          disabled={carouselIndex.age >= stratificationData.age.length - 4}
-                        >
-                          ›
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Age Table - Only show when a group is selected */}
-                {selectedAgeGroup && (
-                  <div className="stratification-table-section">
-                    <h3 className="stratification-table-title">By Age</h3>
-                    <table className="detail-table">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>Age Group</th>
-                          <th>Denominator</th>
-                          <th>Numerator</th>
-                          <th>Not Meeting</th>
-                          <th>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stratificationData.age
-                          .filter(row => row.group === selectedAgeGroup)
-                          .map((row, idx) => (
-                          <React.Fragment key={idx}>
-                            <tr onClick={() => setExpandedAgeGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }))} style={{ cursor: 'pointer', backgroundColor: 'transparent', borderLeft: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                              <td style={{ textAlign: 'center', width: '30px', paddingLeft: '8px' }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" style={{ display: 'inline-block', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedAgeGroups[row.group] ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                                  <path d="M3 2L13 8L3 14V2Z" fill="#0f7a5a" />
-                                </svg>
-                              </td>
-                              <td style={{ paddingLeft: '8px' }}><strong>{row.group}</strong></td>
-                              <td>{row.denom.toLocaleString()}</td>
-                              <td>{row.num.toLocaleString()}</td>
-                              <td style={{ color: '#a32d2d', fontWeight: 600 }}>{row.notMeeting?.toLocaleString() || '—'}</td>
-                              <td style={{ fontWeight: 600, color: row.rate >= measure?.goal ? '#27500a' : '#a32d2d' }}>{row.rate}%</td>
-                            </tr>
-                            {expandedAgeGroups[row.group] && ageCRSPData[row.group]?.crspList?.length > 0 && (
-                              <>
-                                {renderCRSPRows(ageCRSPData[row.group].crspList, row.group, 'age')}
-                              </>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* RACE: Cards + Table */}
-            {stratificationData.race && stratificationData.race.length > 0 && (
-              <>
-                {/* Race Summary Cards */}
-                <div className="summary-group">
-                  <h4 
-                    className="summary-group-title"
-                    onClick={() => setCollapsedSummaryGroups(prev => ({ ...prev, race: !prev.race }))}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span style={{ display: 'inline-block', marginRight: '8px', transition: 'transform 0.2s ease', transform: collapsedSummaryGroups.race ? 'rotate(0deg)' : 'rotate(90deg)' }}>▶</span>
-                    Race
-                  </h4>
-                  {!collapsedSummaryGroups.race && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '200px' }}>
-                      {stratificationData.race.length > 4 && (
-                        <button
-                          onClick={() => setCarouselIndex(prev => ({ ...prev, race: Math.max(0, prev.race - 1) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px', flexShrink: 0 }}
-                          disabled={carouselIndex.race === 0}
-                        >
-                          ‹
-                        </button>
-                      )}
-                      {stratificationData.race.length <= 4 && (
-                        <div style={{ width: '36px', flexShrink: 0 }}></div>
-                      )}
-                      <div className="summary-cards-row" style={{ overflowX: 'auto', scrollBehavior: 'smooth', display: 'flex', gap: '12px', paddingBottom: '8px', flex: 1 }}>
-                        {stratificationData.race.slice(carouselIndex.race, carouselIndex.race + 4).map((row, idx) => {
-                          let borderClass = 'border-below';
-                          if (row.rate > measure?.goal) {
-                            borderClass = 'border-above';
-                          } else if (row.rate === measure?.goal) {
-                            borderClass = 'border-at';
-                          }
-                          return (
-                            <div 
-                              key={idx} 
-                              className={`summary-card ${borderClass}`}
-                              onClick={() => {
-                                setSelectedRaceGroup(selectedRaceGroup === row.group ? null : row.group);
-                                setExpandedRaceGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
-                              }}
-                              style={{ cursor: 'pointer', flexShrink: 0 }}
-                            >
-                              <div className="card-header-text">
-                                <strong>{row.group}</strong>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Rate</span>
-                                <span className="card-value">{row.rate}%</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Numerator</span>
-                                <span className="card-value">{row.num.toLocaleString()}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Denominator</span>
-                                <span className="card-value">{row.denom.toLocaleString()}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Not Meeting</span>
-                                <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Disparity</span>
-                                <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
-                                  {row.disparity || '—'}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {stratificationData.race.length > 4 && (
-                        <button
-                          onClick={() => setCarouselIndex(prev => ({ ...prev, race: Math.min(stratificationData.race.length - 4, prev.race + 1) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' }}
-                          disabled={carouselIndex.race >= stratificationData.race.length - 4}
-                        >
-                          ›
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Race Table - Only show when a group is selected */}
-                {selectedRaceGroup && (
-                  <div className="stratification-table-section">
-                    <h3 className="stratification-table-title">By Race</h3>
-                    <table className="detail-table">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>Race</th>
-                          <th>Denominator</th>
-                          <th>Numerator</th>
-                          <th>Not Meeting</th>
-                          <th>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stratificationData.race
-                          .filter(row => row.group === selectedRaceGroup)
-                          .map((row, idx) => (
-                          <React.Fragment key={idx}>
-                            <tr onClick={() => setExpandedRaceGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }))} style={{ cursor: 'pointer', backgroundColor: 'transparent', borderLeft: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                              <td style={{ textAlign: 'center', width: '30px', paddingLeft: '8px' }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" style={{ display: 'inline-block', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedRaceGroups[row.group] ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                                  <path d="M3 2L13 8L3 14V2Z" fill="#0f7a5a" />
-                                </svg>
-                              </td>
-                              <td style={{ paddingLeft: '8px' }}><strong>{row.group}</strong></td>
-                              <td>{row.denom.toLocaleString()}</td>
-                              <td>{row.num.toLocaleString()}</td>
-                              <td style={{ color: '#a32d2d', fontWeight: 600 }}>{row.notMeeting?.toLocaleString() || '—'}</td>
-                              <td style={{ fontWeight: 600, color: row.rate >= measure?.goal ? '#27500a' : '#a32d2d' }}>{row.rate}%</td>
-                            </tr>
-                            {expandedRaceGroups[row.group] && raceCRSPData[row.group]?.crspList?.length > 0 && (
-                              <>
-                                {renderCRSPRows(raceCRSPData[row.group].crspList, row.group, 'race')}
-                              </>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* ETHNICITY: Cards + Table */}
-            {stratificationData.ethnicity && stratificationData.ethnicity.length > 0 && (
-              <>
-                {/* Ethnicity Summary Cards */}
-                <div className="summary-group">
-                  <h4 
-                    className="summary-group-title"
-                    onClick={() => setCollapsedSummaryGroups(prev => ({ ...prev, ethnicity: !prev.ethnicity }))}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span style={{ display: 'inline-block', marginRight: '8px', transition: 'transform 0.2s ease', transform: collapsedSummaryGroups.ethnicity ? 'rotate(0deg)' : 'rotate(90deg)' }}>▶</span>
-                    Ethnicity
-                  </h4>
-                  {!collapsedSummaryGroups.ethnicity && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0px', minHeight: '200px' }}>
-                      {stratificationData.ethnicity.length > 4 && (
-                        <button
-                          onClick={() => setCarouselIndex(prev => ({ ...prev, ethnicity: Math.max(0, prev.ethnicity - 1) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px', flexShrink: 0 }}
-                          disabled={carouselIndex.ethnicity === 0}
-                        >
-                          ‹
-                        </button>
-                      )}
-                      {stratificationData.ethnicity.length <= 4 && (
-                        <div style={{ width: '36px', flexShrink: 0 }}></div>
-                      )}
-                      <div className="summary-cards-row" style={{ overflowX: 'auto', scrollBehavior: 'smooth', display: 'flex', gap: '12px', paddingBottom: '8px', flex: 1 }}>
-                        {stratificationData.ethnicity.slice(carouselIndex.ethnicity, carouselIndex.ethnicity + 4).map((row, idx) => {
-                          let borderClass = 'border-below';
-                          if (row.rate > measure?.goal) {
-                            borderClass = 'border-above';
-                          } else if (row.rate === measure?.goal) {
-                            borderClass = 'border-at';
-                          }
-                          return (
-                            <div 
-                              key={idx} 
-                              className={`summary-card ${borderClass}`}
-                              onClick={() => {
-                                setSelectedEthnicityGroup(selectedEthnicityGroup === row.group ? null : row.group);
-                                setExpandedEthnicityGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }));
-                              }}
-                              style={{ cursor: 'pointer', flexShrink: 0 }}
-                            >
-                              <div className="card-header-text">
-                                <strong>{row.group}</strong>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Rate</span>
-                                <span className="card-value">{row.rate}%</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Numerator</span>
-                                <span className="card-value">{row.num.toLocaleString()}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Denominator</span>
-                                <span className="card-value">{row.denom.toLocaleString()}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Not Meeting</span>
-                                <span className="card-value">{row.notMeeting?.toLocaleString() || '—'}</span>
-                              </div>
-                              <div className="card-row">
-                                <span className="card-label">Disparity</span>
-                                <span className="card-value" style={{ color: row.disparity === 'no disparity' ? '#27500a' : '#a32d2d' }}>
-                                  {row.disparity || '—'}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {stratificationData.ethnicity.length > 4 && (
-                        <button
-                          onClick={() => setCarouselIndex(prev => ({ ...prev, ethnicity: Math.min(stratificationData.ethnicity.length - 4, prev.ethnicity + 1) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '8px' }}
-                          disabled={carouselIndex.ethnicity >= stratificationData.ethnicity.length - 4}
-                        >
-                          ›
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Ethnicity Table - Only show when a group is selected */}
-                {selectedEthnicityGroup && (
-                  <div className="stratification-table-section">
-                    <h3 className="stratification-table-title">By Ethnicity</h3>
-                    <table className="detail-table">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>Ethnicity</th>
-                          <th>Denominator</th>
-                          <th>Numerator</th>
-                          <th>Not Meeting</th>
-                          <th>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stratificationData.ethnicity
-                          .filter(row => row.group === selectedEthnicityGroup)
-                          .map((row, idx) => (
-                          <React.Fragment key={idx}>
-                            <tr onClick={() => setExpandedEthnicityGroups(prev => ({ ...prev, [row.group]: !prev[row.group] }))} style={{ cursor: 'pointer', backgroundColor: 'transparent', borderLeft: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                              <td style={{ textAlign: 'center', width: '30px', paddingLeft: '8px' }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" style={{ display: 'inline-block', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedEthnicityGroups[row.group] ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                                  <path d="M3 2L13 8L3 14V2Z" fill="#0f7a5a" />
-                                </svg>
-                              </td>
-                              <td style={{ paddingLeft: '8px' }}><strong>{row.group}</strong></td>
-                              <td>{row.denom.toLocaleString()}</td>
-                              <td>{row.num.toLocaleString()}</td>
-                              <td style={{ color: '#a32d2d', fontWeight: 600 }}>{row.notMeeting?.toLocaleString() || '—'}</td>
-                              <td style={{ fontWeight: 600, color: row.rate >= measure?.goal ? '#27500a' : '#a32d2d' }}>{row.rate}%</td>
-                            </tr>
-                            {expandedEthnicityGroups[row.group] && ethnicityCRSPData[row.group]?.crspList?.length > 0 && (
-                              <>
-                                {renderCRSPRows(ethnicityCRSPData[row.group].crspList, row.group, 'ethnicity')}
-                              </>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-
-
+          <div className="md-section-head">
+            <span className="md-section-title">Stratification</span>
+            <span className="md-section-sub">· {measure?.name} · where the gaps concentrate</span>
           </div>
+
+          {age.length > 0 && (
+            <>
+              <div className="eyebrow md-eyebrow">BY AGE</div>
+              <div className="stat-row">
+                {age.map((row, i) => (
+                  <StatCard key={i} row={row} size="lg" selected={expandedAgeGroups[row.group]}
+                    onClick={() => openInDrill('age', row.group)} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {race.length > 0 && (
+            <>
+              <div className="eyebrow md-eyebrow">BY RACE</div>
+              <div className="stat-scroll">
+                {race.map((row, i) => (
+                  <StatCard key={i} row={row} size="sm" selected={expandedRaceGroups[row.group]}
+                    onClick={() => openInDrill('race', row.group)} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {ethnicity.length > 0 && (
+            <>
+              <div className="eyebrow md-eyebrow">BY ETHNICITY</div>
+              <div className="stat-scroll">
+                {ethnicity.map((row, i) => (
+                  <StatCard key={i} row={row} size="sm" selected={expandedEthnicityGroups[row.group]}
+                    onClick={() => openInDrill('ethnicity', row.group)} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {age.length > 0 && renderDrill('age', age, 'age', 'AGE GROUP')}
+          {race.length > 0 && renderDrill('race', race, 'race', 'RACE')}
+          {ethnicity.length > 0 && renderDrill('ethnicity', ethnicity, 'ethnicity', 'ETHNICITY')}
         </>
       )}
     </div>

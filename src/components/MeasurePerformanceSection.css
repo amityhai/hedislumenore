@@ -1,336 +1,238 @@
-/* ── MeasurePerformanceSection ───────────────────────────────── */
-
-/* ── Outer wrapper ───────────────────────────────────────────── */
+/* ── MeasurePerformanceSection — redesigned ──────────────────── */
 .measure-performance {
   width: 100%;
-  max-width: 100%;
   background: var(--c-surface);
-  border-radius: var(--r-xl);
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
   border: 1px solid var(--c-border-light);
+  border-radius: var(--r-xl);
   box-shadow: var(--sh-xs);
+  overflow: hidden;
 }
 
-/* ── Section header ──────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────────── */
 .mp-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  min-width: 0;
-  padding: 20px 24px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--c-border-light);
 }
 
 .mp-title {
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  color: var(--c-text-3);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--c-text);
   margin: 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
-.mp-link {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--c-primary);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mp-link:hover { color: var(--c-primary-dark); text-decoration: underline; }
-
-/* ── Tabs & pills row ────────────────────────────────────────── */
-.mp-tabs,
-.mp-pills {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
+/* ── DOM tabs (segmented) ────────────────────────────────────── */
 .mp-tabs {
-  padding: 16px 24px 0;
-  margin-bottom: 0;
-  border-bottom: 1px solid var(--c-border-light);
-  padding-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 16px 22px 0;
 }
 
-.mp-pills {
-  padding: 14px 24px;
-  margin-bottom: 0;
-  background: #F8FAFC;
-}
-
-/* Shared base for tab & pill */
-.tab,
-.pill {
+.tab {
   appearance: none;
-  border: none;
-  background: #F8FAFC;
+  border: 1px solid var(--c-border-light);
+  background: var(--c-surface);
   color: var(--c-text-3);
   border-radius: var(--r-sm);
   cursor: pointer;
   font-family: var(--font);
-  font-weight: 400;
-  line-height: 1;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 13px;
+  height: 34px;
+  padding: 0 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
 }
+.tab:hover { background: var(--c-primary-light); color: var(--c-primary); border-color: var(--c-primary-subtle); }
+.tab.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
 
-.tab {
-  min-width: 60px;
-  height: 38px;
-  padding: 0 18px;
-  font-size: 14px;
+/* ── Measure pills ───────────────────────────────────────────── */
+.mp-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-bottom: 1px solid var(--c-border-light);
 }
 
 .pill {
-  min-width: 58px;
-  height: 32px;
-  padding: 0 16px;
-  font-size: 13px;
-  border-radius: var(--r-full);
+  appearance: none;
+  border: 1px solid var(--c-border);
   background: var(--c-surface);
-  box-shadow: var(--sh-xs);
+  color: var(--c-text-2);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  height: 30px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  white-space: nowrap;
 }
+.pill:hover { background: var(--c-primary-light); color: var(--c-primary); }
 
-.tab:hover,
-.pill:hover {
-  color: var(--c-primary);
-  background: var(--c-primary-light);
-}
+/* Unselected status hints (subtle dot via border color) */
+.pill.outline-green { color: var(--c-success-text); background: var(--c-success-bg); }
+.pill.outline-blue  { color: var(--c-info-text);    background: var(--c-info-bg); }
+.pill.outline-red   { color: var(--c-error-text);   background: var(--c-error-bg); }
+.pill.outline-green:hover { border-color: var(--c-success); }
+.pill.outline-blue:hover  { border-color: var(--c-info); }
+.pill.outline-red:hover   { border-color: var(--c-error); }
 
-.tab.active {
-  background: var(--c-primary);
-  color: #fff;
-}
-
-/* Pill active states by status */
-.pill.active.above-goal {
-  background: var(--c-primary);
-  color: #fff;
-  box-shadow: none;
-}
-
-.pill.active.below-goal {
-  background: var(--c-error);
-  color: #fff;
-  box-shadow: none;
-}
-
-.pill.active.at-goal {
-  background: var(--c-info);
-  color: #fff;
-  box-shadow: none;
-}
-
-/* Outline variants (unselected with color hint) */
-.pill.outline-green {
-  color: var(--c-primary);
-  background: var(--c-primary-light);
-}
-.pill.outline-green:hover { background: var(--c-primary-subtle); }
-
-.pill.outline-red {
-  color: var(--c-error-text);
-  background: var(--c-error-bg);
-}
-.pill.outline-red:hover { background: #FECACA; }
-
-.pill.outline-blue {
-  color: var(--c-info-text);
-  background: var(--c-info-bg);
-}
-.pill.outline-blue:hover { background: #BFDBFE; }
+/* Selected */
+.pill.active { color: #fff; }
+.pill.active.above-goal { background: var(--c-success); border-color: var(--c-success); }
+.pill.active.at-goal    { background: var(--c-info);    border-color: var(--c-info); }
+.pill.active.below-goal { background: var(--c-error);   border-color: var(--c-error); }
 
 /* ── Measure card ────────────────────────────────────────────── */
-.mp-card {
-  border-radius: var(--r-lg);
-  margin: 18px 24px 24px;
-  padding: 18px 20px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 18px;
-  width: calc(100% - 48px);
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  background: #F8FAFC;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.mp-card { padding: 20px 22px; }
 
-.mp-left {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-}
-
-.measure-row {
+.mp-card-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 2px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
-  min-width: 0;
 }
 
-.measure-name {
-  font-size: 17px;
-  line-height: 1.3;
-  font-weight: 500;
-  color: var(--c-text);
-  margin: 0;
-  letter-spacing: -0.02em;
-  word-break: break-word;
-}
-
-/* Status badge */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: var(--r-full);
-  font-size: 11px;
-  font-weight: 400;
+.mp-code {
+  font-size: 12px;
   color: var(--c-primary-dark);
-  background: var(--c-primary-subtle);
-  white-space: nowrap;
-  flex-shrink: 0;
-  letter-spacing: 0.01em;
+  background: var(--c-primary-light);
+  padding: 5px 9px;
+  border-radius: var(--r-xs);
+  letter-spacing: 0.02em;
 }
 
-/* Hide redundant measure description (it repeats the name) */
-.measure-desc {
-  display: none;
+.mp-name { font-size: 18px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
+
+.mp-card-body { width: 100%; }
+
+/* Legacy aliases (unused) */
+.mp-left { width: 100%; }
+.measure-row { margin-bottom: 14px; }
+.measure-name { font-size: 18px; font-weight: 700; color: var(--c-text); }
+.measure-desc { display: none; }
+
+/* ── Rate vs goal bar ────────────────────────────────────────── */
+.mp-ratebar { margin-top: 20px; }
+.mp-ratebar-track {
+  position: relative;
+  height: 8px;
+  background: var(--c-border-light);
+  border-radius: var(--r-full);
+}
+.mp-ratebar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-full); }
+.mp-fill-above { background: var(--c-success); }
+.mp-fill-at    { background: var(--c-info); }
+.mp-fill-below { background: var(--c-error); }
+.mp-ratebar-goal {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--c-text);
+  opacity: 0.55;
+}
+.mp-ratebar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--c-text-4);
+  margin-top: 7px;
 }
 
-/* ── Mini chart + KPI row ────────────────────────────────────── */
+/* ── Mini chart + KPI strip ──────────────────────────────────── */
 .mp-content {
   display: flex;
-  align-items: center;
-  gap: 0;
-  margin-top: 10px;
+  align-items: stretch;
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-  background: var(--c-surface);
-  border-radius: var(--r-md);
-  overflow: hidden;
   border: 1px solid var(--c-border-light);
-  box-shadow: var(--sh-xs);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--c-surface);
 }
 
 .mini-chart {
   width: 200px;
-  height: 100px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  padding: 12px 8px 12px 16px;
+  padding: 14px 12px 14px 18px;
   border-right: 1px solid var(--c-border-light);
+  background: var(--c-bg-subtle);
 }
-
-.mini-chart svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
+.mini-chart svg { width: 100%; height: 88px; display: block; }
 
 .kpis {
   display: flex;
-  align-items: stretch;
-  flex-wrap: nowrap;
-  min-width: 0;
   flex: 1;
+  min-width: 0;
   overflow-x: auto;
 }
 
 .kpi {
   flex: 1;
-  min-width: 80px;
-  flex-shrink: 0;
+  min-width: 96px;
   padding: 16px 18px;
   border-right: 1px solid var(--c-border-light);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
-
 .kpi:last-child { border-right: none; }
 
 .kpi-label {
-  display: block;
   font-size: 10px;
   line-height: 1;
   color: var(--c-text-4);
-  font-weight: 400;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 2px;
   white-space: nowrap;
 }
 
 .kpi-value {
-  display: block;
   font-size: 20px !important;
-  line-height: 1.15;
-  font-weight: 500;
+  line-height: 1.1;
+  font-weight: 700;
   color: var(--c-text);
   letter-spacing: -0.03em;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.kpi-value.rate        { color: var(--c-primary) !important; }
-.kpi-value.gap-negative{ color: var(--c-error) !important; }
-.kpi-value.positive    { color: var(--c-primary) !important; }
-.kpi-value.yoy-positive{ color: var(--c-success-text); }
-
-.kpi-meta {
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--c-text-3);
-  white-space: nowrap;
-}
+.kpi-value.rate         { color: var(--c-primary) !important; }
+.kpi-value.gap-negative { color: var(--c-error) !important; }
+.kpi-value.positive     { color: var(--c-success-text) !important; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 1024px) {
-  .mp-content {
-    flex-direction: column;
-    border-radius: var(--r-md);
-  }
-  .mini-chart {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--c-border-light);
-    justify-content: flex-start;
-  }
+  .mp-content { flex-direction: column; }
+  .mini-chart { width: 100%; border-right: none; border-bottom: 1px solid var(--c-border-light); justify-content: flex-start; }
   .kpis { flex-wrap: wrap; overflow-x: visible; }
-  .kpi  { min-width: 90px; flex: 1 1 90px; }
+  .kpi { min-width: 33%; }
 }
 
 @media (max-width: 768px) {
-  .mp-header  { padding: 14px 18px; }
-  .mp-tabs    { padding: 12px 18px 12px; }
-  .mp-pills   { padding: 12px 18px; }
-  .mp-card    { margin: 14px 18px 18px; }
-  .kpi-meta   { white-space: normal; }
-  .kpi-value  { font-size: 18px !important; }
+  .mp-header, .mp-tabs, .mp-pills, .mp-card { padding-left: 16px; padding-right: 16px; }
+  .kpi { min-width: 50%; }
+  .kpi-value { font-size: 18px !important; }
 }

@@ -27,7 +27,7 @@ const CustomSelect = ({ value, onChange, options, placeholder = 'Select...', dis
       >
         <span>{selectedLabel}</span>
         <svg width="12" height="8" viewBox="0 0 12 8" className={isOpen ? 'open' : ''}>
-          <path fill="#0f7a5a" d="M1 1l5 5 5-5" />
+          <path fill="var(--c-primary)" d="M1 1l5 5 5-5" />
         </svg>
       </button>
 

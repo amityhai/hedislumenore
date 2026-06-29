@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './MeasurePerformanceSection.css';
-import MonthFilter from './MonthFilter';
+import StatusBadge from './ui/StatusBadge';
+import { Skeleton, ErrorState } from './ui/Feedback';
 import { fetchDashboardMeasures, fetchMiniChartData } from '../services/workflowService';
 
 const MeasurePerformanceSection = ({
@@ -28,6 +29,7 @@ const MeasurePerformanceSection = ({
   const [error, setError] = useState(null);
   const [miniChartData, setMiniChartData] = useState([]);
   const [internalSelectedMonth, setInternalSelectedMonth] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   const isMonthControlled = selectedMonthProp !== undefined;
   const selectedMonth = isMonthControlled ? selectedMonthProp : internalSelectedMonth;
@@ -75,7 +77,7 @@ const MeasurePerformanceSection = ({
       loadMeasures();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, initialMeasureId]);
+  }, [token, initialMeasureId, reloadKey]);
 
   // Refetch measures data when month changes (to keep data current)
   // but preserve the currently selected pill
@@ -131,8 +133,12 @@ const MeasurePerformanceSection = ({
   if (loading) {
     return (
       <section className="measure-performance">
-        <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-          Loading measure performance data...
+        <div className="mp-header">
+          <Skeleton width={160} height={14} />
+        </div>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Skeleton width={220} height={32} radius={8} />
+          <Skeleton width="100%" height={120} radius={12} />
         </div>
       </section>
     );
@@ -141,9 +147,7 @@ const MeasurePerformanceSection = ({
   if (error) {
     return (
       <section className="measure-performance">
-        <div style={{ padding: '20px', textAlign: 'center', color: '#dc2626' }}>
-          Error loading measures: {error}
-        </div>
+        <ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} />
       </section>
     );
   }
@@ -177,7 +181,7 @@ const MeasurePerformanceSection = ({
     return (
       <svg viewBox={`0 0 ${width} ${height}`} xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ overflow: 'visible' }}>
         {/* Line */}
-        <path d={linePath} stroke="#0f7a5a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+        <path d={linePath} stroke="var(--c-primary)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
         
         {/* Points */}
         {points.map((p, idx) => (
@@ -186,7 +190,7 @@ const MeasurePerformanceSection = ({
             cx={p.x}
             cy={p.y}
             r={idx === points.length - 1 ? 5.5 : 2.5}
-            fill={idx === points.length - 1 ? '#0f7a5a' : '#95a3a0'}
+            fill={idx === points.length - 1 ? 'var(--c-primary)' : 'var(--c-border)'}
           />
         ))}
 
@@ -198,7 +202,7 @@ const MeasurePerformanceSection = ({
               y={points[points.length - 1].y - 2} 
               fontSize="14" 
               fontWeight="700" 
-              fill="#0f7a5a"
+              fill="var(--c-primary)"
               textAnchor="start"
             >
               {points[points.length - 1].rate}%
@@ -213,7 +217,7 @@ const MeasurePerformanceSection = ({
             x={p.x} 
             y={height - 8} 
             fontSize="11" 
-            fill="#9aa4b2"
+            fill="var(--c-text-4)"
             textAnchor="middle"
             fontWeight="500"
           >
@@ -224,13 +228,13 @@ const MeasurePerformanceSection = ({
     );
   };
 
+  const st = selectedMeasure
+    ? (selectedMeasure.rate > selectedMeasure.goal ? 'above' : selectedMeasure.rate === selectedMeasure.goal ? 'at' : 'below')
+    : 'below';
+  const STATUS_LABEL = { above: 'Above Goal', at: 'At Goal', below: 'Below Goal' };
+
   return (
     <section className="measure-performance">
-      <div className="mp-header">
-        <h2 className="mp-title">Measure performance</h2>
-        <MonthFilter selectedMonth={selectedMonth} onMonthChange={handleMonthChange} availableMonths={availableMonths} />
-      </div>
-
       <div className="mp-tabs">
         {Object.keys(domLabels).map((domKey) => (
           <button
@@ -294,37 +298,38 @@ const MeasurePerformanceSection = ({
 
       {selectedMeasure && (
         <div className="mp-card">
-          <div className="mp-left">
-            <div className="measure-row">
-              <h3 className="measure-name">{selectedMeasure.id.replace(/_/g, ' ')} — {selectedMeasure.name}</h3>
-            </div>
-            <p className="measure-desc">{selectedMeasure.name}</p>
+          <div className="mp-card-head">
+            <span className="mp-code mono">{selectedMeasure.id.replace(/_/g, ' ')}</span>
+            <span className="mp-name">{selectedMeasure.name}</span>
+            <StatusBadge status={STATUS_LABEL[st]} size="sm" />
+          </div>
 
+          <div className="mp-card-body">
             <div className="mp-content">
               <div className="mini-chart">
                 {miniChartData && miniChartData.length > 0 ? (
                   generateMiniChart()
                 ) : (
                   <svg viewBox="0 0 170 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <line x1="24" y1="52" x2="140" y2="36" stroke="#0f7a5a" strokeWidth="2.5" strokeLinecap="round" />
-                    <circle cx="24" cy="52" r="2.5" fill="#95a3a0" />
-                    <circle cx="56" cy="46" r="2.5" fill="#95a3a0" />
-                    <circle cx="88" cy="39" r="2.5" fill="#95a3a0" />
-                    <circle cx="120" cy="35" r="2.5" fill="#95a3a0" />
-                    <circle cx="150" cy="34" r="5.5" fill="#0f7a5a" />
-                    <text x="162" y="38" fontSize="11" fontWeight="700" fill="#0f7a5a">
+                    <line x1="24" y1="52" x2="140" y2="36" stroke="var(--c-primary)" strokeWidth="2.5" strokeLinecap="round" />
+                    <circle cx="24" cy="52" r="2.5" fill="var(--c-border)" />
+                    <circle cx="56" cy="46" r="2.5" fill="var(--c-border)" />
+                    <circle cx="88" cy="39" r="2.5" fill="var(--c-border)" />
+                    <circle cx="120" cy="35" r="2.5" fill="var(--c-border)" />
+                    <circle cx="150" cy="34" r="5.5" fill="var(--c-primary)" />
+                    <text x="162" y="38" fontSize="11" fontWeight="700" fill="var(--c-primary)">
                       {selectedMeasure.rate}%
                     </text>
-                    <text x="14" y="88" fontSize="10" fill="#9aa4b2">
+                    <text x="14" y="88" fontSize="10" fill="var(--c-text-4)">
                       MY23
                     </text>
-                    <text x="46" y="88" fontSize="10" fill="#9aa4b2">
+                    <text x="46" y="88" fontSize="10" fill="var(--c-text-4)">
                       MY24
                     </text>
-                    <text x="78" y="88" fontSize="10" fill="#9aa4b2">
+                    <text x="78" y="88" fontSize="10" fill="var(--c-text-4)">
                       MY25
                     </text>
-                    <text x="110" y="88" fontSize="10" fill="#9aa4b2">
+                    <text x="110" y="88" fontSize="10" fill="var(--c-text-4)">
                       MY26
                     </text>
                   </svg>
@@ -359,6 +364,17 @@ const MeasurePerformanceSection = ({
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="mp-ratebar">
+            <div className="mp-ratebar-track">
+              <div className={`mp-ratebar-fill mp-fill-${st}`} style={{ width: `${Math.min(100, selectedMeasure.rate)}%` }} />
+              <div className="mp-ratebar-goal" style={{ left: `${Math.min(100, selectedMeasure.goal)}%` }} />
+            </div>
+            <div className="mp-ratebar-labels">
+              <span>Current rate</span>
+              <span>Vertical line marks the {selectedMeasure.goal}% goal</span>
             </div>
           </div>
         </div>

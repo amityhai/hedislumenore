@@ -33,7 +33,7 @@ const RateSimulator = ({ onBack }) => {
       <button className="back-btn" onClick={onBack}>← Back to Overview</button>
 
       <div className="simulator-header">
-        <h1>Rate Simulator</h1>
+        <h1>Rate Simulator <span className="preview-tag">Preview · sample data</span></h1>
         <p>Model gap closure scenarios for individual measures.</p>
       </div>
 
@@ -87,7 +87,7 @@ const RateSimulator = ({ onBack }) => {
             </div>
             <div className="calc-item">
               <div className="calc-label">Open gaps</div>
-              <div className="calc-value" style={{ color: '#a32d2d' }}>{currentMeasure.gaps.toLocaleString()}</div>
+              <div className="calc-value" style={{ color: 'var(--c-error)' }}>{currentMeasure.gaps.toLocaleString()}</div>
             </div>
           </div>
 
@@ -114,19 +114,19 @@ const RateSimulator = ({ onBack }) => {
           <div className={`sim-result ${gtg >= 0 ? 'goal-met' : ''}`}>
             <div className="result-main">
               <div className="result-label">Projected rate</div>
-              <div className="result-value" style={{ color: gtg >= 0 ? '#27500a' : '#1a1a18' }}>
+              <div className="result-value" style={{ color: gtg >= 0 ? 'var(--c-success-text)' : 'var(--c-text)' }}>
                 {newRate.toFixed(2)}%
               </div>
-              <div className="result-delta" style={{ color: gtg >= 0 ? '#27500a' : '#6b6a66' }}>
+              <div className="result-delta" style={{ color: gtg >= 0 ? 'var(--c-success-text)' : 'var(--c-text-4)' }}>
                 {delta >= 0 ? '+' : ''}{delta.toFixed(2)}% from current
               </div>
             </div>
             <div className="result-side">
               <div className="result-label">Gap to goal</div>
-              <div className="result-value" style={{ color: gtg >= 0 ? '#27500a' : '#a32d2d' }}>
+              <div className="result-value" style={{ color: gtg >= 0 ? 'var(--c-success-text)' : 'var(--c-error)' }}>
                 {gtg >= 0 ? '+' : ''}{gtg.toFixed(2)}%
               </div>
-              <div className="result-status" style={{ color: gtg >= 0 ? '#27500a' : '#9c9a92' }}>
+              <div className="result-status" style={{ color: gtg >= 0 ? 'var(--c-success-text)' : 'var(--c-text-4)' }}>
                 {gtg >= 0 ? 'At or above goal' : 'Below goal'}
               </div>
             </div>
@@ -159,20 +159,20 @@ const RateSimulator = ({ onBack }) => {
                 const gn = Math.max(0, Math.ceil((m.goal / 100 * m.denom) - (m.denom * (m.rate / 100))));
                 const pct = (gn / m.denom) * 100;
                 let effort = 'HARD';
-                let effortColor = '#a32d2d';
+                let effortColor = 'var(--c-error)';
                 if (pct < 5) {
                   effort = 'EASY';
-                  effortColor = '#27500a';
+                  effortColor = 'var(--c-success-text)';
                 } else if (pct < 10) {
                   effort = 'MODERATE';
-                  effortColor = '#854f0b';
+                  effortColor = 'var(--c-warn-text)';
                 }
                 return (
                   <tr key={m.id} onClick={() => setSelectedMeasure(m.id)}>
                     <td><strong>{m.id}</strong></td>
                     <td>{m.rate}%</td>
                     <td>{m.goal}%</td>
-                    <td style={{ color: '#a32d2d' }}>{(m.rate - m.goal).toFixed(1)}%</td>
+                    <td style={{ color: 'var(--c-error)' }}>{(m.rate - m.goal).toFixed(1)}%</td>
                     <td>{m.gaps}</td>
                     <td>{gn}</td>
                     <td style={{ color: effortColor, fontWeight: 700, fontSize: '11px' }}>{effort}</td>
