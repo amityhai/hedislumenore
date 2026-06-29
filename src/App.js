@@ -49,7 +49,7 @@ const parseHash = () => {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const [page, ...rest] = raw.split('/');
   return {
-    page: PAGES.includes(page) ? page : 'dashboard',
+    page: PAGES.includes(page) ? page : 'v2',
     measure: decodeURIComponent(rest.join('/') || ''),
   };
 };
