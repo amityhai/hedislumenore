@@ -113,6 +113,8 @@
 .ov2-bench-num { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; color: var(--c-text); line-height: 1; }
 .ov2-bench-total { font-size: 18px; font-weight: 600; color: var(--c-text-4); }
 .ov2-bench-tag { margin-left: 4px; padding: 4px 10px; border-radius: var(--r-full); background: var(--c-error-bg); color: var(--c-error-text); font-size: 11px; font-weight: 700; }
+.ov2-bench-tag-at { background: var(--c-info-bg); color: var(--c-info-text); }
+.ov2-bench-tag-above { background: var(--c-success-bg); color: var(--c-success-text); }
 .ov2-bench-sub { margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--c-error-text); }
 
 /* List rows */
@@ -133,6 +135,8 @@
   flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--c-error-text);
   background: var(--c-error-bg); padding: 3px 9px; border-radius: var(--r-xs);
 }
+.ov2-list-rate-at { color: var(--c-info-text); background: var(--c-info-bg); }
+.ov2-list-rate-above { color: var(--c-success-text); background: var(--c-success-bg); }
 
 /* Selected panel — measure card */
 .ov2-chip { align-self: flex-start; padding: 4px 10px; border-radius: var(--r-xs); font-size: 12px; font-weight: 600; border: 1px solid; }

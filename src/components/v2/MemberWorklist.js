@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import './MemberWorklist.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import useAsync from '../../hooks/useAsync';
@@ -176,15 +177,19 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
 
       {data?.sample && !loading && <div className="mwl-sample">Showing sample data — live workflow unavailable.</div>}
 
-      {modalMember && (
+      {/* Portaled to <body> so the fixed overlay isn't trapped by an ancestor's
+          stacking/transform context (it would otherwise dim only the content card). */}
+      {modalMember && createPortal(
         <AssignModal member={modalMember} providerName={providerName} current={assigned[modalMember.memberId]}
-          onClose={() => setModalMember(null)} onSave={saveAssignment} />
+          onClose={() => setModalMember(null)} onSave={saveAssignment} />,
+        document.body
       )}
 
-      {toast && (
+      {toast && createPortal(
         <div className={`mwl-toast mwl-toast-${toast.kind}`} role="status">
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.msg}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

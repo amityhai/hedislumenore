@@ -24,6 +24,14 @@ const FILTERS = [
 ];
 const LENSES = ['Measures', 'Providers', 'Equity'];
 
+// The summary panel adapts to the active status filter — heading, pill tone and
+// the ranked measure list all follow whichever group is selected.
+const STATUS_PANELS = {
+  'Below Goal': { eyebrow: 'BELOW BENCHMARK', tag: 'Need attention', tone: 'below', listLabel: 'LOWEST PERFORMING MEASURES', dir: 'asc' },
+  'At Goal':    { eyebrow: 'AT BENCHMARK',    tag: 'On track',        tone: 'at',    listLabel: 'MEASURES AT GOAL',          dir: 'asc' },
+  'Above Goal': { eyebrow: 'ABOVE BENCHMARK', tag: 'Exceeding goal',  tone: 'above', listLabel: 'TOP PERFORMING MEASURES',   dir: 'desc' },
+};
+
 const MAX_BUBBLES = 20;
 const R_MIN = 30;
 const R_MAX = 92;
@@ -114,7 +122,6 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   }, [token, selectedMonth], { enabled: !!token });
 
   const grid = data?.grid || [];
-  const kpis = data?.kpis || [];
   const usingSample = data?.sample;
 
   // Bubble SIZE encodes the volume of the care gap — how many members have an
@@ -157,20 +164,31 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   useEffect(() => { setSelectedId(null); }, [statusFilter, lens]);
 
   const selected = useMemo(() => grid.find((m) => m.measure_id === selectedId) || null, [grid, selectedId]);
-  const belowKpi = kpis.find((k) => /below/i.test(k.label)) || {};
-  const matchCount = grid.filter((m) => m.kpi_status === statusFilter).length;
+  // The summary panel mirrors the active status filter (below / at / above goal).
+  const statusMeasures = useMemo(() => grid.filter((m) => m.kpi_status === statusFilter), [grid, statusFilter]);
+  const matchCount = statusMeasures.length;
+  const panelCfg = STATUS_PANELS[statusFilter] || STATUS_PANELS['Below Goal'];
 
-  // Real counts (replaces the stale hardcoded "7 critical, 39 below" string).
-  const belowMeasures = useMemo(() => grid.filter((m) => m.kpi_status === 'Below Goal'), [grid]);
-  const criticalCount = belowMeasures.filter((m) => num(m.goal_50th) - num(m.rate) >= 20).length;
-  const lowestDedup = useMemo(() => {
+  // "Critical" only applies to below-goal measures (≥20 pts under target).
+  const criticalCount = useMemo(
+    () => (statusFilter === 'Below Goal'
+      ? statusMeasures.filter((m) => num(m.goal_50th) - num(m.rate) >= 20).length
+      : 0),
+    [statusMeasures, statusFilter]
+  );
+
+  // Ranked, de-duplicated list for the panel — worst-first below goal,
+  // best-first above goal.
+  const panelList = useMemo(() => {
     const seen = new Set();
-    return (data?.lowest || []).filter((m) => {
-      if (!m.measure_id || seen.has(m.measure_id)) return false;
-      seen.add(m.measure_id);
-      return true;
-    });
-  }, [data]);
+    return [...statusMeasures]
+      .sort((a, b) => (panelCfg.dir === 'desc' ? num(b.rate) - num(a.rate) : num(a.rate) - num(b.rate)))
+      .filter((m) => {
+        if (!m.measure_id || seen.has(m.measure_id)) return false;
+        seen.add(m.measure_id);
+        return true;
+      });
+  }, [statusMeasures, panelCfg.dir]);
 
   return (
     <div className="ov2">
@@ -255,8 +273,8 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                 <SelectedPanel measure={selected} crsps={data?.crsps || []} token={token}
                   selectedMonth={selectedMonth} onInvestigate={() => onInvestigate && onInvestigate(selected)} />
               ) : (
-                <DefaultPanel loading={loading} belowKpi={belowKpi} belowCount={belowMeasures.length}
-                  criticalCount={criticalCount} lowest={lowestDedup} onPick={setSelectedId} />
+                <DefaultPanel loading={loading} cfg={panelCfg} count={matchCount} total={grid.length}
+                  criticalCount={criticalCount} list={panelList} onPick={setSelectedId} />
               )}
             </div>
           </aside>
@@ -266,28 +284,28 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   );
 };
 
-const DefaultPanel = ({ loading, belowKpi, belowCount, criticalCount, lowest, onPick }) => (
+const DefaultPanel = ({ loading, cfg, count, total, criticalCount, list, onPick }) => (
   <div className="ov2-panel-inner">
-    <div className="eyebrow">BELOW BENCHMARK</div>
+    <div className="eyebrow">{cfg.eyebrow}</div>
     {loading ? <Skeleton width={140} height={40} radius={8} style={{ marginTop: 8 }} /> : (
       <div className="ov2-bench">
-        <span className="ov2-bench-num num">{belowKpi.value ?? belowCount ?? '—'}</span>
-        <span className="ov2-bench-total num">/{belowKpi.total ?? '—'}</span>
-        <span className="ov2-bench-tag">Need attention</span>
+        <span className="ov2-bench-num num">{count}</span>
+        <span className="ov2-bench-total num">/{total || '—'}</span>
+        <span className={`ov2-bench-tag ov2-bench-tag-${cfg.tone}`}>{cfg.tag}</span>
       </div>
     )}
-    {!loading && (criticalCount > 0 || belowCount > 0) && (
-      <div className="ov2-bench-sub">↘ {criticalCount} critical · {belowCount} below target</div>
+    {!loading && cfg.tone === 'below' && count > 0 && (
+      <div className="ov2-bench-sub">↘ {criticalCount} critical · {count} below target</div>
     )}
 
-    <div className="eyebrow ov2-panel-sub">LOWEST PERFORMING MEASURES</div>
+    <div className="eyebrow ov2-panel-sub">{cfg.listLabel}</div>
     <div className="ov2-list">
-      {loading ? <SkeletonText lines={5} /> : lowest.length === 0 ? (
-        <EmptyState icon="—" hint="No underperforming measures." />
-      ) : lowest.slice(0, 6).map((m, i) => (
-        <button key={i} className="ov2-list-row" style={{ animationDelay: `${i * 45}ms` }} onClick={() => onPick(m.measure_id)}>
+      {loading ? <SkeletonText lines={5} /> : list.length === 0 ? (
+        <EmptyState icon="—" hint="No measures in this group." />
+      ) : list.slice(0, 6).map((m, i) => (
+        <button key={m.measure_id || i} className="ov2-list-row" style={{ animationDelay: `${i * 45}ms` }} onClick={() => onPick(m.measure_id)}>
           <span className="ov2-list-label">{m.display_name}</span>
-          <span className="ov2-list-rate num">{m.rate}%</span>
+          <span className={`ov2-list-rate ov2-list-rate-${cfg.tone} num`}>{m.rate}%</span>
         </button>
       ))}
     </div>
