@@ -11,6 +11,7 @@ import {
   fetchCRSPsNeedingAttention,
   fetchEquityAlerts,
 } from '../services/workflowService';
+import { sampleLowest, sampleCrsps, sampleEquityAlerts } from './v2/v2utils';
 
 // KPI cards map 1:1 onto the three status buckets returned by fetchDashboardKPI.
 // Status is shown by shape + label + color (never color alone).
@@ -76,9 +77,11 @@ const Dashboard = ({ onNavigate, token, selectedMonth, onMonthChange, availableM
         { month: 'May-2026', value: 31 }, { month: 'Jun-2026', value: 35 },
       ]);
       setMeasuresGrid([]);
-      setLowestPerformingMeasures([]);
-      setCRSPNeedingAttention([]);
-      setEquityAlerts([]);
+      // Fall back to the same sample data the v2 page uses so the
+      // "Where to focus" cards stay populated when live data is down.
+      setLowestPerformingMeasures(sampleLowest());
+      setCRSPNeedingAttention(sampleCrsps());
+      setEquityAlerts(sampleEquityAlerts());
       setUsingFallback(true);
     } finally {
       setLoading(false);

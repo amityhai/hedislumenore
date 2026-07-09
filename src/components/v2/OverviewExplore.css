@@ -13,14 +13,16 @@
 .ov2-notice {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 14px; background: var(--c-warn-bg); color: var(--c-warn-text);
-  border: 1px solid #f1dcae; border-radius: var(--r-md);
+  border: 1px solid var(--c-warn-border); border-radius: var(--r-md);
   font-size: 13px; font-weight: 500;
   animation: ov2-fade 0.3s ease both;
 }
 .ov2-notice-retry {
   margin-left: auto; background: transparent; border: 1px solid currentColor; color: inherit;
   border-radius: var(--r-full); padding: 3px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.14s ease;
 }
+.ov2-notice-retry:hover { background: rgba(154, 106, 22, 0.1); }
 
 /* Card shell — flexes to fill the remaining viewport height */
 .ov2-card {
@@ -60,24 +62,66 @@
 .ov2-pill-above.is-active { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success); }
 
 /* Body: bubble field + detail panel — fills the card height */
-.ov2-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; flex: 1; min-height: 0; }
+/* Both columns stretch to the row, and the row is capped at the card height by
+   `minmax(0, 1fr)`. The field therefore always fills the card (no dead space
+   under the bubbles) while the panel scrolls internally rather than growing the
+   row — so selecting a bubble never resizes the field. */
+.ov2-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 25vw, 380px);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  flex: 1; min-height: 0;
+}
 .ov2-field-wrap {
-  position: relative; border-right: 1px solid var(--c-border-light); padding: 16px;
-  display: flex; align-items: center; justify-content: center; min-height: 420px; overflow: hidden;
+  position: relative; padding: 16px;
+  display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+  height: 100%; min-height: clamp(320px, 45vh, 520px); overflow: hidden;
   background:
     radial-gradient(620px 380px at 42% 44%, rgba(14, 138, 140, 0.05), transparent 70%),
     radial-gradient(var(--c-border-light) 1px, transparent 1px);
   background-size: auto, 22px 22px;
 }
 
-/* Bubble field — fills the wrap so packing uses the full available area */
-.ov2-field { position: relative; width: 100%; height: 100%; }
+/* Bubble field — takes the wrap's height minus the caption, so the packer's
+   measured area is exactly the area it may draw into. */
+.ov2-field {
+  position: relative; flex: 1 1 auto; min-height: 0; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
 .ov2-bubbles { position: absolute; inset: 0; }
 .ov2-field-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 24px; }
-.ov2-field-caption {
-  position: absolute; left: 0; bottom: -4px; font-size: 11px; color: var(--c-text-4);
-  font-weight: 500; letter-spacing: 0.01em;
+/* ── Field legend ────────────────────────────────────────────
+   Swatches reuse the bubbles' own tone tokens and shade ramp, so the key is
+   drawn from the same scale it describes. */
+.ov2-legend {
+  flex: 0 0 auto; margin-top: 8px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px;
+  /* text-3, not text-4 — 11px type needs the contrast */
+  font-size: 11px; font-weight: 500; color: var(--c-text-3); line-height: 1.35;
 }
+.ov2-legend-count { font-weight: 600; color: var(--c-text-3); }
+.ov2-legend-item { display: inline-flex; align-items: center; gap: 8px; }
+.ov2-legend-range { font-style: normal; color: var(--c-text-3); }
+
+/* Three discs stepping up in area — the size channel, in miniature. */
+.ov2-legend-dots { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+.ov2-legend-dots i { display: block; border-radius: var(--r-full); background: var(--tone-base); opacity: 0.85; }
+.ov2-legend-dots i:nth-child(1) { width: 5px; height: 5px; }
+.ov2-legend-dots i:nth-child(2) { width: 9px; height: 9px; }
+.ov2-legend-dots i:nth-child(3) { width: 14px; height: 14px; }
+
+/* The shade ramp, base → deep, matching `--i` 0 → 1 on the bubbles. */
+.ov2-legend-ramp {
+  display: inline-block; width: 46px; height: 9px; flex-shrink: 0;
+  border-radius: var(--r-full); border: 1px solid var(--c-border-light);
+  background: linear-gradient(90deg, var(--tone-base), var(--tone-deep));
+}
+.ov2-legend-dots-below, .ov2-legend-ramp-below { --tone-base: var(--c-error);   --tone-deep: #8f2a23; }
+.ov2-legend-dots-at,    .ov2-legend-ramp-at    { --tone-base: var(--c-info);    --tone-deep: #24488a; }
+.ov2-legend-dots-above, .ov2-legend-ramp-above { --tone-base: var(--c-success); --tone-deep: #0f6344; }
+/* At Goal spans a ±2pt band, so its ramp is genuinely flat. */
+.ov2-legend-ramp-at { background: var(--c-info); }
 
 /* Bubbles */
 .ov2-bubble {
@@ -91,21 +135,54 @@
 .ov2-bubble:hover { transform: scale(1.06); box-shadow: var(--sh-md), inset 0 2px 6px rgba(255,255,255,0.2); z-index: 3; }
 .ov2-bubble.is-selected { box-shadow: 0 0 0 4px var(--c-surface), 0 0 0 7px currentColor, var(--sh-md); z-index: 4; }
 .ov2-bubble.is-dim { opacity: 0.32; }
+/* Providers/Equity bubbles are display-only (no detail panel to open). */
+.ov2-bubble.is-static { cursor: default; }
+.ov2-bubble.is-static:hover { transform: none; box-shadow: var(--sh-sm), inset 0 2px 6px rgba(255,255,255,0.18); }
 
 .ov2-bubble-id { font-weight: 700; font-size: 13px; letter-spacing: -0.01em; line-height: 1.05; }
 .ov2-bubble-rate { font-weight: 600; font-size: 12px; opacity: 0.92; }
+.ov2-bubble-goal { font-weight: 500; font-size: 10.5px; line-height: 1.2; opacity: 0.72; letter-spacing: 0.01em; }
+/* The gap the shade encodes, stated in the points clinicians actually use. */
+.ov2-bubble-gap { margin-top: 2px; font-weight: 600; font-size: 10.5px; line-height: 1.2; opacity: 0.9; letter-spacing: 0.01em; white-space: nowrap; }
+/* Type steps down before the labels reach the curve. `is-sm` keeps long ids
+   ("AMM Cont") inside a ~70px disc; `is-compact` drops to the id alone. */
+.ov2-bubble.is-sm { padding: 4px; }
+.ov2-bubble.is-sm .ov2-bubble-id { font-size: 11px; }
+.ov2-bubble.is-sm .ov2-bubble-rate { font-size: 11px; }
+.ov2-bubble.is-compact { padding: 3px; }
+.ov2-bubble.is-compact .ov2-bubble-id { font-size: 10.5px; }
 
-.ov2-bubble-below { background: radial-gradient(circle at 35% 28%, #ec8b84, var(--c-error)); color: var(--c-error); }
-.ov2-bubble-at    { background: radial-gradient(circle at 35% 28%, #6f97d9, var(--c-info));  color: var(--c-info); }
-.ov2-bubble-above { background: radial-gradient(circle at 35% 28%, #54c293, var(--c-success)); color: var(--c-success); }
-.ov2-bubble-below .ov2-bubble-id, .ov2-bubble-below .ov2-bubble-rate,
-.ov2-bubble-at .ov2-bubble-id, .ov2-bubble-at .ov2-bubble-rate,
-.ov2-bubble-above .ov2-bubble-id, .ov2-bubble-above .ov2-bubble-rate { color: #fff; }
+/* Baseline (also the fallback where color-mix is unsupported): a flat status
+   tone, i.e. the pre-shading behaviour. */
+.ov2-bubble-below { --tone-base: var(--c-error);   --tone-deep: #8f2a23; color: var(--c-error);
+  background: radial-gradient(circle at 35% 28%, #ec8b84, var(--c-error)); }
+.ov2-bubble-at    { --tone-base: var(--c-info);    --tone-deep: #24488a; color: var(--c-info);
+  background: radial-gradient(circle at 35% 28%, #6f97d9, var(--c-info)); }
+.ov2-bubble-above { --tone-base: var(--c-success); --tone-deep: #0f6344; color: var(--c-success);
+  background: radial-gradient(circle at 35% 28%, #54c293, var(--c-success)); }
 
-/* Detail panel — scrolls internally if its content exceeds the card height */
-.ov2-panel { padding: 22px 22px 26px; min-width: 0; overflow-y: auto; }
+/* Shade ramps from the status colour (at goal) toward a deeper one (far from
+   goal), driven by `--i` (0..1) set per bubble. The ramp only ever *darkens*, so
+   the white label keeps its contrast at every step. Must follow the tone rules:
+   equal specificity, so source order decides. */
+@supports (background: color-mix(in srgb, red 50%, blue)) {
+  .ov2-bubble {
+    --fill: color-mix(in srgb, var(--tone-deep) calc(var(--i, 0.5) * 100%), var(--tone-base));
+    background: radial-gradient(circle at 35% 28%, color-mix(in srgb, #fff 26%, var(--fill)), var(--fill));
+  }
+}
+/* Labels are always white on the fill. The bubble's own `color` stays the status
+   tone because `is-selected` draws its ring from currentColor. */
+.ov2-bubble > span { color: #fff; }
+
+/* Detail panel — scrolls internally if its content exceeds the card height.
+   The bottom inset lives on the inner column, not the panel, so the sticky CTA
+   can pin flush to the scrollport's bottom edge and own its own breathing room. */
+.ov2-panel { padding: 22px 22px 0; min-width: 0; min-height: 0; overflow-y: auto; border-left: 1px solid var(--c-border-light); }
 .ov2-panel-anim { animation: ov2-panel-in 0.32s cubic-bezier(.22,1,.36,1) both; }
-.ov2-panel-inner { display: flex; flex-direction: column; }
+.ov2-panel-inner { display: flex; flex-direction: column; padding-bottom: 24px; }
+/* The CTA variant ends in .ov2-panel-cta, which carries the bottom inset itself. */
+.ov2-panel-inner-cta { padding-bottom: 0; }
 .ov2-panel-sub { margin-top: 22px; margin-bottom: 10px; }
 
 /* Default panel */
@@ -131,6 +208,10 @@
 .ov2-list-row:not(.ov2-list-static):active { transform: scale(0.99); }
 .ov2-list-static { cursor: default; animation: none; }
 .ov2-list-label { font-size: 13px; font-weight: 500; color: var(--c-text-2); line-height: 1.35; }
+/* 600, not 700 — Spline Sans Mono ships up to 600; 700 faux-bolds */
+.ov2-list-meta { display: inline-block; margin-right: 7px; font-size: 11px; font-weight: 600; color: var(--c-text-3); letter-spacing: 0.02em; }
+.ov2-list-rates { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ov2-list-goal { font-size: 11px; font-weight: 500; color: var(--c-text-4); white-space: nowrap; }
 .ov2-list-rate {
   flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--c-error-text);
   background: var(--c-error-bg); padding: 3px 9px; border-radius: var(--r-xs);
@@ -140,9 +221,9 @@
 
 /* Selected panel — measure card */
 .ov2-chip { align-self: flex-start; padding: 4px 10px; border-radius: var(--r-xs); font-size: 12px; font-weight: 600; border: 1px solid; }
-.ov2-chip-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: #f0c4c0; }
-.ov2-chip-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: #c4d6f0; }
-.ov2-chip-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: #b7e0cd; }
+.ov2-chip-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }
+.ov2-chip-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info-border); }
+.ov2-chip-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success-border); }
 
 .ov2-measure-name { margin-top: 12px; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; color: var(--c-text); }
 .ov2-measure-def { margin-top: 8px; font-size: 13px; color: var(--c-text-3); line-height: 1.5; }
@@ -161,6 +242,15 @@
   height: 70px; margin-top: 14px; display: flex; align-items: center; justify-content: center;
   font-size: 12px; color: var(--c-text-4); border: 1px dashed var(--c-border); border-radius: var(--r-sm);
 }
+
+/* Detail-style mini trend (line + month ticks + endpoint rate) */
+.ov2-trend2 { width: 100%; height: 96px; margin-top: 14px; }
+.ov2-trend2-line { stroke: var(--c-primary); stroke-width: 2.5;
+  stroke-dasharray: 400; stroke-dashoffset: 400; animation: ov2-draw 0.9s ease forwards 0.1s; }
+.ov2-trend2-dot { fill: var(--c-border); }
+.ov2-trend2-dot-end { fill: var(--c-primary); }
+.ov2-trend2-val { fill: var(--c-primary); font-size: 14px; font-weight: 700; font-family: var(--font); }
+.ov2-trend2-month { fill: var(--c-text-4); font-size: 11px; font-weight: 500; font-family: var(--font); }
 
 /* Rate-vs-goal bar with goal marker */
 .ov2-goalbar {
@@ -184,8 +274,18 @@
 .ov2-stat-v.is-neg { color: var(--c-error-text); }
 .ov2-stat-v.is-pos { color: var(--c-success-text); }
 
-.ov2-investigate { width: 100%; margin-top: 20px; height: 42px; }
-.ov2-investigate:active { transform: scale(0.99); }
+/* Sticky footer: the action stays on screen however long the panel's content
+   runs. Content scrolls under it, so the band is opaque and fades at its top. */
+.ov2-panel-cta {
+  position: sticky; bottom: 0; z-index: 2;
+  margin-top: 20px; padding: 10px 0 22px; background: var(--c-surface);
+}
+.ov2-panel-cta::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 18px;
+  background: linear-gradient(to top, var(--c-surface), transparent);
+  pointer-events: none;
+}
+.ov2-investigate { width: 100%; }
 
 /* ── Motion keyframes ────────────────────────────────────────── */
 @keyframes ov2-pop { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
@@ -194,8 +294,60 @@
 @keyframes ov2-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes ov2-draw { to { stroke-dashoffset: 0; } }
 
-/* Responsive */
+/* ── Responsive ──────────────────────────────────────────────── */
+
+/* Below ~980px the two columns stop fitting side by side: the field stacks on
+   top of the panel. The card no longer bounds their heights, so the field takes
+   an explicit height and the panel grows with the page instead of scrolling. */
 @media (max-width: 980px) {
-  .ov2-body { grid-template-columns: 1fr; }
-  .ov2-field-wrap { border-right: none; border-bottom: 1px solid var(--c-border-light); min-height: 440px; }
+  .ov2-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+  .ov2-field-wrap {
+    border-bottom: 1px solid var(--c-border-light);
+    height: clamp(320px, 50vh, 460px);
+    min-height: 0;
+  }
+  .ov2-panel { border-left: none; overflow-y: visible; }
+  /* No internal scrollport to pin against — the CTA rides the page instead. */
+  .ov2-panel-inner-cta { padding-bottom: 24px; }
+  .ov2-panel-cta { position: static; padding-bottom: 0; }
+  .ov2-panel-cta::before { display: none; }
+}
+
+/* Tablet / large phone: the header and toolbar can't hold two rows side by
+   side. Let them stack, and keep the lens control swipeable rather than
+   letting it squeeze its labels. */
+@media (max-width: 720px) {
+  .ov2 { gap: 14px; }
+  .ov2-head { flex-direction: column; align-items: stretch; gap: 12px; }
+  .ov2-title { font-size: 22px; }
+
+  .ov2-toolbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 14px; }
+  .ov2-lenses { overflow-x: auto; scrollbar-width: none; }
+  .ov2-lenses::-webkit-scrollbar { display: none; }
+  .ov2-lens { flex: 1 0 auto; padding: 7px 14px; }
+  .ov2-pills { flex-wrap: wrap; gap: 6px; }
+  .ov2-pill { flex: 1 1 auto; padding: 7px 10px; font-size: 12px; }
+
+  .ov2-field-wrap { padding: 12px; height: clamp(300px, 44vh, 400px); }
+  .ov2-panel { padding: 18px 16px 0; }
+  .ov2-bench-num { font-size: 34px; }
+
+  .ov2-notice { flex-wrap: wrap; gap: 8px; font-size: 12px; }
+  .ov2-notice-retry { margin-left: 0; }
+}
+
+/* Phone: the three-up stat grids are the last thing to give. */
+@media (max-width: 480px) {
+  .ov2-stats, .ov2-stats-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ov2-measure-name { font-size: 17px; }
+  .ov2-list-label { font-size: 12.5px; }
+  .ov2-list-goal { display: none; } /* the rate pill + tooltip still carry it */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ov2-bubble, .ov2-card, .ov2-notice, .ov2-panel-anim, .ov2-list-row { animation: none; }
+  .ov2-trend-line, .ov2-trend2-line { animation: none; stroke-dashoffset: 0; }
 }

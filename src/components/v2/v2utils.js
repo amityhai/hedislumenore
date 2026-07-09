@@ -79,12 +79,42 @@ const CRSP_NAMES = [
   'Star Center', 'Arab Community Center for Economic Services', 'Riverside Behavioral Health',
   'Eastside Family Clinic', 'Northgate Wellness', 'Lakeshore Primary Care',
   'Unity Health Partners', 'Cedar Grove Medical', 'Hopewell Community Health',
+  'Maplewood Health Center', 'Summit Care Alliance', 'Bayview Medical Group',
+  'Greenfield Family Practice', 'Oakridge Community Clinic', 'Harborview Health',
+  'Pinecrest Wellness Center', 'Sunrise Primary Care', 'Ironwood Medical Associates',
+  'Fairmont Health Partners', 'Westgate Community Health', 'Silverlake Clinic',
+  'Brookside Behavioral Health', 'Cornerstone Family Medicine', 'Meridian Health Group',
+  'Lakeland Care Center', 'Cypress Community Wellness', 'Ridgeway Medical Clinic',
+  'Ashford Primary Care', 'Willowbrook Health Services', 'Trailhead Community Clinic',
 ];
 
 export const sampleCrsps = () =>
   SAMPLE_MEASURES.filter((m) => m.kpi_status === 'Below Goal')
     .slice(0, 6)
     .map((m, i) => ({ measure_id: m.measure_id, crsp_name: CRSP_NAMES[i % CRSP_NAMES.length], rate: Math.max(30, m.rate - 6) }));
+
+// Equity alerts: below-goal measures where a race stratum lags the overall rate.
+const RACE_STRATA = ['Black or African American', 'Arab American', 'Hispanic / Latino', 'Asian', 'Other'];
+export const sampleEquityAlerts = () =>
+  [...SAMPLE_MEASURES]
+    .filter((m) => m.kpi_status === 'Below Goal')
+    .sort((a, b) => a.rate - b.rate)
+    .slice(0, 4)
+    .map((m, i) => ({ measure_id: m.measure_id, race_strat: RACE_STRATA[i % RACE_STRATA.length], rate: Math.max(28, m.rate - (8 + i * 2)) }));
+
+// A short monthly trend ending at the measure's current rate — used as a
+// fallback so the detail panel always shows a trend line (mirrors the classic
+// Measure Detail header) when live mini-chart data isn't available.
+export const sampleTrend = (measureId, fallbackRate) => {
+  const m = SAMPLE_MEASURES.find((x) => x.measure_id === measureId);
+  const end = num(m ? m.rate : (fallbackRate != null ? fallbackRate : 55));
+  const months = ['Oct', 'Nov', 'Dec'];
+  const start = Math.max(5, end - 8);
+  return months.map((mo, i) => ({
+    month: `${mo}-2026`,
+    rate: Math.round(start + ((end - start) * i) / (months.length - 1)),
+  }));
+};
 
 // Providers (CRSP-level) for a measure.
 export const sampleProviders = (measureId) => {

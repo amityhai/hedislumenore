@@ -48,22 +48,26 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
     if (ctx.strat) crumbs.push({ label: ctx.strat.group });
   }
 
+  // Breadcrumb element — rendered standalone on the worklist, but handed to the
+  // Explorer so it can share a single row with the status pills.
+  const crumbNav = (
+    <nav className="sc2-crumbs" aria-label="Breadcrumb">
+      {crumbs.map((c, i) => (
+        <span key={i} className="sc2-crumb-wrap">
+          {i > 0 && <span className="sc2-crumb-sep" aria-hidden="true">/</span>}
+          {c.onClick ? (
+            <button type="button" className="sc2-crumb" onClick={c.onClick}>{c.label}</button>
+          ) : (
+            <span className="sc2-crumb is-current" aria-current="page">{c.label}</span>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+
   return (
     <div className="sc2">
-      {view !== 'overview' && (
-        <nav className="sc2-crumbs" aria-label="Breadcrumb">
-          {crumbs.map((c, i) => (
-            <span key={i} className="sc2-crumb-wrap">
-              {i > 0 && <span className="sc2-crumb-sep" aria-hidden="true">/</span>}
-              {c.onClick ? (
-                <button type="button" className="sc2-crumb" onClick={c.onClick}>{c.label}</button>
-              ) : (
-                <span className="sc2-crumb is-current" aria-current="page">{c.label}</span>
-              )}
-            </span>
-          ))}
-        </nav>
-      )}
+      {view === 'worklist' && crumbNav}
 
       {view === 'overview' && (
         <OverviewExplore
@@ -84,6 +88,7 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           statusFilter={statusFilter}
           onStatusFilter={setStatusFilter}
           onOpenWorklist={goWorklist}
+          breadcrumb={crumbNav}
         />
       )}
       {view === 'worklist' && (

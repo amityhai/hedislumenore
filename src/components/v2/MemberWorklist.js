@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import './MemberWorklist.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
+import { useToast } from '../ui/Toast';
 import useAsync from '../../hooks/useAsync';
 import {
   fetchMemberDetails,
@@ -33,11 +34,11 @@ const normalize = (m, fallbackCrsp) => ({
 });
 
 const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
+  const toast = useToast();
   const [page, setPage] = useState(1);
   const [ncOnly, setNcOnly] = useState(false);     // show only non-compliant
   const [assigned, setAssigned] = useState({});   // memberId -> staff name
   const [modalMember, setModalMember] = useState(null);
-  const [toast, setToast] = useState(null);
 
   const measureId = measure?.measure_id;
   const providerCrsp = provider && !provider.overall ? provider.crsp : undefined;
@@ -76,14 +77,13 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
   const saveAssignment = async ({ member, staff, intervention, notes }) => {
     setAssigned((a) => ({ ...a, [member.memberId]: staff }));
     setModalMember(null);
-    setToast({ kind: 'ok', msg: `${intervention} assigned to ${staff}` });
+    toast({ type: 'success', message: `${intervention} assigned to ${staff}` });
     try {
       await saveCareAction({ memberId: member.memberId, measureId, crsp: member.crsp, assignedTo: staff, actionType: intervention, notes }, token);
     } catch (e) {
       setAssigned((a) => { const n = { ...a }; delete n[member.memberId]; return n; });
-      setToast({ kind: 'err', msg: `Couldn't assign for ${member.memberName}` });
+      toast({ type: 'error', message: `Couldn't assign for ${member.memberName} — please retry.` });
     }
-    setTimeout(() => setToast(null), 2800);
   };
 
   return (
@@ -100,7 +100,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
         <div className="mwl-head-metrics">
           <div><span className="mwl-mk">Rate</span><span className="mwl-mv num">{rate}%</span></div>
           <div><span className="mwl-mk">Goal</span><span className="mwl-mv num">{goal}%</span></div>
-          <div><span className="mwl-mk">Delta</span><span className={`mwl-mv num ${delta < 0 ? 'is-neg' : 'is-pos'}`}>{delta >= 0 ? '+' : ''}{delta}%</span></div>
+          <div><span className="mwl-mk">Delta</span><span className={`mwl-mv num ${delta < 0 ? 'is-neg' : 'is-pos'}`}>{delta >= 0 ? '+' : ''}{delta} pts</span></div>
           <div className="mwl-msep" />
           <div><span className="mwl-mk">Members</span><span className="mwl-mv num">{loading ? '—' : members.length}</span></div>
           <div><span className="mwl-mk">Non-compliant</span><span className="mwl-mv num is-neg">{loading ? '—' : nonCompliant}</span></div>
@@ -125,7 +125,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
                 <span className="mwl-filter-count num">{nonCompliant}</span>
               </button>
               {ncOnly && (
-                <button type="button" className="mwl-clear" onClick={() => setFilter(false)}>Clear ✕</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFilter(false)}>Clear ✕</button>
               )}
               <span className="mwl-toolbar-count num">{shown.length} of {members.length} shown</span>
             </div>
@@ -153,7 +153,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
                       {who ? <span className="mwl-assigned">{who}</span> : <span className="mwl-unassigned">Unassigned</span>}
                     </span>
                     <span className="ta-r">
-                      <button type="button" className={`mwl-assign ${who ? 'is-secondary' : ''}`} onClick={() => setModalMember(m)}>
+                      <button type="button" className={`btn ${who ? 'btn-secondary' : 'btn-primary'} btn-sm`} onClick={() => setModalMember(m)}>
                         {who ? 'Reassign' : 'Assign'}
                       </button>
                     </span>
@@ -164,9 +164,11 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
 
             {totalPages > 1 && (
               <div className="mwl-pager">
-                <button className="mwl-pg-nav" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
+                <button type="button" className="btn btn-secondary btn-icon btn-sm" aria-label="Previous page"
+                  disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
                 <span className="mwl-pg-info num">{page} / {totalPages}</span>
-                <button className="mwl-pg-nav" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
+                <button type="button" className="btn btn-secondary btn-icon btn-sm" aria-label="Next page"
+                  disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
               </div>
             )}
             </>
@@ -182,13 +184,6 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
       {modalMember && createPortal(
         <AssignModal member={modalMember} providerName={providerName} current={assigned[modalMember.memberId]}
           onClose={() => setModalMember(null)} onSave={saveAssignment} />,
-        document.body
-      )}
-
-      {toast && createPortal(
-        <div className={`mwl-toast mwl-toast-${toast.kind}`} role="status">
-          {toast.kind === 'ok' ? '✓' : '⚠'} {toast.msg}
-        </div>,
         document.body
       )}
     </div>

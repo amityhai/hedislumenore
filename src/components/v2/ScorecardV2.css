@@ -1,6 +1,11 @@
 /* ── v2 flow shell ───────────────────────────────────────────── */
 .sc2 { padding: 28px 32px 44px; min-height: 100vh; display: flex; flex-direction: column; gap: 18px; }
 
+/* Phone: trim the gutters, and clear the fixed drawer button (App.css). */
+@media (max-width: 768px) {
+  .sc2 { padding: 64px 16px 32px; gap: 14px; }
+}
+
 /* Breadcrumb */
 .sc2-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; animation: ov2-fade 0.3s ease both; }
 .sc2-crumb-wrap { display: inline-flex; align-items: center; }

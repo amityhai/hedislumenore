@@ -72,28 +72,35 @@
   box-shadow: var(--sh-lg);
 }
 
+/* Options are <button>s (keyboard + screen-reader reachable) styled as rows. */
 .custom-select-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
   padding: 11px 16px;
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--c-text-2);
   cursor: pointer;
   transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
   border-bottom: 1px solid var(--c-border-light);
 }
 
 .custom-select-option:last-child { border-bottom: none; }
 
-.custom-select-option:hover {
-  background: #F8FAFC;
+.custom-select-option:hover,
+.custom-select-option:focus-visible {
+  background: var(--c-bg-subtle);
   color: var(--c-text);
 }
 
 .custom-select-option.selected {
   background: var(--c-primary-light);
   color: var(--c-primary-dark);
-  font-weight: 300;
+  font-weight: 600;
 }
 
 /* Scrollbar */

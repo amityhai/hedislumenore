@@ -16,24 +16,28 @@
   --c-success:        #1f9d6b;
   --c-success-bg:     #e3f4ec;
   --c-success-text:   #0a8a5f;
+  --c-success-border: #b7e0cd;
 
   /* Status — At goal (blue) */
   --c-info:           #3f74c9;
   --c-info-bg:        #e8f0fb;
   --c-info-text:      #2f63b8;
+  --c-info-border:    #c4d6f0;
 
   /* Status — Below goal (red) */
   --c-error:          #d9544d;
   --c-error-bg:       #fbeae8;
   --c-error-text:     #c4453d;
+  --c-error-border:   #f0c4c0;
 
   /* Caution / attention (amber) */
   --c-warn:           #c98a1a;
   --c-warn-bg:        #f7efdf;
   --c-warn-text:      #9a6a16;
+  --c-warn-border:    #f1dcae;
 
-  /* Neutrals — slate */
-  --c-bg:             #e9edee;
+  /* Neutrals — slate (page canvas is cool slate-teal so white cards separate) */
+  --c-bg:             #eef2f4;
   --c-bg-subtle:      #f6f8f9;
   --c-surface:        #ffffff;
   --c-border:         #e2e8ea;
@@ -106,7 +110,7 @@ body {
   border-radius: var(--r-full);
   background: var(--c-warn-bg);
   color: var(--c-warn-text);
-  border: 1px solid #FDE68A;
+  border: 1px solid var(--c-warn-border);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0;
@@ -119,7 +123,15 @@ body {
 ::-webkit-scrollbar-thumb  { background: var(--c-border); border-radius: var(--r-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-text-4); }
 
-/* ── Buttons ────────────────────────────────────────────────── */
+/* ── Buttons ──────────────────────────────────────────────────
+   Shape carries meaning: buttons *do* something and are always rounded
+   rectangles. The full-radius pill is reserved for controls that *filter or
+   describe* — status chips, filter pills, segmented tabs. Never round a .btn.
+
+   Compose one variant + (optionally) one size + (optionally) .btn-icon:
+     .btn .btn-primary .btn-lg      → the single next action in a view
+     .btn .btn-tonal .btn-sm        → a repeated action inside rows/columns
+     .btn .btn-secondary .btn-icon .btn-sm  → a 30px square icon action */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -139,9 +151,17 @@ body {
   letter-spacing: -0.01em;
 }
 .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+/* ── Variants — teal only; status colors never fill an action ── */
 .btn-primary { background: var(--c-primary); color: #fff; }
 .btn-primary:hover { background: var(--c-primary-dark); }
+
+/* Tonal: an action in the brand family that isn't *the* action. Use where the
+   same button repeats down a list and a wall of solid teal would shout. */
+.btn-tonal { background: var(--c-primary-light); color: var(--c-primary-dark); border-color: var(--c-primary-subtle); }
+.btn-tonal:hover { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
 
 .btn-secondary { background: var(--c-surface); color: var(--c-text-2); border-color: var(--c-border); }
 .btn-secondary:hover { background: var(--c-bg-subtle); border-color: var(--c-text-4); }
@@ -149,14 +169,25 @@ body {
 .btn-ghost { background: transparent; color: var(--c-text-3); }
 .btn-ghost:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
 
-/* ── Global focus ring for interactive elements ─────────────── */
+/* ── Sizes — radius steps with the box so corners stay optically equal ── */
+.btn-sm { height: 30px; padding: 0 12px; gap: 6px; font-size: 12px; border-radius: var(--r-sm); }
+.btn-lg { height: 42px; padding: 0 20px; font-size: 13.5px; }
+
+/* ── Icon-only — square, label lives in aria-label/title ── */
+.btn-icon { width: 38px; padding: 0; }
+.btn-icon.btn-sm { width: 30px; }
+.btn-icon.btn-lg { width: 42px; }
+
+/* ── Global focus ring for interactive elements ──────────────
+   The ring follows each element's own border-radius (box-shadow does this for
+   free) — forcing a radius here squared off round pills and bubbles on
+   keyboard focus. */
 a:focus-visible,
 button:focus-visible,
 [role="tab"]:focus-visible,
 [role="button"]:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--c-primary-ring);
-  border-radius: var(--r-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

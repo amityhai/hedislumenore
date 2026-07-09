@@ -1,6 +1,9 @@
 import { useState, useRef, useMemo, useEffect, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import './MeasureExplorer.css';
+import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import { Skeleton, ErrorState, EmptyState } from '../ui/Feedback';
+import { useToast } from '../ui/Toast';
 import useAsync from '../../hooks/useAsync';
 import {
   fetchAllMeasuresGrid,
@@ -8,11 +11,13 @@ import {
   fetchMeasureStratification,
   fetchMeasureStratificationRace,
   fetchMeasureStratificationEthnicity,
+  fetchMiniChartData,
 } from '../../services/workflowService';
 import {
   num, shortId, statusFor, STATUS_TONE,
-  SAMPLE_MEASURES, sampleProviders, sampleEquity,
+  SAMPLE_MEASURES, sampleProviders, sampleEquity, sampleTrend,
 } from './v2utils';
+import { MiniTrend } from './OverviewExplore';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
 
@@ -41,11 +46,71 @@ const countByStatus = (rows, fallbackGoal) =>
   rows.reduce((acc, r) => { acc[statusFor(r.rate, r.goal ?? fallbackGoal)] += 1; return acc; },
     { 'Above Goal': 0, 'At Goal': 0, 'Below Goal': 0 });
 
-const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below Goal', onStatusFilter, onOpenWorklist }) => {
+// The active measure's card carries the full detail (rate, gap, trend,
+// numerator/denominator) — the same numbers as the Overview's selected panel,
+// living right where the drill starts instead of a separate summary bar.
+const ActiveMeasureCard = ({ measure, token, selectedMonth, nodeRef, onAssign }) => {
+  const rate = num(measure?.rate), goal = num(measure?.goal_50th);
+  const gap = Math.round((rate - goal) * 10) / 10;
+  const tone = toneFor(rate, goal);
+  const numerator = num(measure?.numerator);
+  const denominator = num(measure?.denominator);
+  const nonCompliant = Math.max(0, denominator - numerator);
+
+  const { data: trend, loading: trendLoading } = useAsync(
+    () => fetchMiniChartData(measure.measure_id, token).catch(() => []),
+    [measure?.measure_id, selectedMonth], { enabled: !!token && !!measure?.measure_id }
+  );
+  const trendData = trend && trend.length >= 2 ? trend : sampleTrend(measure?.measure_id, rate);
+
+  if (!measure) return null;
+  return (
+    <div ref={nodeRef} className="mex-card mex-card-detail is-active">
+      <div className="mex-detail-head">
+        <span className="mex-card-id mono">{shortId(measure.measure_id)}</span>
+        <RateBadge rate={measure.rate} goal={measure.goal_50th} />
+      </div>
+      <h3 className="mex-detail-name">{measure.display_name}</h3>
+      {measure.measure_definition && <p className="mex-detail-def">{measure.measure_definition}</p>}
+
+      <div className="mex-detail-rate">
+        <span className="num">{rate}%</span>
+        <span className={`mex-detail-gap mex-detail-gap-${gap >= 0 ? 'pos' : 'neg'} num`}>
+          {gap === 0 ? 'at goal' : `${gap > 0 ? '↗' : '↘'} ${Math.abs(gap)} pts ${gap > 0 ? 'above' : 'below'} goal`}
+        </span>
+      </div>
+      <div className="mex-goalbar" title={`Goal ${goal}%`}>
+        <span className={`mex-goalbar-fill mex-bar-${tone}`} style={{ width: `${Math.min(100, Math.max(0, rate))}%` }} />
+        {goal > 0 && <span className="mex-goalbar-marker" style={{ left: `${Math.min(100, goal)}%` }} />}
+      </div>
+
+      {trendLoading ? <Skeleton height={70} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
+
+      {denominator > 0 && (
+        <div className="mex-detail-stats">
+          <div><span className="mex-detail-k">Numerator</span><span className="mex-detail-v num">{numerator.toLocaleString()}</span></div>
+          <div><span className="mex-detail-k">Denominator</span><span className="mex-detail-v num">{denominator.toLocaleString()}</span></div>
+          <div><span className="mex-detail-k">Non-compliant</span><span className="mex-detail-v num is-neg">{nonCompliant.toLocaleString()}</span></div>
+          <div><span className="mex-detail-k">Goal</span><span className="mex-detail-v num">{goal}%</span></div>
+        </div>
+      )}
+
+      <div className="mex-detail-assign">
+        <button type="button" className="btn btn-tonal" onClick={onAssign}>
+          Assign intervention · all providers
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below Goal', onStatusFilter, onOpenWorklist, breadcrumb }) => {
   const [measureId, setMeasureId] = useState(measure?.measure_id || null);
   const [providerIdx, setProviderIdx] = useState(0); // 0 = Overall
   const [expandedEq, setExpandedEq] = useState(null); // `${key}:${i}` of expanded stratum
   const [showMeasures, setShowMeasures] = useState(false); // Measures column expanded?
+  const [assignScope, setAssignScope] = useState(null); // {level, provider?} — drives AssignPanel
+  const toast = useToast();
 
   // ── Column data ────────────────────────────────────────────
   const measuresAsync = useAsync(async () => {
@@ -122,6 +187,19 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
 
   const pickMeasure = useCallback((id) => { setMeasureId(id); setProviderIdx(0); setShowMeasures(false); }, []);
 
+  // The Overall row isn't a provider — assigning against it is a measure-wide fan-out.
+  const openAssign = useCallback((p) => setAssignScope(p && !p.overall ? { level: 'provider', provider: p } : { level: 'measure' }), []);
+
+  // No assignments API yet, so this confirms the scope rather than persisting it.
+  const runAssign = useCallback((payload) => {
+    setAssignScope(null);
+    const { preview, scope, assignedTo } = payload;
+    const where = scope.stratum ? scope.stratum.group
+      : scope.providers ? `${scope.providers.length} providers`
+      : scope.crsp || 'all providers';
+    toast({ type: 'success', message: `${preview.created.toLocaleString()} tasks queued for ${where} · ${assignedTo === UNASSIGNED ? 'unassigned pool' : assignedTo}` });
+  }, [toast]);
+
   // Reset selected provider, expanded stratum, and the measures list when the
   // measure or filter changes (Overall = 0).
   useEffect(() => { setProviderIdx(0); setExpandedEq(null); setShowMeasures(false); }, [activeId, statusFilter]);
@@ -188,7 +266,19 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
     if (!board) return undefined;
     const ro = new ResizeObserver(() => recompute());
     ro.observe(board);
-    return () => ro.disconnect();
+    // Columns 1 & 2 are sticky, so their board-relative position shifts as the
+    // page scrolls — recompute (rAF-throttled) so the connectors stay attached.
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; recompute(); });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [recompute]);
 
   const loading = measuresAsync.loading || providersAsync.loading || equityAsync.loading;
@@ -220,6 +310,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
   return (
     <div className="mex">
       <div className="mex-toolbar">
+        <div className="mex-toolbar-left">{breadcrumb}</div>
         <div className="mex-pills" role="group" aria-label="Filter by goal status">
           {STATUS_FILTERS.map((f) => (
             <button key={f.status} type="button"
@@ -230,6 +321,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
           ))}
         </div>
       </div>
+
       <div className="mex-board" ref={boardRef}>
         {/* Connector overlay */}
         <svg className="mex-links" width={conn.w} height={conn.h} aria-hidden="true">
@@ -238,7 +330,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
         </svg>
 
         {/* Column 1 — Measures */}
-        <section className="mex-col">
+        <section className="mex-col mex-col-sticky">
           <div className="mex-col-head">
             <div>
               <h2 className="mex-col-title">Measures</h2>
@@ -255,7 +347,8 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
               const rest = measuresFiltered.filter((m) => m.measure_id !== active.measure_id);
               return (
                 <>
-                  {renderMeasureCard(active)}
+                  <ActiveMeasureCard measure={active} token={token} selectedMonth={selectedMonth}
+                    nodeRef={setNode(`m:${active.measure_id}`)} onAssign={() => openAssign(null)} />
                   {rest.length > 0 && (
                     <button type="button" className="mex-showall" aria-expanded={showMeasures} onClick={() => setShowMeasures((s) => !s)}>
                       <span>{showMeasures ? 'HIDE MEASURES' : `SHOW REMAINING ${rest.length} MEASURES`}</span>
@@ -270,7 +363,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
         </section>
 
         {/* Column 2 — Providers */}
-        <section className="mex-col">
+        <section className="mex-col mex-col-providers">
           <div className="mex-col-head">
             <div>
               <h2 className="mex-col-title">Providers</h2>
@@ -288,11 +381,21 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
                 return (
                   <div key={`${p.crsp}-${i}`} ref={setNode(`p:${i}`)}
                     className={`mex-prow ${active ? 'is-active' : ''} ${p.overall ? 'is-overall' : ''}`}
-                    onClick={() => setProviderIdx(i)}>
+                    role="button" tabIndex={0} aria-pressed={active}
+                    onClick={() => setProviderIdx(i)}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setProviderIdx(i); }
+                    }}>
                     <span className="mex-prow-name">{p.crsp}</span>
                     <span className="mex-prow-right">
                       <RateBadge rate={p.rate} goal={p.goal} />
-                      <button type="button" className="mex-inspect" title="Open member worklist"
+                      <button type="button" className="btn btn-tonal btn-sm"
+                        title={p.overall ? 'Assign across all providers' : `Assign intervention · ${p.crsp}`}
+                        onClick={(ev) => { ev.stopPropagation(); openAssign(p); }}>
+                        Assign
+                      </button>
+                      <button type="button" className="btn btn-secondary btn-icon btn-sm"
+                        title="Open member worklist" aria-label="Open member worklist"
                         onClick={(ev) => { ev.stopPropagation(); onOpenWorklist(activeMeasure, p, null); }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -345,18 +448,14 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
                               <div className="mex-eq-metrics">
                                 <span>Rate: <b className="num">{num(g.rate)}%</b></span>
                                 <span>Goal: <b className="num">{gGoal}%</b></span>
-                                <span>Delta: <b className={`num ${d < 0 ? 'is-neg' : 'is-pos'}`}>{d >= 0 ? '+' : ''}{d}%</b></span>
+                                <span>Delta: <b className={`num ${d < 0 ? 'is-neg' : 'is-pos'}`}>{d >= 0 ? '+' : ''}{d} pts</b></span>
                               </div>
                               <div className="mex-eq-actions">
-                                <button type="button" className="mex-eq-eye" title="Preview (coming soon)" aria-label="Preview">
-                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" />
-                                  </svg>
-                                </button>
-                                <button type="button" className="mex-eq-go" title="Open member worklist" aria-label="Open member worklist"
+                                <button type="button" className="btn btn-primary btn-sm"
                                   onClick={() => onOpenWorklist(activeMeasure, activeProvider, { type: key, ...g, goal: gGoal })}>
-                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
+                                  Open worklist
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                                   </svg>
                                 </button>
                               </div>
@@ -385,6 +484,15 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
 
       {(measuresAsync.data?.sample || providersAsync.data?.sample || equityAsync.data?.sample) && !loading && (
         <div className="mex-sample">Showing sample data — live workflow unavailable.</div>
+      )}
+
+      {/* Portaled so the fixed scrim escapes the board's stacking context. The
+          panel gets the unfiltered providers/equity — its own counts describe the
+          whole population, not whatever the status pills are showing. */}
+      {assignScope && createPortal(
+        <AssignPanel measure={activeMeasure} providers={providers} equity={equity} scope={assignScope}
+          onClose={() => setAssignScope(null)} onAssign={runAssign} />,
+        document.body
       )}
     </div>
   );

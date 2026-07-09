@@ -19,23 +19,34 @@ const CustomSelect = ({ value, onChange, options, placeholder = 'Select...', dis
   const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder;
 
   return (
-    <div className="custom-select" ref={containerRef} title={title}>
+    <div
+      className="custom-select"
+      ref={containerRef}
+      title={title}
+      onKeyDown={(e) => { if (e.key === 'Escape') setIsOpen(false); }}
+    >
       <button
         className="custom-select-trigger"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         <span>{selectedLabel}</span>
-        <svg width="12" height="8" viewBox="0 0 12 8" className={isOpen ? 'open' : ''}>
+        <svg width="12" height="8" viewBox="0 0 12 8" className={isOpen ? 'open' : ''} aria-hidden="true">
           <path fill="var(--c-primary)" d="M1 1l5 5 5-5" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="custom-select-dropdown">
+        <div className="custom-select-dropdown" role="listbox">
           {options.map(opt => (
-            <div
+            // Buttons, not divs — so the options are tabbable and screen-readable.
+            <button
+              type="button"
               key={opt.value}
+              role="option"
+              aria-selected={value === opt.value}
               className={`custom-select-option ${value === opt.value ? 'selected' : ''}`}
               onClick={() => {
                 onChange(opt.value);
@@ -43,7 +54,7 @@ const CustomSelect = ({ value, onChange, options, placeholder = 'Select...', dis
               }}
             >
               {opt.label}
-            </div>
+            </button>
           ))}
         </div>
       )}

@@ -1472,14 +1472,14 @@ export const fetchCACNonCompliantCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      return 21292; // Default value
+      throw new Error('Empty CAC non-compliant count');
     }
 
-    const count = result.data.data.resultSet[0][0];
-    return count || 21292;
+    return result.data.data.resultSet[0][0];
   } catch (error) {
-    // Return default value on error
-    return 21292;
+    // Let the caller decide on a fallback — silently returning a made-up
+    // number here made demo data indistinguishable from live data.
+    throw error;
   }
 };
 
@@ -1499,13 +1499,13 @@ export const fetchCACUnassignedCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      return 2392; // Default value
+      throw new Error('Empty CAC unassigned count');
     }
 
-    return result.data.data.resultSet[0][0] || 2392;
+    return result.data.data.resultSet[0][0];
   } catch (error) {
-    // Return default value on error
-    return 2392;
+    // Let the caller decide on a fallback (see fetchCACNonCompliantCount).
+    throw error;
   }
 };
 
@@ -1525,13 +1525,13 @@ export const fetchCACActionableCount = async (token) => {
     );
 
     if (!result.data?.data?.resultSet || result.data.data.resultSet.length === 0) {
-      return 5842; // Default value
+      throw new Error('Empty CAC actionable count');
     }
 
-    return result.data.data.resultSet[0][0] || 5842;
+    return result.data.data.resultSet[0][0];
   } catch (error) {
-    // Return default value on error
-    return 5842;
+    // Let the caller decide on a fallback (see fetchCACNonCompliantCount).
+    throw error;
   }
 };
 

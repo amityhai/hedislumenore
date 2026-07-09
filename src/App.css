@@ -242,7 +242,9 @@
   flex: 1;
   min-height: 100vh;
   width: calc(100% - var(--sidebar-w));
-  overflow-x: hidden;
+  /* clip (not hidden) keeps horizontal overflow contained WITHOUT turning this
+     into a scroll container — otherwise page-level `position: sticky` breaks. */
+  overflow-x: clip;
   transition: all 0.3s ease;
 }
 
@@ -255,8 +257,8 @@
   min-height: 100vh;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
-  background: #f5f8fd; /* very light blue page tint; white cards sit on top */
+  overflow-x: clip; /* clip, not hidden — preserves sticky (see .main-content) */
+  background: var(--c-bg); /* one page canvas everywhere; white cards sit on top */
 }
 
 /* ── Top header ─────────────────────────────────────────────── */
@@ -289,13 +291,72 @@
   gap: 10px;
 }
 
+/* ── Mobile drawer affordances ──────────────────────────────── */
+/* Both are rendered only on the mobile breakpoint (App.js gates on a media
+   query), so they need no desktop `display: none`. */
+.mobile-menu-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 110; /* above .header (100) */
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  box-shadow: var(--sh-sm);
+  cursor: pointer;
+}
+.mobile-menu-btn:active { transform: scale(0.96); }
+
+.sidebar-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 49; /* directly under .sidebar (50) */
+  background: rgba(15, 23, 32, 0.45);
+  animation: scrim-in 0.2s ease both;
+}
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
 /* ── Responsive ─────────────────────────────────────────────── */
+/* Tablet: the rail. App.js collapses the sidebar here, so `.sidebar-closed`
+   (80px) already applies — nothing extra to do but keep the content fluid. */
+
+/* Phone: the sidebar leaves the flow entirely and slides over the content.
+   Docking even an 80px rail here left the v2 card ~126px wide. */
 @media (max-width: 768px) {
-  .sidebar {
-    width: 200px;
+  .sidebar,
+  .sidebar-open,
+  .sidebar-closed {
+    width: min(280px, 82vw);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .main-content {
-    margin-left: 200px;
-    width: calc(100% - 200px);
+  .sidebar-closed { transform: translateX(-100%); }
+  .sidebar-open { transform: translateX(0); box-shadow: var(--sh-lg); }
+
+  /* The drawer is always full-width when visible, so undo the collapsed-rail
+     styling that `.sidebar-closed` otherwise carries. */
+  .sidebar-closed .logo-text,
+  .sidebar-closed .nav-item-text { display: inline; }
+  .sidebar-closed .sidebar-header { flex-direction: row; justify-content: space-between; gap: 8px; }
+  .sidebar-closed .nav-item { justify-content: flex-start; padding: 10px 14px; gap: 10px; }
+  .sidebar-closed .nav-item.active::before { display: block; }
+
+  .main-content,
+  .main-content-expanded {
+    margin-left: 0;
+    width: 100%;
   }
+
+  /* Clear the floating menu button. */
+  .header { padding: 0 16px 0 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
+  .sidebar-scrim { animation: none; }
 }

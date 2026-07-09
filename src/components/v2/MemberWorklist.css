@@ -16,9 +16,9 @@
 .mwl-head-titlerow { display: flex; align-items: center; gap: 14px; }
 .mwl-head-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); }
 .mwl-head-rate { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: var(--r-xs); border: 1px solid; }
-.mwl-rate-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: #f0c4c0; }
-.mwl-rate-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: #c4d6f0; }
-.mwl-rate-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: #b7e0cd; }
+.mwl-rate-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }
+.mwl-rate-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info-border); }
+.mwl-rate-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success-border); }
 .mwl-head-provider { margin-top: 6px; font-size: 12.5px; color: var(--c-text-3); }
 .mwl-head-provider strong { color: var(--c-text-2); font-weight: 600; }
 
@@ -46,11 +46,6 @@
 .mwl-filter-count { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: var(--r-full); background: var(--c-bg-subtle); color: var(--c-text-3); }
 .mwl-filter.is-active { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error); }
 .mwl-filter.is-active .mwl-filter-count { background: var(--c-error); color: #fff; }
-.mwl-clear {
-  font-family: var(--font); font-size: 12.5px; font-weight: 600; color: var(--c-text-3);
-  background: transparent; border: none; cursor: pointer; padding: 6px 8px; border-radius: var(--r-sm);
-}
-.mwl-clear:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
 .mwl-toolbar-count { margin-left: auto; font-size: 12px; color: var(--c-text-4); font-weight: 500; }
 
 .mwl-table { display: flex; flex-direction: column; }
@@ -80,32 +75,15 @@
 .mwl-assigned { font-size: 12px; font-weight: 600; color: var(--c-text-2); background: var(--c-primary-light); border: 1px solid var(--c-primary-subtle); padding: 3px 9px; border-radius: var(--r-full); }
 .mwl-unassigned { font-size: 12px; font-weight: 600; color: var(--c-warn-text); background: var(--c-warn-bg); padding: 3px 9px; border-radius: var(--r-full); }
 
-.mwl-assign {
-  background: var(--c-primary); color: #fff; border: 1px solid var(--c-primary);
-  font-family: var(--font); font-size: 12.5px; font-weight: 600; cursor: pointer;
-  padding: 6px 14px; border-radius: var(--r-sm); transition: background 0.14s ease, transform 0.1s ease;
-}
-.mwl-assign:hover { background: var(--c-primary-dark); }
-.mwl-assign:active { transform: scale(0.97); }
-.mwl-assign.is-secondary { background: var(--c-surface); color: var(--c-text-2); border-color: var(--c-border); }
-.mwl-assign.is-secondary:hover { background: var(--c-bg-subtle); border-color: var(--c-text-4); }
-
-/* Pager */
+/* Pager — nav arrows are `.btn .btn-secondary .btn-icon .btn-sm`; the chevron
+   glyph needs more size than the 12px small-button type gives it. */
 .mwl-pager { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 14px; }
-.mwl-pg-nav { width: 32px; height: 32px; border: 1px solid var(--c-border); background: var(--c-surface); border-radius: var(--r-sm); cursor: pointer; color: var(--c-text-2); font-size: 16px; }
-.mwl-pg-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+.mwl-pager .btn-icon { font-size: 16px; line-height: 1; }
 .mwl-pg-info { font-size: 13px; color: var(--c-text-3); font-weight: 600; }
 
-.mwl-sample { font-size: 12px; color: var(--c-text-4); text-align: center; }
+.mwl-sample { font-size: 12px; color: var(--c-text-3); text-align: center; }
 
-/* Toast */
-.mwl-toast {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-  padding: 12px 20px; border-radius: var(--r-md); font-size: 13px; font-weight: 600;
-  box-shadow: var(--sh-lg); z-index: 210; color: #fff; animation: ov2-fade 0.25s ease both;
-}
-.mwl-toast-ok { background: var(--c-success-text); }
-.mwl-toast-err { background: var(--c-error-text); }
+/* Toasts come from the app-wide ToastProvider (ui/Toast). */
 
 /* Assign modal */
 .mwl-modal-scrim {
@@ -141,4 +119,12 @@
 @media (max-width: 1080px) {
   .mwl-row { grid-template-columns: 1fr 1.3fr 1.4fr 1fr 0.9fr; }
   .mwl-row > :nth-child(3), .mwl-row > :nth-child(6) { display: none; }
+}
+
+/* Below ~720px five fr-columns crush member names to a few characters. Scroll
+   the table sideways instead of dropping more columns — this is a worklist, so
+   every column is something the user came here to read. */
+@media (max-width: 720px) {
+  .mwl-table { overflow-x: auto; }
+  .mwl-row { min-width: 560px; }
 }

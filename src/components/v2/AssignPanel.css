@@ -1,0 +1,149 @@
+/* Assign panel — the targeting screen shown before an intervention fans out.
+   Every number that can narrow the scope is a button, not a label. */
+
+.apx-scrim {
+  position: fixed; inset: 0; background: rgba(20, 33, 43, 0.45); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px;
+  animation: apx-fade 0.18s ease both;
+}
+@keyframes apx-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Confirmation toasts come from the app-wide ToastProvider (ui/Toast). */
+
+.apx {
+  width: 100%; max-width: 620px; max-height: calc(100vh - 40px);
+  display: flex; flex-direction: column;
+  background: var(--c-surface); border-radius: var(--r-xl); box-shadow: var(--sh-xl);
+  animation: apx-pop 0.22s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes apx-pop { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.apx-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 20px 22px 14px; border-bottom: 1px solid var(--c-border-light);
+}
+.apx-head h3 { font-size: 17px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
+.apx-sub { margin-top: 3px; font-size: 12.5px; color: var(--c-text-3); }
+.apx-sub strong { color: var(--c-text-2); font-weight: 600; }
+.apx-x {
+  background: transparent; border: none; color: var(--c-text-3); font-size: 15px;
+  cursor: pointer; padding: 4px; border-radius: var(--r-sm); line-height: 1;
+}
+.apx-x:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+
+.apx-body { overflow-y: auto; padding: 18px 22px 4px; }
+
+/* Hero — rate, goal, and the members-to-goal number that gives scale meaning */
+.apx-hero {
+  background: var(--c-bg-subtle); border-radius: var(--r-md);
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.apx-hero-rates { display: flex; align-items: baseline; gap: 10px; }
+.apx-hero-rate { font-size: 26px; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; }
+.apx-hero-arrow { color: var(--c-text-4); font-size: 14px; }
+.apx-hero-goal { font-size: 14px; font-weight: 600; color: var(--c-text-3); }
+.apx-hero-need { margin-top: 6px; font-size: 13px; color: var(--c-text-2); }
+.apx-hero-need strong { color: var(--c-primary-dark); font-weight: 700; }
+
+.apx-target {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 12px; margin-bottom: 16px; font-size: 12.5px;
+  background: var(--c-primary-light); border: 1px solid var(--c-primary-subtle);
+  border-radius: var(--r-sm); color: var(--c-primary-dark);
+}
+.apx-target strong { font-weight: 700; }
+.apx-target button {
+  background: transparent; border: none; cursor: pointer; font: inherit;
+  font-weight: 600; color: var(--c-primary-dark); padding: 2px 4px; border-radius: var(--r-xs);
+}
+.apx-target button:hover { background: var(--c-primary-subtle); }
+
+.apx-block { margin-bottom: 16px; }
+.apx-block-title {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-4); margin-bottom: 8px;
+}
+.apx-block-note { text-transform: none; letter-spacing: 0; font-family: var(--font); font-size: 11px; color: var(--c-text-4); }
+
+.apx-line { font-size: 13px; color: var(--c-text-2); }
+.apx-line strong { color: var(--c-text); font-weight: 700; }
+.apx-line.is-muted, .apx-block .is-muted { color: var(--c-text-3); }
+
+.apx-stack { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--c-text-2); }
+.apx-stack span { font-weight: 700; color: var(--c-text); }
+.apx-stack em { font-style: normal; color: var(--c-text-4); font-size: 12px; }
+.apx-stack .is-muted span { color: var(--c-text-3); }
+.apx-stack .is-strong { color: var(--c-primary-dark); font-weight: 600; }
+.apx-stack .is-strong span { color: var(--c-primary-dark); }
+
+/* Clickable targeting affordances */
+.apx-pick {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  margin-top: 8px; padding: 10px 12px; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  color: var(--c-text-2); background: var(--c-surface);
+  border: 1px dashed var(--c-border); border-radius: var(--r-sm);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.apx-pick:hover { border-color: var(--c-primary); background: var(--c-primary-light); }
+.apx-pick strong { color: var(--c-text); font-weight: 700; }
+.apx-pick-cta { flex: none; font-size: 12px; font-weight: 600; color: var(--c-primary-dark); }
+
+.apx-eq { display: flex; flex-direction: column; gap: 6px; }
+.apx-eqrow {
+  display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 12px;
+  padding: 9px 12px; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-sm);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.apx-eqrow:hover { border-color: var(--c-primary); background: var(--c-primary-light); }
+.apx-eqrow.is-on { border-color: var(--c-primary); background: var(--c-primary-light); }
+.apx-eq-group { color: var(--c-text); font-weight: 600; }
+.apx-eq-rate { color: var(--c-text-2); font-weight: 700; }
+.apx-eq-delta { color: var(--c-error-text); font-size: 12px; font-weight: 600; }
+.apx-eq-cta { font-size: 11.5px; font-weight: 600; color: var(--c-primary-dark); min-width: 62px; text-align: right; }
+
+.apx-hidden { margin-top: 7px; font-size: 11.5px; color: var(--c-text-4); }
+
+.apx-form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px;
+  padding-top: 14px; border-top: 1px solid var(--c-border-light);
+}
+.apx-field { display: flex; flex-direction: column; gap: 6px; }
+.apx-field-wide { grid-column: 1 / -1; }
+.apx-field > span { font-size: 12.5px; font-weight: 600; color: var(--c-text-2); }
+.apx-field > span em { color: var(--c-text-4); font-weight: 400; font-style: normal; }
+.apx-field select, .apx-field input {
+  font-family: var(--font); font-size: 13px; color: var(--c-text); background: var(--c-surface);
+  border: 1px solid var(--c-border); border-radius: var(--r-sm); padding: 9px 11px; width: 100%;
+}
+.apx-field select:focus, .apx-field input:focus {
+  outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-ring);
+}
+
+.apx-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 14px 22px 18px; margin-top: 12px;
+  border-top: 1px solid var(--c-border-light); background: var(--c-bg-subtle);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+}
+.apx-summary { font-size: 12.5px; color: var(--c-text-3); max-width: 60ch; }
+.apx-summary strong { color: var(--c-text); font-weight: 700; }
+.apx-summary.is-short strong { color: var(--c-warn-text); }
+.apx-actions { display: flex; gap: 10px; margin-left: auto; }
+.apx-actions .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* The assign triggers in the Measures + Providers columns are plain
+   `.btn .btn-tonal` — see the button system in src/index.css. The measure-detail
+   one spans the column: it acts on everything above it, so it reads as the
+   column's footer action rather than something tucked in a corner. */
+.mex-detail-assign { margin-top: 12px; }
+.mex-detail-assign .btn { width: 100%; }
+
+@media (max-width: 620px) {
+  .apx-form { grid-template-columns: 1fr; }
+  .apx-eqrow { grid-template-columns: 1fr auto; row-gap: 4px; }
+  .apx-eq-cta { grid-column: 2; }
+  .apx-foot { flex-direction: column; align-items: stretch; }
+  .apx-actions { margin-left: 0; }
+}
