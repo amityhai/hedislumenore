@@ -535,9 +535,11 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                       // second line, the goal a third, the gap a fourth.
                       const compact = d < 64;
                       const small = d < 88; // long ids ("AMM Cont") overrun 13px type here
-                      const showGoal = d >= 92 && b.goal > 0;
-                      const showGap = d >= 104 && b.goal > 0;
-                      const gap = Math.round((b.rate - b.goal) * 10) / 10;
+                      // The size anchor: bubbles are sized by open-gap members, so
+                      // print that count. Without it the eye reads size off the
+                      // goal-distance lines and thinks size = "furthest below".
+                      const showOpen = d >= 88 && b.sizeBy === 'gap' && b.value > 0;
+                      const showGoal = d >= 104 && b.goal > 0;
                       return (
                         <button key={b.key}
                           className={`ov2-bubble ov2-bubble-${b.tone} ${compact ? 'is-compact' : ''} ${small ? 'is-sm' : ''} ${isSel ? 'is-selected' : ''} ${selectedId && !isSel ? 'is-dim' : ''} ${b.measureId ? '' : 'is-static'}`}
@@ -548,12 +550,12 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                             : `${b.title} · ${b.rate}%`}>
                           <span className="ov2-bubble-id">{b.label}</span>
                           {!compact && <span className="ov2-bubble-rate num">{b.rate}%</span>}
-                          {showGoal && <span className="ov2-bubble-goal num">goal {b.goal}%</span>}
-                          {showGap && (
-                            <span className="ov2-bubble-gap num">
-                              {gap >= 0 ? '▲' : '▼'}{Math.abs(gap)} pts
+                          {showOpen && (
+                            <span className="ov2-bubble-open num">
+                              {fmtCount(b.value)}<span className="ov2-bubble-open-tag"> open</span>
                             </span>
                           )}
+                          {showGoal && <span className="ov2-bubble-goal num">goal {b.goal}%</span>}
                         </button>
                       );
                     })}

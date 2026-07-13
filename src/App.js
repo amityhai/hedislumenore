@@ -72,9 +72,10 @@ function App() {
   // Used by the parked MeasureDetail page; kept so deep links survive re-enabling.
   // eslint-disable-next-line no-unused-vars
   const selectedMeasure = route.measure;
-  // Start collapsed on narrow viewports so the rail/drawer never steals content
-  // width on first paint.
-  const [sidebarOpen, setSidebarOpen] = useState(() => !mq(RAIL_Q).matches);
+  // Start collapsed by default so the data-dense Overview gets the full width on
+  // first paint; the user can expand the sidebar manually, and pages can request
+  // it (see `requestSidebar`). Kept collapsed on rail/drawer layouts regardless.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => mq(MOBILE_Q).matches);
 
   // Track the mobile breakpoint and force the drawer shut on the way in, so a

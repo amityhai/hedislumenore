@@ -14,10 +14,10 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
   // Shared status filter — chosen on the Overview, carried into the Explorer.
   const [statusFilter, setStatusFilter] = useState('Below Goal');
 
-  // Give the data-dense explorer/worklist more room by collapsing the sidebar;
-  // restore it on the overview.
+  // The whole v2 flow is data-dense — the Overview bubble field included — so keep
+  // the sidebar collapsed for the room. The user can still expand it manually.
   useEffect(() => {
-    if (onSidebar) onSidebar(view === 'overview');
+    if (onSidebar) onSidebar(false);
   }, [view, onSidebar]);
 
   const goOverview = useCallback(() => {

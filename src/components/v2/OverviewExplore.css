@@ -133,8 +133,13 @@
   animation: ov2-pop 0.5s cubic-bezier(.34,1.56,.64,1) backwards;
 }
 .ov2-bubble:hover { transform: scale(1.06); box-shadow: var(--sh-md), inset 0 2px 6px rgba(255,255,255,0.2); z-index: 3; }
-.ov2-bubble.is-selected { box-shadow: 0 0 0 4px var(--c-surface), 0 0 0 7px currentColor, var(--sh-md); z-index: 4; }
-.ov2-bubble.is-dim { opacity: 0.32; }
+/* Selection leads by being *enhanced* — a ring plus a slight lift — rather than
+   by suppressing everything else, so the unselected bubbles stay fully legible. */
+.ov2-bubble.is-selected { transform: scale(1.05); box-shadow: 0 0 0 4px var(--c-surface), 0 0 0 7px currentColor, var(--sh-md); z-index: 4; }
+.ov2-bubble.is-selected:hover { transform: scale(1.08); }
+/* A gentle recede, not a disable: the labels stay readable and the field still
+   reads as one set — only the selected bubble is meant to feel foregrounded. */
+.ov2-bubble.is-dim { opacity: 0.82; }
 /* Providers/Equity bubbles are display-only (no detail panel to open). */
 .ov2-bubble.is-static { cursor: default; }
 .ov2-bubble.is-static:hover { transform: none; box-shadow: var(--sh-sm), inset 0 2px 6px rgba(255,255,255,0.18); }
@@ -142,8 +147,10 @@
 .ov2-bubble-id { font-weight: 700; font-size: 13px; letter-spacing: -0.01em; line-height: 1.05; }
 .ov2-bubble-rate { font-weight: 600; font-size: 12px; opacity: 0.92; }
 .ov2-bubble-goal { font-weight: 500; font-size: 10.5px; line-height: 1.2; opacity: 0.72; letter-spacing: 0.01em; }
-/* The gap the shade encodes, stated in the points clinicians actually use. */
-.ov2-bubble-gap { margin-top: 2px; font-weight: 600; font-size: 10.5px; line-height: 1.2; opacity: 0.9; letter-spacing: 0.01em; white-space: nowrap; }
+/* The variable size actually encodes: open-gap members. Given its own weight so
+   a bigger disc visibly reads "more people", not "worse rate" (that's the shade). */
+.ov2-bubble-open { margin-top: 1px; font-weight: 600; font-size: 11px; line-height: 1.2; opacity: 0.95; letter-spacing: 0.01em; white-space: nowrap; }
+.ov2-bubble-open-tag { font-weight: 500; opacity: 0.72; }
 /* Type steps down before the labels reach the curve. `is-sm` keeps long ids
    ("AMM Cont") inside a ~70px disc; `is-compact` drops to the id alone. */
 .ov2-bubble.is-sm { padding: 4px; }
@@ -295,6 +302,17 @@
 @keyframes ov2-draw { to { stroke-dashoffset: 0; } }
 
 /* ── Responsive ──────────────────────────────────────────────── */
+
+/* Desktop: lock the overview to the viewport so a tall selected measure is
+   absorbed by the panel's own scrollport — not by growing the card. Without
+   this cap the card stretches past 100vh (its .sc2 host is min-height, not
+   height), the field's 1fr row grows with it, the ResizeObserver refires, and
+   the packer reshuffles every bubble on select. Below 980px the field and panel
+   stack and the page scrolls instead, so the lock only applies above that.
+   72px = .sc2's 28px top + 44px bottom padding (it's the overview's sole child). */
+@media (min-width: 981px) {
+  .ov2 { max-height: calc(100vh - 72px); }
+}
 
 /* Below ~980px the two columns stop fitting side by side: the field stacks on
    top of the panel. The card no longer bounds their heights, so the field takes
