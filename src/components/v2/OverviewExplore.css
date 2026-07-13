@@ -241,37 +241,37 @@
 .ov2-gap-neg { color: var(--c-error-text); }
 .ov2-gap-pos { color: var(--c-success-text); }
 
-/* Stage 1 · Behavior Intelligence read — a generated interpretation of the
-   numbers below it. Neutral slate card so it reads as analysis, not status;
-   confidence is a mono label, deliberately uncoloured to avoid colliding with
-   the fixed red/blue/green status semantics. */
-.ov2-read { margin-top: 16px; padding: 14px; border: 1px solid var(--c-border-light);
-  border-radius: var(--r-sm); background: var(--c-bg-subtle); }
-.ov2-read-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.ov2-read-eyebrow { margin: 0; }
-.ov2-read-conf { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; color: var(--c-text-3);
-  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-full);
-  padding: 2px 9px; white-space: nowrap; }
-.ov2-read-synth { margin: 9px 0 0; font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--c-text); }
-.ov2-read-signals { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.ov2-read-signals li { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: baseline;
+/* ── Intelligence read — the four-stage stack ────────────────────────────────
+   One flat, hairline-separated group instead of four bordered cards. Each row
+   shows a one-line summary; the math expands on click. This keeps a selected
+   measure to a header + a few scannable lines rather than a long scroll. */
+.ov2-intel { margin-top: 16px; border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm); background: var(--c-bg-subtle); overflow: hidden; }
+.ov2-st + .ov2-st { border-top: 1px solid var(--c-border-light); }
+.ov2-st-head { width: 100%; display: flex; flex-direction: column; gap: 5px; align-items: stretch;
+  padding: 12px 13px; background: none; border: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.ov2-st-head:disabled { cursor: default; }
+.ov2-st-head:focus-visible { outline: 2px solid var(--c-primary-ring); outline-offset: -2px; border-radius: var(--r-xs); }
+.ov2-st-top { display: flex; align-items: center; gap: 8px; }
+.ov2-st-label { margin: 0; flex: none; }
+.ov2-st-tag { margin-left: auto; font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--c-text-3);
+  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-full); padding: 2px 9px; white-space: nowrap; }
+.ov2-st-tag.is-preview { color: var(--c-warn-text); background: var(--c-warn-bg); border-color: var(--c-warn-border); text-transform: uppercase; }
+.ov2-st-chev { flex: none; color: var(--c-text-4); display: inline-flex; transition: transform 0.18s ease; }
+.ov2-st.is-open .ov2-st-chev { transform: rotate(180deg); }
+.ov2-st-summary { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--c-text); }
+.ov2-st-body { padding: 0 13px 14px; }
+
+.ov2-read-signals { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ov2-read-signals li { display: grid; grid-template-columns: 78px 1fr; gap: 10px; align-items: baseline;
   font-size: 12.5px; color: var(--c-text-2); line-height: 1.4; }
 .ov2-read-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--c-text-4); }
 .ov2-read-v { color: var(--c-text-2); }
 .ov2-read-why { margin: 11px 0 0; padding-top: 9px; border-top: 1px solid var(--c-border-light);
   font-size: 10.5px; color: var(--c-text-4); letter-spacing: 0.01em; }
-
-/* Stages 2–4 · Decision / Recommendation / Learning — each a plainly-bordered
-   block so the four reads stack as one column of escalating questions. */
-.ov2-stage { margin-top: 14px; padding: 14px; border: 1px solid var(--c-border-light);
-  border-radius: var(--r-sm); background: var(--c-surface); }
-.ov2-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-.ov2-stage-eyebrow { margin: 0; }
-.ov2-stage-tag { font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--c-text-3);
-  background: var(--c-bg-subtle); border: 1px solid var(--c-border); border-radius: var(--r-full); padding: 2px 9px; white-space: nowrap; }
-.ov2-stage-tag.is-preview { color: var(--c-warn-text); background: var(--c-warn-bg); border-color: var(--c-warn-border); text-transform: uppercase; }
-.ov2-stage-note { margin: 10px 0 0; font-size: 12px; color: var(--c-text-3); line-height: 1.45; }
+.ov2-stage-note { margin: 0 0 4px; font-size: 12px; color: var(--c-text-3); line-height: 1.45; }
 .ov2-stage-note b { color: var(--c-text-2); }
+.ov2-intel-stats { margin-top: 14px; }
 
 /* Stage 2 priority meter — neutral slate fill (magnitude, not status). */
 .ov2-prio { display: flex; align-items: center; gap: 10px; }
