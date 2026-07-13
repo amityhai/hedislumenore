@@ -257,12 +257,14 @@
 .ov2-gap-pos { color: var(--c-success-text); }
 
 /* ── Intelligence read — the four-stage stack ────────────────────────────────
-   One flat, hairline-separated group instead of four bordered cards. Each row
-   shows a one-line summary; the math expands on click. This keeps a selected
-   measure to a header + a few scannable lines rather than a long scroll. */
-.ov2-intel { margin-top: 16px; border: 1px solid var(--c-border-light);
-  border-radius: var(--r-sm); background: var(--c-bg-subtle); overflow: hidden; }
-.ov2-st + .ov2-st { border-top: 1px solid var(--c-border-light); }
+   Each stage is its own spaced card that shows a one-line summary and expands to
+   the math on click. Keeping them separate (not one flat strip) makes the opened
+   card read as a distinct, foregrounded panel. */
+.ov2-intel { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.ov2-st { border: 1px solid var(--c-border-light); border-radius: var(--r-sm);
+  background: var(--c-bg-subtle); overflow: hidden;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
+.ov2-st.is-open { background: var(--c-surface); border-color: var(--c-border); box-shadow: var(--sh-sm); }
 .ov2-st-head { width: 100%; display: flex; flex-direction: column; gap: 5px; align-items: stretch;
   padding: 12px 13px; background: none; border: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .ov2-st-head:disabled { cursor: default; }
