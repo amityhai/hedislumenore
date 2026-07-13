@@ -353,6 +353,55 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
 
   const fieldRef = useRef(null);
   const [fieldSize, setFieldSize] = useState({ w: 720, h: 520 });
+
+  // Draggable split between the bubble field and the detail panel, so the panel
+  // can be widened for its content. Width is a px value driven into a CSS var on
+  // .ov2-body; the field re-packs itself via its ResizeObserver. Persisted, and
+  // reset on double-click of the handle.
+  const bodyRef = useRef(null);
+  const pendingW = useRef(null);
+  const [panelW, setPanelW] = useState(() => {
+    const v = Number(localStorage.getItem('qp_v2_panelw'));
+    return v > 0 ? v : null;
+  });
+  const clampW = (w, rect) => {
+    const min = 300;
+    const max = Math.max(min, rect.width - 420); // always leave the field room
+    return Math.min(max, Math.max(min, w));
+  };
+  const startResize = (e) => {
+    const body = bodyRef.current;
+    if (!body) return;
+    e.preventDefault();
+    const rect = body.getBoundingClientRect();
+    const onMove = (ev) => {
+      const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const w = clampW(rect.right - x, rect);
+      pendingW.current = w;
+      setPanelW(w);
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.body.style.userSelect = '';
+      if (pendingW.current) localStorage.setItem('qp_v2_panelw', String(Math.round(pendingW.current)));
+    };
+    document.body.style.userSelect = 'none';
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+  const nudgeResize = (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const body = bodyRef.current;
+    if (!body) return;
+    e.preventDefault();
+    const rect = body.getBoundingClientRect();
+    const base = panelW || Math.min(380, Math.max(300, rect.width * 0.25));
+    const w = clampW(base + (e.key === 'ArrowLeft' ? 24 : -24), rect);
+    setPanelW(w);
+    localStorage.setItem('qp_v2_panelw', String(Math.round(w)));
+  };
+  const resetResize = () => { setPanelW(null); localStorage.removeItem('qp_v2_panelw'); };
   useLayoutEffect(() => {
     const el = fieldRef.current;
     if (!el) return undefined;
@@ -508,7 +557,8 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
           )}
         </div>
 
-        <div className="ov2-body">
+        <div className="ov2-body" ref={bodyRef}
+          style={panelW ? { '--ov2-panel-w': `${panelW}px` } : undefined}>
           <div className="ov2-field-wrap" onClick={() => selectedId && setSelectedId(null)}>
             {error ? (
               <ErrorState message="Couldn't load measures." onRetry={refetch} />
@@ -571,6 +621,12 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
             {!error && !loading && legend && (
               <FieldLegend shown={packed.length} total={fieldTotal} lens={lens} {...legend} />
             )}
+          </div>
+
+          <div className="ov2-resizer" role="separator" aria-orientation="vertical"
+            aria-label="Resize panel — drag, arrow keys, or double-click to reset" tabIndex={0}
+            onPointerDown={startResize} onKeyDown={nudgeResize} onDoubleClick={resetResize}>
+            <span className="ov2-resizer-grip" aria-hidden="true" />
           </div>
 
           <aside className="ov2-panel">

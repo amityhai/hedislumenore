@@ -68,11 +68,24 @@
    row — so selecting a bubble never resizes the field. */
 .ov2-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 25vw, 380px);
+  grid-template-columns: minmax(0, 1fr) 0 var(--ov2-panel-w, clamp(300px, 25vw, 380px));
   grid-template-rows: minmax(0, 1fr);
   align-items: stretch;
   flex: 1; min-height: 0;
 }
+
+/* Draggable split handle. Lives in a zero-width grid column on the field/panel
+   boundary; the grip overflows into a comfortable hit target. Drag to resize,
+   arrow keys to nudge, double-click to reset. */
+.ov2-resizer { position: relative; width: 0; align-self: stretch; z-index: 5; outline: none; touch-action: none; }
+.ov2-resizer-grip { position: absolute; top: 0; bottom: 0; left: -6px; width: 12px; display: block; cursor: col-resize; }
+.ov2-resizer-grip::after {
+  content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 3px; height: 34px; border-radius: var(--r-full); background: var(--c-border);
+  transition: background 0.15s ease, height 0.15s ease;
+}
+.ov2-resizer:hover .ov2-resizer-grip::after,
+.ov2-resizer:focus-visible .ov2-resizer-grip::after { background: var(--c-primary); height: 52px; }
 .ov2-field-wrap {
   position: relative; padding: 16px;
   display: flex; flex-direction: column; align-items: stretch; justify-content: center;
@@ -377,6 +390,8 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto;
   }
+  /* Stacked layout has no vertical boundary to drag. */
+  .ov2-resizer { display: none; }
   .ov2-field-wrap {
     border-bottom: 1px solid var(--c-border-light);
     height: clamp(320px, 50vh, 460px);
