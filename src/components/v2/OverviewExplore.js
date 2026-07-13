@@ -13,7 +13,7 @@ import {
 } from '../../services/workflowService';
 import {
   STATUS_TONE, num, shortId, behaviorRead, portfolioRead,
-  rankByPriority, priorityFactors,
+  rankByPriority, priorityFactors, recommendAction, learningState, recordApplied,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
 } from './v2utils';
 
@@ -639,6 +639,62 @@ const PriorityBlock = ({ mine, leader, total, measureId }) => {
   );
 };
 
+// Stage 3 · Recommendation Intelligence — the precedent-based next action.
+// Tagged "Preview" and footed with its basis so it never reads as a live,
+// outcome-proven claim (that's Stage 4's job to earn).
+const RecommendBlock = ({ measure, read }) => {
+  const rec = recommendAction(measure, read);
+  return (
+    <section className="ov2-stage" aria-label="Recommended action">
+      <div className="ov2-stage-head">
+        <span className="eyebrow ov2-stage-eyebrow">Recommended action</span>
+        <span className="ov2-stage-tag mono is-preview">Preview</span>
+      </div>
+      <p className="ov2-rec-action">{rec.action}</p>
+      <p className="ov2-stage-note">Because {rec.rationale}.</p>
+      <div className="ov2-rec-chips">
+        {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
+      </div>
+      <p className="ov2-read-why mono">{rec.basis}</p>
+    </section>
+  );
+};
+
+// Stage 4 · Learning Intelligence — the loop, as a working local preview.
+// Applying the action logs it; the panel then shows how that outcome would feed
+// back to sharpen the next recommendation. Persisted locally only, and says so.
+const LearningBlock = ({ measure }) => {
+  const rec = recommendAction(measure);
+  const [state, setState] = useState(() => learningState(measure.measure_id));
+  useEffect(() => setState(learningState(measure.measure_id)), [measure.measure_id]);
+  const apply = () => setState(recordApplied(measure.measure_id, rec.action));
+  return (
+    <section className="ov2-stage" aria-label="Learning">
+      <div className="ov2-stage-head">
+        <span className="eyebrow ov2-stage-eyebrow">Learning · closes the loop</span>
+        <span className="ov2-stage-tag mono is-preview">Preview</span>
+      </div>
+      {state.count === 0 ? (
+        <>
+          <p className="ov2-stage-note">Apply the recommended action to start the loop — next cycle's outcome refines what gets recommended here.</p>
+          <button type="button" className="btn btn-secondary btn-sm ov2-learn-btn" onClick={apply}>Mark action applied</button>
+        </>
+      ) : (
+        <>
+          <div className="ov2-learn-loop">
+            <div className="ov2-learn-step"><span className="ov2-read-k mono">Applied</span><span>{state.last.action}</span></div>
+            <div className="ov2-learn-arrow" aria-hidden="true">↓</div>
+            <div className="ov2-learn-step"><span className="ov2-read-k mono">Next cycle</span><span>outcome feeds back to the recommendation</span></div>
+            <div className="ov2-learn-arrow" aria-hidden="true">↓</div>
+            <div className="ov2-learn-step is-round"><span className="ov2-read-k mono">Learned</span><span>weights this action higher for measures like {shortId(measure.measure_id)}</span></div>
+          </div>
+          <p className="ov2-read-why mono">{state.count} action{state.count > 1 ? 's' : ''} logged locally · a real deployment ties this to the next measurement cycle</p>
+        </>
+      )}
+    </section>
+  );
+};
+
 const DefaultPanel = ({ loading, panel, onPick }) => (
   <div className="ov2-panel-inner">
     <div className="eyebrow">{panel.eyebrow}</div>
@@ -720,6 +776,12 @@ const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestig
 
       {/* Stage 2 · Decision Intelligence — this measure's place in the priority order. */}
       <PriorityBlock mine={mine} leader={leader} total={ranked.length} measureId={measure.measure_id} />
+
+      {/* Stage 3 · Recommendation Intelligence — the action most likely to move it. */}
+      <RecommendBlock measure={measure} read={read} />
+
+      {/* Stage 4 · Learning Intelligence — apply it, close the loop. */}
+      <LearningBlock measure={measure} />
 
       {trendLoading ? <Skeleton height={70} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
 

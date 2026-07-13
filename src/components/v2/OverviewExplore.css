@@ -294,6 +294,7 @@
   display: grid; grid-template-columns: 66px 1fr; gap: 9px; align-items: baseline; }
 .ov2-learn-step.is-round { border-color: var(--c-primary-subtle); background: var(--c-primary-light); color: var(--c-primary-dark); }
 .ov2-learn-arrow { text-align: center; color: var(--c-text-4); font-size: 12px; line-height: 1; padding: 3px 0; }
+.ov2-learn-btn { margin-top: 11px; }
 
 .ov2-trend { width: 100%; height: 70px; margin-top: 14px; overflow: visible; }
 .ov2-trend-line { fill: none; stroke: var(--c-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;

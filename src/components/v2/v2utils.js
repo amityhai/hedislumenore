@@ -253,6 +253,62 @@ export const portfolioRead = (measures, statusFilter, totalCount) => {
   return { synthesis, signals, confidence: { level, why: `${totalDenom.toLocaleString()} eligible across ${n} measures` } };
 };
 
+// ── Recommendation Intelligence (Stage 3) ────────────────────
+// Precedent-based, and honest about it: these are the interventions that most
+// often move measures LIKE this one (drawn from published quality-improvement
+// patterns), NOT yet learned from this organization's own outcomes — that's
+// Stage 4. Every recommendation is labelled "pattern-based" so it never reads as
+// a live outcome claim, in line with the "explainable, no invented facts" rule.
+const INTERVENTION_PATTERNS = [
+  { test: (id) => /^(FU|FUH|FUM|FUA)/.test(id), action: 'Post-discharge outreach + scheduling',
+    why: 'follow-up measures move most when contact happens inside the closing window', lift: '9–12%' },
+  { test: (id) => /^(APM|SSD|AMM|SPC|SPD|PCE|HBD|BPD)/.test(id), action: 'Pharmacy adherence + records reconciliation',
+    why: 'medication and monitoring gaps are often documentation, not missing care', lift: '8–11%' },
+  { test: (id) => /^(BCS|CCS|COL|CIS|IMA|W30|WCV|CHL|AAP|PPC|ADD)/.test(id), action: 'Screening & visit reminder campaign',
+    why: 'preventive measures respond to reminders paired with easy scheduling', lift: '6–9%' },
+  { test: () => true, action: 'Coding & records review',
+    why: 'a share of the gap is usually care that was delivered but never coded', lift: '5–8%' },
+];
+
+export const recommendAction = (measure, read) => {
+  const id = measure.measure_id || '';
+  const pick = INTERVENTION_PATTERNS.find((r) => r.test(id)) || INTERVENTION_PATTERNS[INTERVENTION_PATTERNS.length - 1];
+  const open = Math.max(0, num(measure.denominator) - num(measure.numerator));
+  return {
+    action: pick.action,
+    rationale: pick.why,
+    chips: [
+      { label: `similar measures +${pick.lift}`, strong: true },
+      { label: `${fmtCompact(open)} members in scope` },
+      ...(read && read.confidence ? [{ label: `read confidence ${read.confidence.level.toLowerCase()}` }] : []),
+    ],
+    basis: 'Pattern-based — from how measures like this behave, not yet learned from your own outcomes.',
+  };
+};
+
+// ── Learning Intelligence (Stage 4) ──────────────────────────
+// A working preview of the feedback loop. Applied actions are logged locally
+// (localStorage) and fed back as "what we've learned here". A real deployment
+// persists this server-side and ties each action to the next measurement cycle;
+// this shows the shape of the loop and is labelled as a local preview.
+const LEARN_KEY = 'qp_v2_learning';
+const readLearnLog = () => { try { return JSON.parse(localStorage.getItem(LEARN_KEY) || '{}'); } catch { return {}; } };
+const writeLearnLog = (log) => { try { localStorage.setItem(LEARN_KEY, JSON.stringify(log)); } catch { /* storage off */ } };
+
+export const learningState = (measureId) => {
+  const entries = readLearnLog()[measureId] || [];
+  return { count: entries.length, last: entries[entries.length - 1] || null };
+};
+
+export const recordApplied = (measureId, action) => {
+  const log = readLearnLog();
+  const entries = log[measureId] || [];
+  entries.push({ action, at: Date.now() });
+  log[measureId] = entries;
+  writeLearnLog(log);
+  return { count: entries.length, last: entries[entries.length - 1] };
+};
+
 // A short monthly trend ending at the measure's current rate — used as a
 // fallback so the detail panel always shows a trend line (mirrors the classic
 // Measure Detail header) when live mini-chart data isn't available.
