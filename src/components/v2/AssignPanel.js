@@ -85,8 +85,13 @@ const defaultDue = () => {
 };
 const today = () => new Date().toISOString().slice(0, 10);
 
+const sameRow = (a, b) => a.dim === b.dim && a.group === b.group;
+
 const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], ethnicity: [] }, scope, assignedCount = null, onClose, onAssign }) => {
-  const [target, setTarget] = useState(null); // null | {kind:'providers'|'stratum', …}
+  // Providers and strata narrow the scope independently and compose: picking a
+  // stratum shouldn't wipe a provider selection, or vice versa.
+  const [provPick, setProvPick] = useState(null); // null | provider rows
+  const [strata, setStrata] = useState([]);       // stratum rows, multi-select
   const [intervention, setIntervention] = useState(INTERVENTIONS[0]);
   const [staff, setStaff] = useState(UNASSIGNED);
   const [due, setDue] = useState(defaultDue);
@@ -95,6 +100,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   const atMeasure = scope.level === 'measure';
   const goal = num(measure?.goal_50th);
   const measureDenom = num(measure?.denominator);
+  const measureNonCompliant = Math.max(0, measureDenom - num(measure?.numerator));
 
   const providerRows = useMemo(
     () => providers.filter((p) => !p.overall).map((p) => withStats(p, goal)),
@@ -122,25 +128,48 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     [equity, measure]
   );
 
-  const inScope = useMemo(() => {
-    if (target?.kind === 'providers') {
-      return {
-        members: target.rows.reduce((s, r) => s + r.nonCompliant, 0),
-        providers: target.rows.length,
-        approx: false,
-      };
-    }
-    if (target?.kind === 'stratum') {
-      if (atMeasure) return { members: target.row.notMeeting, providers: providerRows.length, approx: false };
-      // No provider × stratum rate exists; scale the network stratum by this
-      // provider's share of the denominator and mark the result approximate.
-      const share = measureDenom > 0 ? baseDenom / measureDenom : 0;
-      return { members: Math.round(target.row.notMeeting * share), providers: 1, approx: true };
-    }
-    return { members: baseNonCompliant, providers: atMeasure ? providerRows.length : 1, approx: false };
-  }, [target, atMeasure, providerRows, baseNonCompliant, baseDenom, measureDenom]);
+  // Groups inside one dimension are mutually exclusive, so their open gaps add
+  // up exactly. Across dimensions they overlap — every member has an age *and* a
+  // race — so the union is estimated by inclusion–exclusion, treating the two
+  // dimensions as independent. Summing instead would count the same member twice.
+  const strataReach = useMemo(() => {
+    if (!strata.length) return null;
+    const byDim = new Map();
+    strata.forEach((r) => byDim.set(r.dim, (byDim.get(r.dim) || 0) + r.notMeeting));
+    const dims = [...byDim.values()];
+    const crossDim = dims.length > 1;
+    if (!measureNonCompliant) return { members: 0, crossDim };
+    const union = dims.reduce((acc, s) => acc + s - (acc * s) / measureNonCompliant, 0);
+    return { members: Math.min(measureNonCompliant, Math.round(union)), crossDim };
+  }, [strata, measureNonCompliant]);
 
-  const scopeKey = `${measure?.measure_id}|${scope.level}|${scope.provider?.crsp || ''}|${target?.kind || ''}|${target?.row?.group || target?.rows?.length || ''}`;
+  const inScope = useMemo(() => {
+    const base = atMeasure && provPick
+      ? provPick.reduce((s, r) => s + r.nonCompliant, 0)
+      : baseNonCompliant;
+    const providerCount = atMeasure ? (provPick ? provPick.length : providerRows.length) : 1;
+
+    if (!strataReach) return { members: base, providers: providerCount, approx: false };
+
+    // The stratum counts describe the whole network. They're exact only when
+    // nothing else narrows the scope; otherwise there's no provider × stratum
+    // cross-tab to read, so the stratum's share of the network's open gaps gets
+    // applied to the narrower base.
+    const wholeNetwork = atMeasure && !provPick;
+    const members = wholeNetwork
+      ? strataReach.members
+      : Math.round(base * (measureNonCompliant > 0 ? strataReach.members / measureNonCompliant : 0));
+
+    const why = [];
+    if (!wholeNetwork) why.push('no provider × group cross-tab');
+    if (strataReach.crossDim) why.push('selected groups overlap');
+    return { members, providers: providerCount, approx: why.length > 0, why: why.join('; ') };
+  }, [strataReach, provPick, atMeasure, providerRows, baseNonCompliant, measureNonCompliant]);
+
+  const scopeKey = [
+    measure?.measure_id, scope.level, scope.provider?.crsp || '', provPick?.length || 0,
+    strata.map((r) => `${r.dim}:${r.group}`).sort().join(','),
+  ].join('|');
   const estimated = assignedCount == null;
   const skipped = estimated ? estimateAssigned(scopeKey, inScope.members) : Math.min(inScope.members, assignedCount);
   const created = Math.max(0, inScope.members - skipped);
@@ -156,17 +185,31 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     return { short: false, mustClose: need, share: Math.round((need / created) * 100) };
   }, [hasCounts, need, created, baseNumer, baseDenom]);
 
-  const targetLabel = target?.kind === 'providers'
-    ? `${target.rows.length} providers`
-    : target?.kind === 'stratum' ? `${target.row.dimLabel}: ${target.row.group}` : null;
+  // One chip per narrowing: the provider set, then each dimension with the
+  // groups picked inside it ("Race: Asian, White").
+  const targetChips = useMemo(() => {
+    const byDim = new Map();
+    strata.forEach((r) => {
+      if (!byDim.has(r.dim)) byDim.set(r.dim, { label: r.dimLabel, groups: [] });
+      byDim.get(r.dim).groups.push(r.group);
+    });
+    return [
+      ...(provPick ? [`${provPick.length} providers`] : []),
+      ...[...byDim.values()].map((d) => `${d.label}: ${d.groups.join(', ')}`),
+    ];
+  }, [provPick, strata]);
+
+  const clearTarget = () => { setProvPick(null); setStrata([]); };
+  const toggleStratum = (r) => setStrata((cur) =>
+    cur.some((x) => sameRow(x, r)) ? cur.filter((x) => !sameRow(x, r)) : [...cur, r]);
 
   const submit = () => onAssign({
     scope: {
       measureId: measure?.measure_id,
       level: scope.level,
       crsp: atMeasure ? null : scope.provider.crsp,
-      providers: target?.kind === 'providers' ? target.rows.map((r) => r.crsp) : null,
-      stratum: target?.kind === 'stratum' ? { type: target.row.dim, group: target.row.group } : null,
+      providers: provPick ? provPick.map((r) => r.crsp) : null,
+      strata: strata.length ? strata.map((r) => ({ type: r.dim, group: r.group })) : null,
       nonCompliantOnly: true,
     },
     intervention, assignedTo: staff, due, why,
@@ -185,7 +228,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                 : <>Provider · <strong>{scope.provider.crsp}</strong> · {measure?.display_name}</>}
             </p>
           </div>
-          <button type="button" className="apx-x" onClick={onClose} aria-label="Close">✕</button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm apx-x" onClick={onClose} aria-label="Close">✕</button>
         </header>
 
         <div className="apx-body">
@@ -205,10 +248,12 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
             )}
           </div>
 
-          {targetLabel && (
+          {targetChips.length > 0 && (
             <div className="apx-target">
-              <span>Narrowed to <strong>{targetLabel}</strong></span>
-              <button type="button" onClick={() => setTarget(null)}>Clear ✕</button>
+              <span>Narrowed to {targetChips.map((c, i) => (
+                <span key={c}>{i > 0 && <span className="apx-target-sep"> · </span>}<strong>{c}</strong></span>
+              ))}</span>
+              <button type="button" onClick={clearTarget}>Clear ✕</button>
             </div>
           )}
 
@@ -218,10 +263,12 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
               <p className="apx-line">
                 <strong className="num">{providerRows.length}</strong> total · <strong className="num">{belowGoal}</strong> below goal
               </p>
-              {conc && !target && (
-                <button type="button" className="apx-pick" onClick={() => setTarget({ kind: 'providers', rows: conc.rows })}>
+              {conc && (
+                <button type="button" aria-pressed={!!provPick} className={`apx-pick ${provPick ? 'is-on' : ''}`}
+                  onClick={() => setProvPick(provPick ? null : conc.rows)}>
+                  <span className="apx-check" aria-hidden="true" />
                   <span><strong className="num">{conc.rows.length}</strong> providers account for <strong className="num">{conc.share}%</strong> of the shortfall</span>
-                  <span className="apx-pick-cta">Target these</span>
+                  <span className="apx-pick-cta">{provPick ? 'Targeted' : 'Target these'}</span>
                 </button>
               )}
             </section>
@@ -231,7 +278,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
             <h4 className="apx-block-title">Members</h4>
             {hasCounts ? (
               <ul className="apx-stack">
-                <li><span className="num">{inScope.members.toLocaleString()}</span> non-compliant in scope{inScope.approx && <em> (estimated)</em>}</li>
+                <li><span className="num">{inScope.members.toLocaleString()}</span> non-compliant in scope{inScope.approx && <em> (estimated — {inScope.why})</em>}</li>
                 <li className="is-muted">
                   <span className="num">{skipped.toLocaleString()}</span> already assigned — will be skipped
                   {estimated && <em> (estimated — no assignment records yet)</em>}
@@ -246,17 +293,22 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           <section className="apx-block">
             <h4 className="apx-block-title">
               Equity
-              {!atMeasure && <span className="apx-block-note">network-wide rates</span>}
+              {eqRows.length > 0 && (
+                <span className="apx-block-note">
+                  {!atMeasure && 'network-wide rates · '}select one or more
+                </span>
+              )}
             </h4>
             {eqRows.length === 0 ? (
               <p className="apx-line is-muted">No significant equity gap for this measure.</p>
             ) : (
               <div className="apx-eq">
                 {eqRows.slice(0, 4).map((r) => {
-                  const on = target?.kind === 'stratum' && target.row.group === r.group && target.row.dim === r.dim;
+                  const on = strata.some((x) => sameRow(x, r));
                   return (
-                    <button key={`${r.dim}:${r.group}`} type="button" className={`apx-eqrow ${on ? 'is-on' : ''}`}
-                      onClick={() => setTarget(on ? null : { kind: 'stratum', row: r })}>
+                    <button key={`${r.dim}:${r.group}`} type="button" aria-pressed={on}
+                      className={`apx-eqrow ${on ? 'is-on' : ''}`} onClick={() => toggleStratum(r)}>
+                      <span className="apx-check" aria-hidden="true" />
                       <span className="apx-eq-group">{r.group}</span>
                       <span className="apx-eq-rate num">{r.rate}%</span>
                       <span className="apx-eq-delta num">▼ {Math.abs(r.delta)} pts</span>

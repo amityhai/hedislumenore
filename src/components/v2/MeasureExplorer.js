@@ -194,9 +194,11 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
   const runAssign = useCallback((payload) => {
     setAssignScope(null);
     const { preview, scope, assignedTo } = payload;
-    const where = scope.stratum ? scope.stratum.group
-      : scope.providers ? `${scope.providers.length} providers`
-      : scope.crsp || 'all providers';
+    const parts = [];
+    if (scope.providers) parts.push(`${scope.providers.length} providers`);
+    else if (scope.crsp) parts.push(scope.crsp);
+    if (scope.strata) parts.push(scope.strata.map((s) => s.group).join(', '));
+    const where = parts.join(' · ') || 'all providers';
     toast({ type: 'success', message: `${preview.created.toLocaleString()} tasks queued for ${where} · ${assignedTo === UNASSIGNED ? 'unassigned pool' : assignedTo}` });
   }, [toast]);
 

@@ -51,6 +51,10 @@
   --sidebar-bg:       #ffffff;
   --sidebar-w:        232px;
 
+  /* Control height — buttons and form fields share it so they line up when
+     they sit on the same row. */
+  --h-control: 38px;
+
   /* Radius */
   --r-xs:   6px;
   --r-sm:   8px;
@@ -137,7 +141,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 38px;
+  height: var(--h-control);
   padding: 0 18px;
   border-radius: var(--r-md);
   font-family: var(--font);
@@ -174,7 +178,7 @@ body {
 .btn-lg { height: 42px; padding: 0 20px; font-size: 13.5px; }
 
 /* ── Icon-only — square, label lives in aria-label/title ── */
-.btn-icon { width: 38px; padding: 0; }
+.btn-icon { width: var(--h-control); padding: 0; }
 .btn-icon.btn-sm { width: 30px; }
 .btn-icon.btn-lg { width: 42px; }
 
