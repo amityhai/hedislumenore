@@ -271,8 +271,8 @@
     </div>
 
     <div class="rail-legend">
-      <span class="k"><span class="dot live"></span>Live — shipping now</span>
-      <span class="k"><span class="dot partial"></span>Partial — in build</span>
+      <span class="k"><span class="dot live"></span>Built — running in the app</span>
+      <span class="k"><span class="dot partial"></span>Preview — shape built, awaiting real outcome data</span>
       <span class="k"><span class="dot next"></span>Next — designed, not built</span>
     </div>
 
@@ -315,7 +315,7 @@
         <div class="card">
           <div class="card-head">
             <div class="stage-name">Decision <span>Intelligence</span></div>
-            <div class="status partial"><span class="dot partial"></span>Partial</div>
+            <div class="status live"><span class="dot live"></span>Built</div>
           </div>
           <p class="question">“Network East has 316 open items. <em>Which one do I work first?</em>”</p>
           <div class="body">
@@ -349,7 +349,7 @@
         <div class="card">
           <div class="card-head">
             <div class="stage-name">Recommendation <span>Intelligence</span></div>
-            <div class="status next"><span class="dot next"></span>Next</div>
+            <div class="status partial"><span class="dot partial"></span>Preview</div>
           </div>
           <p class="question">“FUH it is. <em>What action actually tends to move it?</em>”</p>
           <div class="body">
@@ -383,7 +383,7 @@
         <div class="card">
           <div class="card-head">
             <div class="stage-name">Learning <span>Intelligence</span></div>
-            <div class="status next"><span class="dot next"></span>Later</div>
+            <div class="status partial"><span class="dot partial"></span>Preview</div>
           </div>
           <p class="question">“We ran it. <em>Did it work for us — and what should we recommend next time?</em>”</p>
           <div class="body">
@@ -414,12 +414,12 @@
     <div class="close">
       <h2>The same afternoon, in one line each</h2>
       <div class="oneline">
-        <div class="step"><span class="q">“What changed?”</span><span class="s">Stage 1 · live</span></div>
-        <div class="step"><span class="q">“Where do I focus?”</span><span class="s">Stage 2 · in build</span></div>
-        <div class="step"><span class="q">“What action works?”</span><span class="s">Stage 3 · next</span></div>
-        <div class="step"><span class="q">“What works for us, specifically?”</span><span class="s">Stage 4 · later</span></div>
+        <div class="step"><span class="q">“What changed?”</span><span class="s">Stage 1 · built</span></div>
+        <div class="step"><span class="q">“Where do I focus?”</span><span class="s">Stage 2 · built</span></div>
+        <div class="step"><span class="q">“What action works?”</span><span class="s">Stage 3 · preview</span></div>
+        <div class="step"><span class="q">“What works for us, specifically?”</span><span class="s">Stage 4 · preview</span></div>
       </div>
-      <p class="foot"><b>Reading the build state:</b> the top half of this flow is already on screen — the scorecard renders behavior, the explorer and assign panel begin the ranking. The bottom half is the leap: Stages 3–4 need a body of intervention-outcome history before their answers are trustworthy, which is exactly why they come last. Each stage ships value alone, and each one feeds the next.</p>
+      <p class="foot"><b>Reading the build state:</b> all four stages now stack in the measure panel — behavior read, priority score, recommended action, learning loop. Stages 1–2 run entirely on live numbers. Stages 3–4 are built but marked <b>Preview</b>: the recommendation is precedent-based (how measures like this behave, not yet your own outcomes) and the learning loop logs locally. What turns Preview into Built is one thing — a body of intervention-outcome history — which is exactly why they come last. Each stage delivers value alone, and each one feeds the next.</p>
     </div>
 
   </div>
