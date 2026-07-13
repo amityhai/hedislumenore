@@ -165,7 +165,46 @@ export const behaviorRead = (measure, trend, crsps = []) => {
   };
 };
 
-const fmtCompact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(n)));
+export const fmtCompact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(n)));
+
+// ── Decision Intelligence (Stage 2) ──────────────────────────
+// A few HEDIS measures carry outsized program weight (behavioral-health
+// follow-up measures are triple-weighted in Medicaid quality programs); the rest
+// default to 1. Kept as an explicit, editable table so the weight shows in the
+// math rather than hiding in a model.
+const MEASURE_WEIGHT = { FUM_7: 3, FUA_7: 3, FUH: 3, FUM_30: 2, APM_E: 2, SSD: 2, AMM_Acute: 2, AMM_Cont: 2 };
+
+// Priority = recoverable work × how far below goal × program weight × urgency.
+// Every term comes from the measure's own numbers, so a rank can always explain
+// itself. "Recoverable" is the winnable member count, not the raw miss — a big
+// gap on 40 members ranks below a small gap on 4,000.
+export const priorityScore = (measure) => {
+  const rate = num(measure.rate), goal = num(measure.goal_50th);
+  const open = Math.max(0, num(measure.denominator) - num(measure.numerator));
+  const gap = Math.max(0, Math.round((goal - rate) * 10) / 10); // points below goal
+  const weight = MEASURE_WEIGHT[measure.measure_id] || 1;
+  const urgency = gap >= 20 ? 1.5 : gap >= 10 ? 1.2 : 1;
+  const raw = open * (gap / 100) * weight * urgency;
+  return { raw, open, gap, weight, urgency };
+};
+
+// Rank a set of measures by priority, normalising the raw score to 0–100 so the
+// leader reads as 100 and the rest are relative to it.
+export const rankByPriority = (measures) => {
+  const scored = (measures || []).filter((m) => m && m.measure_id).map((m) => ({ measure: m, ...priorityScore(m) }));
+  const max = Math.max(1, ...scored.map((s) => s.raw));
+  return scored
+    .sort((a, b) => b.raw - a.raw)
+    .map((s, i) => ({ ...s, score: Math.round((s.raw / max) * 100), rank: i + 1 }));
+};
+
+// The human-readable "why this rank" breakdown for one scored measure.
+export const priorityFactors = (s) => [
+  { k: 'Recoverable', v: `${s.open.toLocaleString()} members still open` },
+  { k: 'Gap', v: `${s.gap} pts below goal` },
+  { k: 'Weight', v: `×${s.weight}${s.weight > 1 ? ' · program-weighted' : ''}` },
+  ...(s.urgency > 1 ? [{ k: 'Urgency', v: s.urgency >= 1.5 ? '×1.5 · critical gap' : '×1.2 · wide gap' }] : []),
+];
 
 // Portfolio-level companion to behaviorRead: the "what's happening across the
 // whole board" narrative shown before any single measure is opened. Same shape

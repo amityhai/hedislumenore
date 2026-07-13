@@ -13,6 +13,7 @@ import {
 } from '../../services/workflowService';
 import {
   STATUS_TONE, num, shortId, behaviorRead, portfolioRead,
+  rankByPriority, priorityFactors,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
 } from './v2utils';
 
@@ -576,7 +577,8 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
             <div className="ov2-panel-anim" key={selected ? selected.measure_id : `default-${lens}`}>
               {selected ? (
                 <SelectedPanel measure={selected} crsps={data?.crsps || []} token={token}
-                  selectedMonth={selectedMonth} onInvestigate={() => onInvestigate && onInvestigate(selected)} />
+                  peers={statusMeasures} selectedMonth={selectedMonth}
+                  onInvestigate={() => onInvestigate && onInvestigate(selected)} />
               ) : (
                 <DefaultPanel loading={loading} panel={activePanel} onPick={setSelectedId} />
               )}
@@ -605,6 +607,34 @@ const ReadBlock = ({ read, label = 'Behavior read' }) => {
         ))}
       </ul>
       <p className="ov2-read-why mono">{read.confidence.why}</p>
+    </section>
+  );
+};
+
+// Stage 2 · Decision Intelligence — a measure's rank in the priority order, with
+// the score bar and the factor math that produced it. Neutral (non-status) fill:
+// priority is a magnitude, not a good/bad state.
+const PriorityBlock = ({ mine, leader, total, measureId }) => {
+  if (!mine) return null;
+  const isLeader = leader && leader.measure.measure_id === measureId;
+  return (
+    <section className="ov2-stage" aria-label="Priority">
+      <div className="ov2-stage-head">
+        <span className="eyebrow ov2-stage-eyebrow">Priority · where to focus</span>
+        <span className="ov2-stage-tag mono">#{mine.rank} of {total}</span>
+      </div>
+      <div className="ov2-prio">
+        <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, mine.score)}%` }} /></span>
+        <span className="ov2-prio-score mono num">{mine.score}</span>
+      </div>
+      <ul className="ov2-read-signals ov2-prio-factors">
+        {priorityFactors(mine).map((f, i) => (
+          <li key={i}><span className="ov2-read-k mono">{f.k}</span><span className="ov2-read-v">{f.v}</span></li>
+        ))}
+      </ul>
+      {isLeader
+        ? <p className="ov2-stage-note">Highest recoverable opportunity in this group right now.</p>
+        : leader && <p className="ov2-stage-note">Work first across this group: <b className="mono">{shortId(leader.measure.measure_id)}</b> · score {leader.score}.</p>}
     </section>
   );
 };
@@ -645,13 +675,19 @@ const DefaultPanel = ({ loading, panel, onPick }) => (
   </div>
 );
 
-const SelectedPanel = ({ measure, crsps, token, selectedMonth, onInvestigate }) => {
+const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestigate }) => {
   const rate = num(measure.rate), goal = num(measure.goal_50th);
   const gap = Math.round((rate - goal) * 10) / 10;
   const tone = STATUS_TONE[measure.kpi_status] || 'below';
   const numerator = num(measure.numerator);
   const denominator = num(measure.denominator);
   const nonCompliant = Math.max(0, denominator - numerator);
+
+  // Stage 2 · Decision Intelligence — where this measure sits in the priority
+  // order for the current status group, and the math behind that rank.
+  const ranked = useMemo(() => rankByPriority(peers && peers.length ? peers : [measure]), [peers, measure]);
+  const mine = ranked.find((s) => s.measure.measure_id === measure.measure_id) || ranked[0];
+  const leader = ranked[0];
 
   const { data: trend, loading: trendLoading } = useAsync(
     () => fetchMiniChartData(measure.measure_id, token).catch(() => []),
@@ -681,6 +717,9 @@ const SelectedPanel = ({ measure, crsps, token, selectedMonth, onInvestigate }) 
 
       {/* Stage 1 · Behavior Intelligence — the read leads, the chart backs it up. */}
       <ReadBlock read={read} />
+
+      {/* Stage 2 · Decision Intelligence — this measure's place in the priority order. */}
+      <PriorityBlock mine={mine} leader={leader} total={ranked.length} measureId={measure.measure_id} />
 
       {trendLoading ? <Skeleton height={70} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
 

@@ -261,6 +261,40 @@
 .ov2-read-why { margin: 11px 0 0; padding-top: 9px; border-top: 1px solid var(--c-border-light);
   font-size: 10.5px; color: var(--c-text-4); letter-spacing: 0.01em; }
 
+/* Stages 2–4 · Decision / Recommendation / Learning — each a plainly-bordered
+   block so the four reads stack as one column of escalating questions. */
+.ov2-stage { margin-top: 14px; padding: 14px; border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm); background: var(--c-surface); }
+.ov2-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.ov2-stage-eyebrow { margin: 0; }
+.ov2-stage-tag { font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--c-text-3);
+  background: var(--c-bg-subtle); border: 1px solid var(--c-border); border-radius: var(--r-full); padding: 2px 9px; white-space: nowrap; }
+.ov2-stage-tag.is-preview { color: var(--c-warn-text); background: var(--c-warn-bg); border-color: var(--c-warn-border); text-transform: uppercase; }
+.ov2-stage-note { margin: 10px 0 0; font-size: 12px; color: var(--c-text-3); line-height: 1.45; }
+.ov2-stage-note b { color: var(--c-text-2); }
+
+/* Stage 2 priority meter — neutral slate fill (magnitude, not status). */
+.ov2-prio { display: flex; align-items: center; gap: 10px; }
+.ov2-prio-bar { flex: 1; height: 8px; border-radius: var(--r-full); background: var(--c-border-light); overflow: hidden; }
+.ov2-prio-fill { display: block; height: 100%; border-radius: var(--r-full); background: var(--c-text-2); }
+.ov2-prio-score { font-size: 15px; font-weight: 700; color: var(--c-text); min-width: 26px; text-align: right; }
+.ov2-prio-factors { margin-top: 12px; }
+
+/* Stage 3 recommendation */
+.ov2-rec-action { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--c-text); line-height: 1.35; }
+.ov2-rec-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.ov2-rec-chip { font-size: 10.5px; padding: 3px 9px; border-radius: var(--r-full);
+  background: var(--c-bg-subtle); border: 1px solid var(--c-border); color: var(--c-text-3); white-space: nowrap; }
+.ov2-rec-chip.is-strong { color: var(--c-primary-dark); background: var(--c-primary-light); border-color: var(--c-primary-subtle); }
+
+/* Stage 4 learning loop */
+.ov2-learn-loop { display: flex; flex-direction: column; gap: 0; margin: 4px 0 2px; }
+.ov2-learn-step { font-size: 12px; color: var(--c-text-2); line-height: 1.4; padding: 8px 11px;
+  border: 1px solid var(--c-border-light); border-radius: var(--r-xs); background: var(--c-bg-subtle);
+  display: grid; grid-template-columns: 66px 1fr; gap: 9px; align-items: baseline; }
+.ov2-learn-step.is-round { border-color: var(--c-primary-subtle); background: var(--c-primary-light); color: var(--c-primary-dark); }
+.ov2-learn-arrow { text-align: center; color: var(--c-text-4); font-size: 12px; line-height: 1; padding: 3px 0; }
+
 .ov2-trend { width: 100%; height: 70px; margin-top: 14px; overflow: visible; }
 .ov2-trend-line { fill: none; stroke: var(--c-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 600; stroke-dashoffset: 600; animation: ov2-draw 0.9s ease forwards 0.1s; }
