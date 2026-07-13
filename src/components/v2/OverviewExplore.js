@@ -12,7 +12,7 @@ import {
   fetchMiniChartData,
 } from '../../services/workflowService';
 import {
-  STATUS_TONE, num, shortId, behaviorRead,
+  STATUS_TONE, num, shortId, behaviorRead, portfolioRead,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
 } from './v2utils';
 
@@ -461,12 +461,13 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     return {
       ...panelCfg, count: matchCount, total: grid.length,
       sub: panelCfg.tone === 'below' && matchCount > 0 ? `↘ ${criticalCount} critical · ${matchCount} below target` : null,
+      read: portfolioRead(statusMeasures, statusFilter, grid.length),
       rows: panelList.slice(0, 6).map((m) => ({
         key: m.measure_id, label: m.display_name, meta: null, rate: num(m.rate),
         goal: num(m.goal_50th), measureId: m.measure_id, pick: true,
       })),
     };
-  }, [lens, crspList, equityList, panelCfg, matchCount, grid.length, criticalCount, panelList]);
+  }, [lens, crspList, equityList, panelCfg, matchCount, grid.length, criticalCount, panelList, statusMeasures, statusFilter]);
 
   const fieldTotal = lens === 'Providers' ? crspList.length : lens === 'Equity' ? equityList.length : matchCount;
 
@@ -587,6 +588,27 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   );
 };
 
+// Stage 1 · Behavior Intelligence — the generated read, shared by the measure
+// detail panel (per-measure) and the overview panel (portfolio roll-up).
+const ReadBlock = ({ read, label = 'Behavior read' }) => {
+  if (!read) return null;
+  return (
+    <section className="ov2-read" aria-label={label}>
+      <div className="ov2-read-head">
+        <span className="eyebrow ov2-read-eyebrow">{label}</span>
+        <span className="ov2-read-conf mono" title={read.confidence.why}>Confidence · {read.confidence.level}</span>
+      </div>
+      <p className="ov2-read-synth">{read.synthesis}</p>
+      <ul className="ov2-read-signals">
+        {read.signals.map((s, i) => (
+          <li key={i}><span className="ov2-read-k mono">{s.k}</span><span className="ov2-read-v">{s.v}</span></li>
+        ))}
+      </ul>
+      <p className="ov2-read-why mono">{read.confidence.why}</p>
+    </section>
+  );
+};
+
 const DefaultPanel = ({ loading, panel, onPick }) => (
   <div className="ov2-panel-inner">
     <div className="eyebrow">{panel.eyebrow}</div>
@@ -598,6 +620,8 @@ const DefaultPanel = ({ loading, panel, onPick }) => (
       </div>
     )}
     {!loading && panel.sub && <div className="ov2-bench-sub">{panel.sub}</div>}
+
+    {!loading && <ReadBlock read={panel.read} label="Board read" />}
 
     <div className="eyebrow ov2-panel-sub">{panel.listLabel}</div>
     <div className="ov2-list">
@@ -656,21 +680,7 @@ const SelectedPanel = ({ measure, crsps, token, selectedMonth, onInvestigate }) 
       </div>
 
       {/* Stage 1 · Behavior Intelligence — the read leads, the chart backs it up. */}
-      <section className="ov2-read" aria-label="Behavior read">
-        <div className="ov2-read-head">
-          <span className="eyebrow ov2-read-eyebrow">Behavior read</span>
-          <span className="ov2-read-conf mono" title={read.confidence.why}>
-            Confidence · {read.confidence.level}
-          </span>
-        </div>
-        <p className="ov2-read-synth">{read.synthesis}</p>
-        <ul className="ov2-read-signals">
-          {read.signals.map((s, i) => (
-            <li key={i}><span className="ov2-read-k mono">{s.k}</span><span className="ov2-read-v">{s.v}</span></li>
-          ))}
-        </ul>
-        <p className="ov2-read-why mono">{read.confidence.why}</p>
-      </section>
+      <ReadBlock read={read} />
 
       {trendLoading ? <Skeleton height={70} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
 

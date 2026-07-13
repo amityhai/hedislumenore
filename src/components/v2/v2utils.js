@@ -165,6 +165,55 @@ export const behaviorRead = (measure, trend, crsps = []) => {
   };
 };
 
+const fmtCompact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(n)));
+
+// Portfolio-level companion to behaviorRead: the "what's happening across the
+// whole board" narrative shown before any single measure is opened. Same shape
+// and same discipline — every line is a roll-up of the current snapshot (counts,
+// widest gap, total open work, where that work concentrates). Snapshot only, so
+// it makes no trend claim it can't back up.
+export const portfolioRead = (measures, statusFilter, totalCount) => {
+  const set = (measures || []).filter((m) => m && m.measure_id);
+  const n = set.length;
+  const total = totalCount || n;
+  if (!n) return null;
+
+  const att = (m) => (num(m.goal_50th) > 0 ? num(m.rate) / num(m.goal_50th) : num(m.rate) / 100);
+  const openOf = (m) => Math.max(0, num(m.denominator) - num(m.numerator));
+  const totalOpen = set.reduce((s, m) => s + openOf(m), 0);
+  const totalDenom = set.reduce((s, m) => s + num(m.denominator), 0);
+
+  const above = statusFilter === 'Above Goal';
+  const below = statusFilter === 'Below Goal';
+
+  const sorted = [...set].sort((a, b) => (above ? att(b) - att(a) : att(a) - att(b)));
+  const lead = sorted[0];
+  const leadGap = Math.round((num(lead.rate) - num(lead.goal_50th)) * 10) / 10;
+  const critical = below ? set.filter((m) => num(m.goal_50th) - num(m.rate) >= 20).length : 0;
+
+  const signals = [];
+  if (lead && num(lead.goal_50th) > 0) {
+    signals.push({
+      k: above ? 'Leader' : 'Widest gap',
+      v: `${shortId(lead.measure_id)} — ${Math.abs(leadGap)} pts ${above ? 'ahead of' : 'under'} its ${num(lead.goal_50th)}% target.`,
+    });
+  }
+  if (totalOpen > 0) {
+    signals.push({ k: 'Open work', v: `~${fmtCompact(totalOpen)} members carry an open gap across these ${n} measures.` });
+    const top3 = sorted.slice(0, 3).reduce((s, m) => s + openOf(m), 0);
+    const pct = Math.round((top3 / totalOpen) * 100);
+    if (n > 3 && pct > 0) signals.push({ k: 'Concentration', v: `The 3 ${below ? 'widest-gap' : 'lowest'} measures hold ${pct}% of that work.` });
+  }
+
+  let synthesis;
+  if (below) synthesis = `${n} of ${total} measures sit below goal${critical ? ` — ${critical} critically` : ''}.`;
+  else if (above) synthesis = `${n} of ${total} measures are beating goal.`;
+  else synthesis = `${n} of ${total} measures are holding at goal.`;
+
+  const level = totalDenom >= 5000 ? 'High' : totalDenom >= 1000 ? 'Moderate' : 'Low';
+  return { synthesis, signals, confidence: { level, why: `${totalDenom.toLocaleString()} eligible across ${n} measures` } };
+};
+
 // A short monthly trend ending at the measure's current rate — used as a
 // fallback so the detail panel always shows a trend line (mirrors the classic
 // Measure Detail header) when live mini-chart data isn't available.
