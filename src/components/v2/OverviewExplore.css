@@ -241,6 +241,26 @@
 .ov2-gap-neg { color: var(--c-error-text); }
 .ov2-gap-pos { color: var(--c-success-text); }
 
+/* Stage 1 · Behavior Intelligence read — a generated interpretation of the
+   numbers below it. Neutral slate card so it reads as analysis, not status;
+   confidence is a mono label, deliberately uncoloured to avoid colliding with
+   the fixed red/blue/green status semantics. */
+.ov2-read { margin-top: 16px; padding: 14px; border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm); background: var(--c-bg-subtle); }
+.ov2-read-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ov2-read-eyebrow { margin: 0; }
+.ov2-read-conf { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; color: var(--c-text-3);
+  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-full);
+  padding: 2px 9px; white-space: nowrap; }
+.ov2-read-synth { margin: 9px 0 0; font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--c-text); }
+.ov2-read-signals { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ov2-read-signals li { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: baseline;
+  font-size: 12.5px; color: var(--c-text-2); line-height: 1.4; }
+.ov2-read-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--c-text-4); }
+.ov2-read-v { color: var(--c-text-2); }
+.ov2-read-why { margin: 11px 0 0; padding-top: 9px; border-top: 1px solid var(--c-border-light);
+  font-size: 10.5px; color: var(--c-text-4); letter-spacing: 0.01em; }
+
 .ov2-trend { width: 100%; height: 70px; margin-top: 14px; overflow: visible; }
 .ov2-trend-line { fill: none; stroke: var(--c-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 600; stroke-dashoffset: 600; animation: ov2-draw 0.9s ease forwards 0.1s; }

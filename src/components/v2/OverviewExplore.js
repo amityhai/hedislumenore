@@ -12,7 +12,7 @@ import {
   fetchMiniChartData,
 } from '../../services/workflowService';
 import {
-  STATUS_TONE, num, shortId,
+  STATUS_TONE, num, shortId, behaviorRead,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
 } from './v2utils';
 
@@ -638,6 +638,9 @@ const SelectedPanel = ({ measure, crsps, token, selectedMonth, onInvestigate }) 
   // Always show a trend: live mini-chart data when available, otherwise a
   // sample series ending at the measure's current rate (matches the rest of v2).
   const trendData = trend && trend.length >= 2 ? trend : sampleTrend(measure.measure_id, rate);
+  // Stage 1 — Behavior Intelligence: a plain-language read of what's happening,
+  // generated from the same numbers shown below (gap, trend, denominator, CRSPs).
+  const read = behaviorRead(measure, trendData, crsps);
 
   return (
     <div className="ov2-panel-inner ov2-panel-inner-cta">
@@ -651,6 +654,23 @@ const SelectedPanel = ({ measure, crsps, token, selectedMonth, onInvestigate }) 
           {gap === 0 ? 'at goal' : `${gap > 0 ? '↗' : '↘'} ${Math.abs(gap)} pts ${gap > 0 ? 'above' : 'below'} goal`}
         </span>
       </div>
+
+      {/* Stage 1 · Behavior Intelligence — the read leads, the chart backs it up. */}
+      <section className="ov2-read" aria-label="Behavior read">
+        <div className="ov2-read-head">
+          <span className="eyebrow ov2-read-eyebrow">Behavior read</span>
+          <span className="ov2-read-conf mono" title={read.confidence.why}>
+            Confidence · {read.confidence.level}
+          </span>
+        </div>
+        <p className="ov2-read-synth">{read.synthesis}</p>
+        <ul className="ov2-read-signals">
+          {read.signals.map((s, i) => (
+            <li key={i}><span className="ov2-read-k mono">{s.k}</span><span className="ov2-read-v">{s.v}</span></li>
+          ))}
+        </ul>
+        <p className="ov2-read-why mono">{read.confidence.why}</p>
+      </section>
 
       {trendLoading ? <Skeleton height={70} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
 

@@ -102,6 +102,69 @@ export const sampleEquityAlerts = () =>
     .slice(0, 4)
     .map((m, i) => ({ measure_id: m.measure_id, race_strat: RACE_STRATA[i % RACE_STRATA.length], rate: Math.max(28, m.rate - (8 + i * 2)) }));
 
+// ── Behavior Intelligence (Stage 1) ──────────────────────────
+// Turns a measure's own numbers into a plain-language read of what's happening
+// and who's driving it. Deterministic and explainable by design — every line is
+// derived from data already on screen (gap, trend, denominator, CRSP rates), no
+// model and no invented facts. `confidence` is a function of denominator size,
+// because a read off 4,000 members is more trustworthy than one off 40.
+export const behaviorRead = (measure, trend, crsps = []) => {
+  const rate = num(measure.rate);
+  const goal = num(measure.goal_50th);
+  const denom = num(measure.denominator);
+  const numer = num(measure.numerator);
+  const open = Math.max(0, denom - numer);
+  const gap = Math.round((rate - goal) * 10) / 10;
+
+  const signals = [];
+
+  // Where it sits versus its own goal.
+  let stance = 'steady';
+  if (goal > 0) {
+    if (gap <= -0.5) { signals.push({ k: 'Gap', v: `${Math.abs(gap)} pts below the ${goal}% goal.` }); stance = `${Math.abs(gap)} pts below goal`; }
+    else if (gap < 2) { signals.push({ k: 'Gap', v: `Holding right at the ${goal}% goal.` }); stance = 'at goal'; }
+    else { signals.push({ k: 'Gap', v: `${gap} pts above the ${goal}% goal.` }); stance = `${gap} pts above goal`; }
+  }
+
+  // Direction of travel, first vs. last point of the trend series.
+  let motion = '';
+  if (trend && trend.length >= 2) {
+    const first = num(trend[0].rate);
+    const last = num(trend[trend.length - 1].rate);
+    const delta = Math.round((last - first) * 10) / 10;
+    const months = trend.length;
+    if (delta <= -1) { signals.push({ k: 'Trend', v: `Down ${Math.abs(delta)} pts over the last ${months} months — still sliding.` }); motion = 'and still sliding'; }
+    else if (delta >= 1) { signals.push({ k: 'Trend', v: `Up ${delta} pts over the last ${months} months — recovering.` }); motion = 'but recovering'; }
+    else { signals.push({ k: 'Trend', v: `Flat over the last ${months} months — no real movement.` }); motion = 'and flat'; }
+  }
+
+  // How much work still sits here.
+  if (denom > 0) {
+    const pct = Math.round((open / denom) * 100);
+    signals.push({ k: 'Open gaps', v: `${open.toLocaleString()} members still open — ${pct}% of the ${denom.toLocaleString()} eligible.` });
+  }
+
+  // Who is furthest behind — the "who's driving it" line.
+  const mine = (crsps || []).filter((c) => c.measure_id === measure.measure_id && num(c.rate) > 0);
+  if (mine.length) {
+    const worst = mine.reduce((lo, c) => (num(c.rate) < num(lo.rate) ? c : lo), mine[0]);
+    signals.push({ k: 'Driver', v: `${worst.crsp_name} is furthest behind at ${num(worst.rate)}%.` });
+  }
+
+  const level = denom >= 1000 ? 'High' : denom >= 300 ? 'Moderate' : 'Low';
+  const confidenceWhy = denom > 0
+    ? `${denom.toLocaleString()} eligible members · trend + claims only`
+    : 'no denominator — read is directional only';
+
+  const synthesis = [stance, motion].filter(Boolean).join(' ');
+
+  return {
+    synthesis: synthesis ? `${synthesis.charAt(0).toUpperCase()}${synthesis.slice(1)}.` : 'Stable this period.',
+    signals,
+    confidence: { level, why: confidenceWhy },
+  };
+};
+
 // A short monthly trend ending at the measure's current rate — used as a
 // fallback so the detail panel always shows a trend line (mirrors the classic
 // Measure Detail header) when live mini-chart data isn't available.
