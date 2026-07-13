@@ -405,16 +405,21 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   useLayoutEffect(() => {
     const el = fieldRef.current;
     if (!el) return undefined;
-    const measure = () => {
+    let t = null;
+    const apply = () => {
       const w = el.clientWidth || 720, h = el.clientHeight || 520;
       // Skip no-op writes: ResizeObserver fires on sub-pixel reflow and each
       // setState here re-packs every bubble.
       setFieldSize((p) => (p.w === w && p.h === h ? p : { w, h }));
     };
-    measure();
-    const ro = new ResizeObserver(measure);
+    apply(); // first pack is immediate
+    // Debounce reflow: dragging the panel resizer changes the field width every
+    // frame, and re-packing on each one makes the bubbles teleport. Let them
+    // hold position while the size is changing (the wrap clips), then re-pack
+    // once it settles.
+    const ro = new ResizeObserver(() => { if (t) clearTimeout(t); t = setTimeout(apply, 110); });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { if (t) clearTimeout(t); ro.disconnect(); };
   }, [lens, loading, error]);
 
   // Every status group's weights, so the fit-to-field scale can be derived from
