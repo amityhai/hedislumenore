@@ -11,13 +11,12 @@ import {
   fetchMeasureStratification,
   fetchMeasureStratificationRace,
   fetchMeasureStratificationEthnicity,
-  fetchMiniChartData,
 } from '../../services/workflowService';
 import {
   num, shortId, statusFor, STATUS_TONE,
-  SAMPLE_MEASURES, sampleProviders, sampleEquity, sampleTrend,
+  SAMPLE_MEASURES, sampleProviders, sampleEquity,
 } from './v2utils';
-import { MiniTrend } from './OverviewExplore';
+import { MeasureIntel } from './OverviewExplore';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
 
@@ -46,22 +45,15 @@ const countByStatus = (rows, fallbackGoal) =>
   rows.reduce((acc, r) => { acc[statusFor(r.rate, r.goal ?? fallbackGoal)] += 1; return acc; },
     { 'Above Goal': 0, 'At Goal': 0, 'Below Goal': 0 });
 
-// The active measure's card carries the full detail (rate, gap, trend,
-// numerator/denominator) — the same numbers as the Overview's selected panel,
-// living right where the drill starts instead of a separate summary bar.
-const ActiveMeasureCard = ({ measure, token, selectedMonth, nodeRef, onAssign }) => {
+// The active measure's card carries the full detail — the same read as the
+// Overview's selected panel (rate, gap, trend, and the Behavior / Priority /
+// Recommended-action intelligence), living right where the drill starts. It
+// shares the exact MeasureIntel block so a measure reads identically on both
+// surfaces. `peers` rank it; `crsps` feed its driver line.
+const ActiveMeasureCard = ({ measure, token, selectedMonth, peers, crsps, nodeRef, onAssign }) => {
   const rate = num(measure?.rate), goal = num(measure?.goal_50th);
   const gap = Math.round((rate - goal) * 10) / 10;
   const tone = toneFor(rate, goal);
-  const numerator = num(measure?.numerator);
-  const denominator = num(measure?.denominator);
-  const nonCompliant = Math.max(0, denominator - numerator);
-
-  const { data: trend, loading: trendLoading } = useAsync(
-    () => fetchMiniChartData(measure.measure_id, token).catch(() => []),
-    [measure?.measure_id, selectedMonth], { enabled: !!token && !!measure?.measure_id }
-  );
-  const trendData = trend && trend.length >= 2 ? trend : sampleTrend(measure?.measure_id, rate);
 
   if (!measure) return null;
   return (
@@ -84,16 +76,7 @@ const ActiveMeasureCard = ({ measure, token, selectedMonth, nodeRef, onAssign })
         {goal > 0 && <span className="mex-goalbar-marker" style={{ left: `${Math.min(100, goal)}%` }} />}
       </div>
 
-      {trendLoading ? <Skeleton height={70} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
-
-      {denominator > 0 && (
-        <div className="mex-detail-stats">
-          <div><span className="mex-detail-k">Numerator</span><span className="mex-detail-v num">{numerator.toLocaleString()}</span></div>
-          <div><span className="mex-detail-k">Denominator</span><span className="mex-detail-v num">{denominator.toLocaleString()}</span></div>
-          <div><span className="mex-detail-k">Non-compliant</span><span className="mex-detail-v num is-neg">{nonCompliant.toLocaleString()}</span></div>
-          <div><span className="mex-detail-k">Goal</span><span className="mex-detail-v num">{goal}%</span></div>
-        </div>
-      )}
+      <MeasureIntel measure={measure} crsps={crsps} token={token} peers={peers} selectedMonth={selectedMonth} />
 
       <div className="mex-detail-assign">
         <button type="button" className="btn btn-tonal" onClick={onAssign}>
@@ -160,6 +143,15 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
 
   const equity = equityAsync.data || { age: [], race: [], ethnicity: [] };
   const goal = num(activeMeasure?.goal_50th);
+
+  // The active card's Behavior read wants CRSP rows in the "needing attention"
+  // shape (measure_id + crsp_name + rate). The provider column already holds this
+  // measure's CRSP rates, so reshape them rather than a second fetch — the Overall
+  // roll-up isn't a provider, so drop it.
+  const crspsForRead = useMemo(
+    () => providers.filter((p) => !p.overall).map((p) => ({ measure_id: activeId, crsp_name: p.crsp, rate: p.rate })),
+    [providers, activeId]
+  );
 
   // ── Shared status filter applied to all three columns, worst-first ─────────
   const measuresFiltered = useMemo(
@@ -350,6 +342,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
               return (
                 <>
                   <ActiveMeasureCard measure={active} token={token} selectedMonth={selectedMonth}
+                    peers={measuresFiltered} crsps={crspsForRead}
                     nodeRef={setNode(`m:${active.measure_id}`)} onAssign={() => openAssign(null)} />
                   {rest.length > 0 && (
                     <button type="button" className="mex-showall" aria-expanded={showMeasures} onClick={() => setShowMeasures((s) => !s)}>

@@ -714,6 +714,74 @@ const LearningInline = ({ measure, rec }) => {
   );
 };
 
+// The four-stage read, compact: one line each, math on expand. Shared by the
+// Overview's selected panel and the Explorer's active-measure card, so a measure
+// reads the same way wherever it is opened. `peers` are the measures it is ranked
+// against (same status group); `crsps` are the CRSP rows behind its driver line.
+export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth }) => {
+  const rate = num(measure.rate);
+  const numerator = num(measure.numerator);
+  const denominator = num(measure.denominator);
+  const nonCompliant = Math.max(0, denominator - numerator);
+
+  // Stage 2 · Decision Intelligence — where this measure sits in the priority
+  // order for the current status group, and the math behind that rank.
+  const ranked = useMemo(() => rankByPriority(peers && peers.length ? peers : [measure]), [peers, measure]);
+  const mine = ranked.find((s) => s.measure.measure_id === measure.measure_id) || ranked[0];
+  const leader = ranked[0];
+
+  const { data: trend, loading: trendLoading } = useAsync(
+    () => fetchMiniChartData(measure.measure_id, token).catch(() => []),
+    [measure.measure_id, selectedMonth], { enabled: !!token }
+  );
+
+  // Always show a trend: live mini-chart data when available, otherwise a
+  // sample series ending at the measure's current rate (matches the rest of v2).
+  const trendData = trend && trend.length >= 2 ? trend : sampleTrend(measure.measure_id, rate);
+  // Stage 1 — Behavior Intelligence: a plain-language read of what's happening,
+  // generated from the same numbers shown in the header and expandable detail.
+  const read = behaviorRead(measure, trendData, crsps);
+  const rec = recommendAction(measure, read);
+  const isLeader = leader && leader.measure.measure_id === measure.measure_id;
+  const prioSummary = isLeader
+    ? `#1 of ${ranked.length} — the top recoverable opportunity here.`
+    : `#${mine.rank} of ${ranked.length} — work ${shortId(leader.measure.measure_id)} first.`;
+
+  return (
+    <div className="ov2-intel">
+      <Stage label="Behavior" summary={read.synthesis} tag={`Confidence · ${read.confidence.level}`}>
+        <Signals items={read.signals} />
+        {trendLoading ? <Skeleton height={64} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
+        {denominator > 0 && (
+          <div className="ov2-stats ov2-stats-3 ov2-intel-stats">
+            <div><span className="ov2-stat-k">Numerator</span><span className="ov2-stat-v num">{numerator.toLocaleString()}</span></div>
+            <div><span className="ov2-stat-k">Denominator</span><span className="ov2-stat-v num">{denominator.toLocaleString()}</span></div>
+            <div><span className="ov2-stat-k">Non-compliant</span><span className="ov2-stat-v num is-neg">{nonCompliant.toLocaleString()}</span></div>
+          </div>
+        )}
+        <p className="ov2-read-why mono">{read.confidence.why}</p>
+      </Stage>
+
+      <Stage label="Priority · where to focus" summary={prioSummary} tag={`Score ${mine.score}`}>
+        <div className="ov2-prio">
+          <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, mine.score)}%` }} /></span>
+          <span className="ov2-prio-score mono num">{mine.score}</span>
+        </div>
+        <Signals items={priorityFactors(mine)} className="ov2-prio-factors" />
+      </Stage>
+
+      <Stage label="Recommended action" summary={rec.action} tag="Preview" tagKind="preview">
+        <p className="ov2-stage-note">Because {rec.rationale}.</p>
+        <div className="ov2-rec-chips">
+          {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
+        </div>
+        <p className="ov2-read-why mono">{rec.basis}</p>
+        <LearningInline measure={measure} rec={rec} />
+      </Stage>
+    </div>
+  );
+};
+
 const DefaultPanel = ({ loading, panel, onPick }) => (
   <div className="ov2-panel-inner">
     <div className="eyebrow">{panel.eyebrow}</div>
@@ -762,32 +830,6 @@ const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestig
   const rate = num(measure.rate), goal = num(measure.goal_50th);
   const gap = Math.round((rate - goal) * 10) / 10;
   const tone = STATUS_TONE[measure.kpi_status] || 'below';
-  const numerator = num(measure.numerator);
-  const denominator = num(measure.denominator);
-  const nonCompliant = Math.max(0, denominator - numerator);
-
-  // Stage 2 · Decision Intelligence — where this measure sits in the priority
-  // order for the current status group, and the math behind that rank.
-  const ranked = useMemo(() => rankByPriority(peers && peers.length ? peers : [measure]), [peers, measure]);
-  const mine = ranked.find((s) => s.measure.measure_id === measure.measure_id) || ranked[0];
-  const leader = ranked[0];
-
-  const { data: trend, loading: trendLoading } = useAsync(
-    () => fetchMiniChartData(measure.measure_id, token).catch(() => []),
-    [measure.measure_id, selectedMonth], { enabled: !!token }
-  );
-
-  // Always show a trend: live mini-chart data when available, otherwise a
-  // sample series ending at the measure's current rate (matches the rest of v2).
-  const trendData = trend && trend.length >= 2 ? trend : sampleTrend(measure.measure_id, rate);
-  // Stage 1 — Behavior Intelligence: a plain-language read of what's happening,
-  // generated from the same numbers shown in the header and expandable detail.
-  const read = behaviorRead(measure, trendData, crsps);
-  const rec = recommendAction(measure, read);
-  const isLeader = leader && leader.measure.measure_id === measure.measure_id;
-  const prioSummary = isLeader
-    ? `#1 of ${ranked.length} — the top recoverable opportunity here.`
-    : `#${mine.rank} of ${ranked.length} — work ${shortId(leader.measure.measure_id)} first.`;
 
   return (
     <div className="ov2-panel-inner ov2-panel-inner-cta">
@@ -807,38 +849,7 @@ const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestig
         {goal > 0 && <span className="ov2-goalbar-marker" style={{ left: `${Math.min(100, goal)}%` }} />}
       </div>
 
-      {/* The four-stage read, compact: one line each, math on expand. */}
-      <div className="ov2-intel">
-        <Stage label="Behavior" summary={read.synthesis} tag={`Confidence · ${read.confidence.level}`}>
-          <Signals items={read.signals} />
-          {trendLoading ? <Skeleton height={64} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
-          {denominator > 0 && (
-            <div className="ov2-stats ov2-stats-3 ov2-intel-stats">
-              <div><span className="ov2-stat-k">Numerator</span><span className="ov2-stat-v num">{numerator.toLocaleString()}</span></div>
-              <div><span className="ov2-stat-k">Denominator</span><span className="ov2-stat-v num">{denominator.toLocaleString()}</span></div>
-              <div><span className="ov2-stat-k">Non-compliant</span><span className="ov2-stat-v num is-neg">{nonCompliant.toLocaleString()}</span></div>
-            </div>
-          )}
-          <p className="ov2-read-why mono">{read.confidence.why}</p>
-        </Stage>
-
-        <Stage label="Priority · where to focus" summary={prioSummary} tag={`Score ${mine.score}`}>
-          <div className="ov2-prio">
-            <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, mine.score)}%` }} /></span>
-            <span className="ov2-prio-score mono num">{mine.score}</span>
-          </div>
-          <Signals items={priorityFactors(mine)} className="ov2-prio-factors" />
-        </Stage>
-
-        <Stage label="Recommended action" summary={rec.action} tag="Preview" tagKind="preview">
-          <p className="ov2-stage-note">Because {rec.rationale}.</p>
-          <div className="ov2-rec-chips">
-            {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
-          </div>
-          <p className="ov2-read-why mono">{rec.basis}</p>
-          <LearningInline measure={measure} rec={rec} />
-        </Stage>
-      </div>
+      <MeasureIntel measure={measure} crsps={crsps} token={token} peers={peers} selectedMonth={selectedMonth} />
 
       {/* Pinned to the panel's bottom edge: the panel scrolls, the action doesn't. */}
       <div className="ov2-panel-cta">
