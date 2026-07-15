@@ -14,8 +14,10 @@ import {
 import {
   STATUS_TONE, num, shortId, behaviorRead, portfolioRead,
   rankByPriority, priorityFactors, recommendAction, learningState, recordApplied,
+  categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
 } from './v2utils';
+import CategoryTabs from './CategoryTabs';
 
 // The bubble field encodes two independent variables, so a measure's urgency and
 // its workload can be read at once:
@@ -263,9 +265,10 @@ export const MiniTrend = ({ data }) => {
   );
 };
 
-const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, availableMonths, statusFilter = 'Below Goal', onStatusFilter }) => {
+const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, availableMonths, statusFilter = 'Below Goal', onStatusFilter, category = null, onCategory }) => {
   const [lens, setLens] = useState('Measures');
   const setStatusFilter = onStatusFilter || (() => {});
+  const setCategory = onCategory || (() => {});
   const [selectedId, setSelectedId] = useState(null);
 
   const { data, loading, error, refetch } = useAsync(async () => {
@@ -289,12 +292,22 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   const crspList = data?.crsps || [];
   const equityList = data?.equity || [];
 
+  // Category ("sub-category") tabs come from whatever domains the data carries.
+  const categories = useMemo(() => categoriesOf(grid), [grid]);
+  // The active category scopes every measure derivation below; null = All. Bubble
+  // sizing (maxV) is normalized within the category so switching status tabs
+  // inside a category never rescales the field.
+  const catGrid = useMemo(
+    () => (category ? grid.filter((m) => categoryOf(m) === category) : grid),
+    [grid, category]
+  );
+
   // Derive every size/shade input once, over the WHOLE measure set. `maxV` is
   // global on purpose: normalizing inside the active status filter would make a
   // "big" Above Goal bubble and a "big" Below Goal bubble encode different
   // absolute values, so nothing could be compared across tabs.
   const measureStats = useMemo(() => {
-    const rows = grid.map((m) => {
+    const rows = catGrid.map((m) => {
       const rate = num(m.rate);
       const goal = num(m.goal_50th);
       return {
@@ -310,7 +323,7 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     // points-from-goal and say so in the caption.
     const sizeKey = rows.some((m) => m._nonComp > 0) ? '_nonComp' : '_dist';
     return { rows, sizeKey, maxV: Math.max(1, ...rows.map((m) => m[sizeKey])) };
-  }, [grid]);
+  }, [catGrid]);
 
   // Bubbles are normalized to { key, label, title, rate, tone, sizeBy, radius,
   // measureId? } so the field renders the same way for every lens. Only the
@@ -449,7 +462,7 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     return packCircles(items, w, h, rMin, scale);
   }, [bubbleData, fieldSize, scaleGroups]);
 
-  useEffect(() => { setSelectedId(null); }, [statusFilter, lens]);
+  useEffect(() => { setSelectedId(null); }, [statusFilter, lens, category]);
 
   // The legend labels the scale of what is actually drawn, not of the whole set.
   const legend = useMemo(() => {
@@ -464,8 +477,9 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   }, [packed, lens, statusFilter]);
 
   const selected = useMemo(() => grid.find((m) => m.measure_id === selectedId) || null, [grid, selectedId]);
-  // The summary panel mirrors the active status filter (below / at / above goal).
-  const statusMeasures = useMemo(() => grid.filter((m) => m.kpi_status === statusFilter), [grid, statusFilter]);
+  // The summary panel mirrors the active status filter (below / at / above goal),
+  // scoped to the active category.
+  const statusMeasures = useMemo(() => catGrid.filter((m) => m.kpi_status === statusFilter), [catGrid, statusFilter]);
   const matchCount = statusMeasures.length;
   const panelCfg = STATUS_PANELS[statusFilter] || STATUS_PANELS['Below Goal'];
 
@@ -514,15 +528,15 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
       };
     }
     return {
-      ...panelCfg, count: matchCount, total: grid.length,
+      ...panelCfg, count: matchCount, total: catGrid.length,
       sub: panelCfg.tone === 'below' && matchCount > 0 ? `↘ ${criticalCount} critical · ${matchCount} below target` : null,
-      read: portfolioRead(statusMeasures, statusFilter, grid.length),
+      read: portfolioRead(statusMeasures, statusFilter, catGrid.length),
       rows: panelList.slice(0, 6).map((m) => ({
         key: m.measure_id, label: m.display_name, meta: null, rate: num(m.rate),
         goal: num(m.goal_50th), measureId: m.measure_id, pick: true,
       })),
     };
-  }, [lens, crspList, equityList, panelCfg, matchCount, grid.length, criticalCount, panelList, statusMeasures, statusFilter]);
+  }, [lens, crspList, equityList, panelCfg, matchCount, catGrid.length, criticalCount, panelList, statusMeasures, statusFilter]);
 
   const fieldTotal = lens === 'Providers' ? crspList.length : lens === 'Equity' ? equityList.length : matchCount;
 
@@ -545,11 +559,23 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
 
       <div className="ov2-card">
         <div className="ov2-toolbar">
-          <div className="ov2-lenses" role="tablist" aria-label="Lens">
-            {LENSES.map((l) => (
-              <button key={l} role="tab" aria-selected={lens === l}
-                className={`ov2-lens ${lens === l ? 'is-active' : ''}`} onClick={() => setLens(l)}>{l}</button>
-            ))}
+          <div className="ov2-toolbar-left">
+            {/* A single lens is a heading, not a control — a lone segmented pill
+                reads as a button you can press for no effect. The tablist returns
+                automatically the moment a second lens is re-enabled. */}
+            {LENSES.length > 1 ? (
+              <div className="ov2-lenses" role="tablist" aria-label="Lens">
+                {LENSES.map((l) => (
+                  <button key={l} role="tab" aria-selected={lens === l}
+                    className={`ov2-lens ${lens === l ? 'is-active' : ''}`} onClick={() => setLens(l)}>{l}</button>
+                ))}
+              </div>
+            ) : (
+              <h2 className="ov2-section-title">{LENSES[0]}</h2>
+            )}
+            {lens === 'Measures' && categories.length > 1 && (
+              <CategoryTabs categories={categories} value={category} onChange={setCategory} count={grid.length} />
+            )}
           </div>
           {lens === 'Measures' && (
             <div className="ov2-pills" role="group" aria-label="Filter by status">
@@ -652,7 +678,7 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
 };
 
 // Shared signal list used by every read.
-const Signals = ({ items, className = '' }) => (
+export const Signals = ({ items, className = '' }) => (
   <ul className={`ov2-read-signals ${className}`}>
     {items.map((s, i) => (
       <li key={i}><span className="ov2-read-k mono">{s.k}</span><span className="ov2-read-v">{s.v}</span></li>
@@ -663,7 +689,7 @@ const Signals = ({ items, className = '' }) => (
 // One collapsible intelligence row. The one-line summary is always visible; the
 // math/detail expands on click. This is what keeps the four-stage read to four
 // scannable lines instead of four screens of scroll.
-const Stage = ({ label, summary, tag, tagKind, defaultOpen = false, children }) => {
+export const Stage = ({ label, summary, tag, tagKind, defaultOpen = false, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   const hasBody = Boolean(children);
   return (
@@ -770,12 +796,13 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth 
         <Signals items={priorityFactors(mine)} className="ov2-prio-factors" />
       </Stage>
 
-      <Stage label="Recommended action" summary={rec.action} tag="Preview" tagKind="preview">
-        <p className="ov2-stage-note">Because {rec.rationale}.</p>
+      <Stage label="Recommended action" summary={rec.action} tag="Suggested" tagKind="preview">
+        <p className="ov2-stage-lead">The intervention most likely to close this gap. Because {rec.rationale}.</p>
         <div className="ov2-rec-chips">
           {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
         </div>
         <p className="ov2-read-why mono">{rec.basis}</p>
+        <p className="ov2-rec-applynote">Ran this play? Mark it applied — we log the action and weight it higher for measures like this next cycle.</p>
         <LearningInline measure={measure} rec={rec} />
       </Stage>
     </div>

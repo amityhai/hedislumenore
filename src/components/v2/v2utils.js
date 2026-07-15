@@ -10,6 +10,28 @@ export const STATUS_TONE = {
 export const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 export const shortId = (id) => (id || '').replace(/_/g, ' ');
 
+// HEDIS reporting domains ("sub-categories"). Live grid rows carry their own
+// `category`; the sample set below is tagged from this map so the category tabs
+// are demonstrable on the fallback path too. Anything unmapped falls to EOC.
+export const CATEGORY_MAP = {
+  APM_E: 'EOC', FUM_7: 'EOC', FUM_30: 'EOC', FUA_7: 'EOC', HBD: 'EOC', SSD: 'EOC',
+  CBP: 'EOC', AMM_Acute: 'EOC', AMM_Cont: 'EOC', SPC: 'EOC', SPD: 'EOC', ADD: 'EOC', BPD: 'EOC',
+  BCS_E: 'ECDS', CCS: 'ECDS', COL_E: 'ECDS', IMA: 'ECDS', CIS: 'ECDS', CHL: 'ECDS', FVA: 'ECDS', W30: 'ECDS', WCV: 'ECDS',
+  AAP: 'AAC', PPC_Pre: 'AAC',
+  PCE: 'URU', AMR: 'URU',
+};
+export const categoryOf = (m) => (m && (m.category || CATEGORY_MAP[m.measure_id])) || 'EOC';
+
+// Distinct categories present in a measure set, in a stable domain order so the
+// tabs don't reshuffle between renders. Unknown categories sort to the end.
+const CATEGORY_ORDER = ['EOC', 'ECDS', 'AAC', 'URU'];
+export const categoriesOf = (measures) => {
+  const seen = new Set((measures || []).map(categoryOf).filter(Boolean));
+  const known = CATEGORY_ORDER.filter((c) => seen.has(c));
+  const extra = [...seen].filter((c) => !CATEGORY_ORDER.includes(c)).sort();
+  return [...known, ...extra];
+};
+
 // Derive a status bucket from rate vs goal when the API doesn't supply one.
 export const statusFor = (rate, goal) => {
   const d = num(rate) - num(goal);
@@ -26,7 +48,7 @@ const M = (measure_id, display_name, rate, goal_50th, def) => {
   const kpi_status = statusFor(rate, goal_50th);
   const denominator = 1500 + ((rate * 37) % 5000);
   const numerator = Math.round((rate / 100) * denominator);
-  return { measure_id, display_name, rate, goal_50th, kpi_status, numerator, denominator, measure_definition: def };
+  return { measure_id, display_name, rate, goal_50th, kpi_status, numerator, denominator, measure_definition: def, category: CATEGORY_MAP[measure_id] || 'EOC' };
 };
 
 export const SAMPLE_MEASURES = [
@@ -253,6 +275,57 @@ export const portfolioRead = (measures, statusFilter, totalCount) => {
   return { synthesis, signals, confidence: { level, why: `${totalDenom.toLocaleString()} eligible across ${n} measures` } };
 };
 
+// Stratum-level companion to behaviorRead: the "what's happening for THIS equity
+// group" narrative, relevant to the group rather than the whole measure. Same
+// discipline — every line is a roll-up of the group's own rate against goal and
+// against its sibling strata (rank, spread). Deterministic and explainable.
+const DIM_LABEL = { age: 'age', race: 'race', ethnicity: 'ethnicity' };
+const ordinal = (n) => {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+export const stratumRead = (pick, siblings, measure) => {
+  if (!pick) return null;
+  const rate = num(pick.rate);
+  const goal = num(pick.goal ?? measure?.goal_50th);
+  const gap = Math.round((rate - goal) * 10) / 10;
+  const dim = DIM_LABEL[pick.type] || 'peer';
+
+  const set = (siblings || []).filter((s) => s && s.group);
+  const sorted = [...set].sort((a, b) => num(a.rate) - num(b.rate)); // worst-first
+  const n = sorted.length;
+  const rank = sorted.findIndex((s) => s.group === pick.group) + 1; // 1 = furthest behind
+  const worst = sorted[0];
+  const best = sorted[n - 1];
+  const spread = n >= 2 ? Math.round((num(best.rate) - num(worst.rate)) * 10) / 10 : 0;
+
+  const signals = [];
+  if (goal > 0) {
+    if (gap <= -0.5) signals.push({ k: 'Gap', v: `${Math.abs(gap)} pts below the ${goal}% goal.` });
+    else if (gap < 2) signals.push({ k: 'Gap', v: `Holding right at the ${goal}% goal.` });
+    else signals.push({ k: 'Gap', v: `${gap} pts above the ${goal}% goal.` });
+  }
+  if (n >= 2 && rank) {
+    const place = rank === 1 ? 'the furthest behind' : rank === n ? 'the strongest' : 'mid-pack';
+    signals.push({ k: 'Standing', v: `${ordinal(rank)} of ${n} ${dim} groups — ${place}.` });
+    signals.push({ k: 'Spread', v: `${spread} pts between ${worst.group} (${num(worst.rate)}%) and ${best.group} (${num(best.rate)}%).` });
+  }
+
+  const disparity = rank === 1 && n >= 2 && gap < 0;
+  const synthesis = goal > 0
+    ? `${pick.group} is ${Math.abs(gap)} pts ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal${disparity ? ' — the widest disparity in this group' : ''}.`
+    : `${pick.group} · ${rate}%.`;
+
+  const denom = num(measure?.denominator);
+  const level = denom >= 3000 ? 'High' : denom >= 800 ? 'Moderate' : 'Low';
+  return {
+    signals,
+    synthesis,
+    isDisparity: disparity,
+    confidence: { level, why: `stratified rate · ${dim} cut · claims only` },
+  };
+};
+
 // ── Recommendation Intelligence (Stage 3) ────────────────────
 // Precedent-based, and honest about it: these are the interventions that most
 // often move measures LIKE this one (drawn from published quality-improvement
@@ -322,6 +395,27 @@ export const sampleTrend = (measureId, fallbackRate) => {
     rate: Math.round(start + ((end - start) * i) / (months.length - 1)),
   }));
 };
+
+// A provider's standing across the WHOLE measure set. There is no provider-→-all-
+// measures endpoint, so a stable per-(provider, measure) offset is applied to each
+// measure's network rate — the same demo-grade, deterministic approach as
+// sampleProviders, giving each provider a distinct but repeatable profile. The
+// "Overall" provider is the network itself, so it passes through unchanged.
+const hashStr = (s) => { let h = 0; for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+export const providerProfile = (providerName, overall, measures) =>
+  (measures || []).filter((m) => m && m.measure_id).map((m) => {
+    const net = num(m.rate);
+    const goal = num(m.goal_50th);
+    const off = overall ? 0 : ((hashStr(`${providerName}|${m.measure_id}`) % 25) - 12); // −12..+12 pts
+    const rate = Math.max(20, Math.min(96, net + off));
+    const denominator = 60 + (hashStr(`${m.measure_id}|${providerName}`) % 340);
+    const numerator = Math.round((rate / 100) * denominator);
+    return {
+      measure_id: m.measure_id, display_name: m.display_name, measure_definition: m.measure_definition,
+      category: categoryOf(m), goal_50th: goal, netRate: net,
+      rate, numerator, denominator, kpi_status: statusFor(rate, goal),
+    };
+  });
 
 // Providers (CRSP-level) for a measure.
 export const sampleProviders = (measureId) => {

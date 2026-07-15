@@ -13,10 +13,11 @@ import {
   fetchMeasureStratificationEthnicity,
 } from '../../services/workflowService';
 import {
-  num, shortId, statusFor, STATUS_TONE,
+  num, shortId, statusFor, STATUS_TONE, categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleProviders, sampleEquity,
 } from './v2utils';
 import { MeasureIntel } from './OverviewExplore';
+import CategoryTabs from './CategoryTabs';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
 
@@ -24,13 +25,12 @@ const RateBadge = ({ rate, goal }) => (
   <span className={`mex-rate mex-rate-${toneFor(rate, goal)} num`}>{num(rate)}%</span>
 );
 
-// One global status filter (pills, top-right) drives all three columns and is
-// inherited from the Overview selection.
-const STATUS_FILTERS = [
-  { status: 'Below Goal', tone: 'below', label: 'Below Goal' },
-  { status: 'At Goal', tone: 'at', label: 'At Goal' },
-  { status: 'Above Goal', tone: 'above', label: 'Above Goal' },
-];
+// A bare goal-status dot — the "circled color, not full text" read carried at the
+// measure/provider/stratum level now that every row is shown (no status filter).
+const StatusDot = ({ rate, goal, className = '' }) => (
+  <span className={`mex-dot mex-dot-${toneFor(rate, goal)} ${className}`}
+    title={`${statusFor(rate, goal)} · ${num(rate)}% vs ${num(goal)}% goal`} aria-hidden="true" />
+);
 
 const EQUITY_SECTIONS = [
   { key: 'age', title: 'AGE' },
@@ -39,11 +39,6 @@ const EQUITY_SECTIONS = [
 ];
 
 const byRateAsc = (a, b) => num(a.rate) - num(b.rate); // worst (lowest rate) first
-
-const STATUS_LABEL = { 'Below Goal': 'Below goal', 'At Goal': 'At goal', 'Above Goal': 'Above goal' };
-const countByStatus = (rows, fallbackGoal) =>
-  rows.reduce((acc, r) => { acc[statusFor(r.rate, r.goal ?? fallbackGoal)] += 1; return acc; },
-    { 'Above Goal': 0, 'At Goal': 0, 'Below Goal': 0 });
 
 // The active measure's card carries the full detail — the same read as the
 // Overview's selected panel (rate, gap, trend, and the Behavior / Priority /
@@ -59,7 +54,10 @@ const ActiveMeasureCard = ({ measure, token, selectedMonth, peers, crsps, nodeRe
   return (
     <div ref={nodeRef} className="mex-card mex-card-detail is-active">
       <div className="mex-detail-head">
-        <span className="mex-card-id mono">{shortId(measure.measure_id)}</span>
+        <span className="mex-card-idrow">
+          <StatusDot rate={measure.rate} goal={measure.goal_50th} />
+          <span className="mex-card-id mono">{shortId(measure.measure_id)}</span>
+        </span>
         <RateBadge rate={measure.rate} goal={measure.goal_50th} />
       </div>
       <h3 className="mex-detail-name">{measure.display_name}</h3>
@@ -87,7 +85,8 @@ const ActiveMeasureCard = ({ measure, token, selectedMonth, peers, crsps, nodeRe
   );
 };
 
-const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below Goal', onStatusFilter, onOpenWorklist, breadcrumb }) => {
+const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCategory, onOpenWorklist, onAnalyzeProvider, breadcrumb }) => {
+  const setCategory = onCategory || (() => {});
   const [measureId, setMeasureId] = useState(measure?.measure_id || null);
   const [providerIdx, setProviderIdx] = useState(0); // 0 = Overall
   const [expandedEq, setExpandedEq] = useState(null); // `${key}:${i}` of expanded stratum
@@ -153,27 +152,31 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
     [providers, activeId]
   );
 
-  // ── Shared status filter applied to all three columns, worst-first ─────────
+  // Category ("sub-category") tabs, scoping the Measures column only. Providers
+  // and equity always show in full — the status filter is gone; goal standing is
+  // carried by each row's tinted background instead (see StatusDot / row tones).
+  const categories = useMemo(() => categoriesOf(measures), [measures]);
   const measuresFiltered = useMemo(
-    () => measures.filter((m) => m.kpi_status === statusFilter).sort(byRateAsc),
-    [measures, statusFilter]
+    () => measures
+      .filter((m) => !category || categoryOf(m) === category)
+      .slice()
+      .sort(byRateAsc),
+    [measures, category]
   );
+  // Every provider (Overall pinned first), worst-first. Nothing hidden.
   const providersFiltered = useMemo(() => {
     const overall = providers.filter((p) => p.overall);
-    const rest = providers
-      .filter((p) => !p.overall && statusFor(p.rate, p.goal ?? goal) === statusFilter)
-      .sort(byRateAsc);
+    const rest = providers.filter((p) => !p.overall).sort(byRateAsc);
     return [...overall, ...rest];
-  }, [providers, statusFilter, goal]);
+  }, [providers]);
+  // Every stratum in every dimension, worst-first.
   const equityFiltered = useMemo(() => {
     const f = {};
     EQUITY_SECTIONS.forEach(({ key }) => {
-      f[key] = (equity[key] || [])
-        .filter((g) => statusFor(g.rate, g.goal ?? goal) === statusFilter)
-        .sort(byRateAsc);
+      f[key] = (equity[key] || []).slice().sort(byRateAsc);
     });
     return f;
-  }, [equity, statusFilter, goal]);
+  }, [equity]);
 
   const activeProvider = providersFiltered[providerIdx] || providersFiltered[0];
 
@@ -195,8 +198,8 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
   }, [toast]);
 
   // Reset selected provider, expanded stratum, and the measures list when the
-  // measure or filter changes (Overall = 0).
-  useEffect(() => { setProviderIdx(0); setExpandedEq(null); setShowMeasures(false); }, [activeId, statusFilter]);
+  // measure or category changes (Overall = 0).
+  useEffect(() => { setProviderIdx(0); setExpandedEq(null); setShowMeasures(false); }, [activeId, category]);
 
   // If the active measure falls outside the current filter, snap to the first
   // matching measure so providers/equity stay coherent.
@@ -213,7 +216,10 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
   const boardRef = useRef(null);
   const nodeRefs = useRef({});
   const setNode = (key) => (el) => { if (el) nodeRefs.current[key] = el; };
-  const [conn, setConn] = useState({ w: 0, h: 0, mp: [], pe: [] });
+  // Only the selected-provider → equity wires are drawn now: with every provider
+  // and stratum shown, a measure → all-providers fan would be noise. The wire
+  // reads "these are the equity strata sitting under this provider".
+  const [conn, setConn] = useState({ w: 0, h: 0, pe: [] });
   const connRef = useRef(conn);
 
   const ageN = equityFiltered.age.length;
@@ -238,9 +244,6 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
       const dx = Math.max(40, (c.x - a.x) * 0.5);
       return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} C ${(a.x + dx).toFixed(1)} ${a.y.toFixed(1)}, ${(c.x - dx).toFixed(1)} ${c.y.toFixed(1)}, ${c.x.toFixed(1)} ${c.y.toFixed(1)}`;
     };
-    const from = anchor(`m:${activeId}`, 'right');
-    const mp = [];
-    for (let i = 0; i < provN; i++) { const c = curve(from, anchor(`p:${i}`, 'left')); if (c) mp.push(c); }
     const pFrom = anchor(`p:${providerIdx}`, 'right');
     const pe = [];
     EQUITY_SECTIONS.forEach(({ key }) => {
@@ -248,11 +251,11 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
       for (let i = 0; i < n; i++) { const c = curve(pFrom, anchor(`e:${key}:${i}`, 'left')); if (c) pe.push(c); }
     });
     const prev = connRef.current;
-    if (prev.w === W && prev.h === H && prev.mp.join('|') === mp.join('|') && prev.pe.join('|') === pe.join('|')) return;
-    const next = { w: W, h: H, mp, pe };
+    if (prev.w === W && prev.h === H && prev.pe.join('|') === pe.join('|')) return;
+    const next = { w: W, h: H, pe };
     connRef.current = next;
     setConn(next);
-  }, [activeId, providerIdx, provN, ageN, raceN, ethN, expandedEq]);
+  }, [providerIdx, ageN, raceN, ethN, expandedEq]);
 
   useLayoutEffect(() => {
     recompute();
@@ -285,7 +288,10 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
         className={`mex-card ${active ? 'is-active' : ''}`} onClick={() => pickMeasure(m.measure_id)}>
         <span className="mex-card-main">
           <span className="mex-card-body">
-            <span className="mex-card-id mono">{shortId(m.measure_id)}</span>
+            <span className="mex-card-idrow">
+              <StatusDot rate={m.rate} goal={m.goal_50th} />
+              <span className="mex-card-id mono">{shortId(m.measure_id)}</span>
+            </span>
             <span className="mex-card-name">{m.display_name}</span>
           </span>
           <RateBadge rate={m.rate} goal={m.goal_50th} />
@@ -305,21 +311,14 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
     <div className="mex">
       <div className="mex-toolbar">
         <div className="mex-toolbar-left">{breadcrumb}</div>
-        <div className="mex-pills" role="group" aria-label="Filter by goal status">
-          {STATUS_FILTERS.map((f) => (
-            <button key={f.status} type="button"
-              className={`mex-pill mex-pill-${f.tone} ${statusFilter === f.status ? 'is-active' : ''}`}
-              aria-pressed={statusFilter === f.status} onClick={() => onStatusFilter && onStatusFilter(f.status)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
+        {categories.length > 1 && (
+          <CategoryTabs categories={categories} value={category} onChange={setCategory} />
+        )}
       </div>
 
       <div className="mex-board" ref={boardRef}>
         {/* Connector overlay */}
         <svg className="mex-links" width={conn.w} height={conn.h} aria-hidden="true">
-          {conn.mp.map((d, i) => <path key={`mp${i}`} d={d} className="mex-link mex-link-mp" />)}
           {conn.pe.map((d, i) => <path key={`pe${i}`} d={d} className="mex-link mex-link-pe" />)}
         </svg>
 
@@ -335,7 +334,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
             {measuresAsync.loading ? (
               [...Array(6)].map((_, i) => <Skeleton key={i} height={62} radius={12} style={{ marginBottom: 10 }} />)
             ) : measuresFiltered.length === 0 ? (
-              <EmptyState icon="—" hint="No measures in this status." />
+              <EmptyState icon="—" hint="No measures in this category." />
             ) : (() => {
               const active = measuresFiltered.find((m) => m.measure_id === activeId) || measuresFiltered[0];
               const rest = measuresFiltered.filter((m) => m.measure_id !== active.measure_id);
@@ -373,9 +372,11 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
             ) : (
               providersFiltered.map((p, i) => {
                 const active = i === providerIdx;
+                // Overall is the aggregate, not a goal-standing row — keep it neutral.
+                const tone = p.overall ? '' : `mex-prow-${toneFor(p.rate, p.goal)}`;
                 return (
                   <div key={`${p.crsp}-${i}`} ref={setNode(`p:${i}`)}
-                    className={`mex-prow ${active ? 'is-active' : ''} ${p.overall ? 'is-overall' : ''}`}
+                    className={`mex-prow ${tone} ${active ? 'is-active' : ''} ${p.overall ? 'is-overall' : ''}`}
                     role="button" tabIndex={0} aria-pressed={active}
                     onClick={() => setProviderIdx(i)}
                     onKeyDown={(ev) => {
@@ -389,11 +390,18 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
                         onClick={(ev) => { ev.stopPropagation(); openAssign(p); }}>
                         Assign
                       </button>
-                      <button type="button" className="btn btn-secondary btn-icon btn-sm"
+                      <button type="button" className="btn btn-primary btn-icon btn-sm mex-prow-open"
                         title="Open member worklist" aria-label="Open member worklist"
                         onClick={(ev) => { ev.stopPropagation(); onOpenWorklist(activeMeasure, p, null); }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </button>
+                      <button type="button" className="btn btn-secondary btn-icon btn-sm mex-prow-analyze"
+                        title={p.overall ? 'Analyze all providers' : `Analyze ${p.crsp}`} aria-label="Analyze provider"
+                        onClick={(ev) => { ev.stopPropagation(); onAnalyzeProvider && onAnalyzeProvider(activeMeasure, p); }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
                         </svg>
                       </button>
                     </span>
@@ -418,32 +426,35 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
               const full = equity[key] || [];
               if (full.length === 0) return null;
               const rows = equityFiltered[key] || [];
-              const counts = countByStatus(full, goal);
-              const chips = STATUS_FILTERS.filter((s) => s.status !== statusFilter && counts[s.status] > 0);
               return (
                 <div key={key} className="mex-eq-card">
                   <div className="mex-eq-head">{title}</div>
                   <div className="mex-eq-list">
                     {rows.length === 0 ? (
-                      <div className="mex-eq-empty">No {STATUS_LABEL[statusFilter].toLowerCase()} strata</div>
+                      <div className="mex-eq-empty">No strata</div>
                     ) : rows.map((g, i) => {
                       const expKey = `${key}:${i}`;
                       const expanded = expandedEq === expKey;
                       const gGoal = num(g.goal ?? goal);
                       const d = Math.round((num(g.rate) - gGoal) * 10) / 10;
+                      const gTone = toneFor(g.rate, gGoal);
                       return (
                         <div key={i} className={`mex-eq-rowwrap ${expanded ? 'is-expanded' : ''}`}>
-                          <button ref={setNode(`e:${key}:${i}`)} className="mex-eq-row"
+                          <button ref={setNode(`e:${key}:${i}`)} className={`mex-eq-row mex-eq-row-${gTone}`}
                             aria-expanded={expanded} onClick={() => setExpandedEq(expanded ? null : expKey)}>
+                            {/* Dot rides the left border so the incoming connector
+                                wire lands on it — the wire is anchored to this row's
+                                left edge (see `anchor('e:…','left')`). */}
+                            <StatusDot rate={g.rate} goal={gGoal} className="mex-eq-dot" />
                             <span className="mex-eq-name">{g.group}</span>
                             <RateBadge rate={g.rate} goal={gGoal} />
                           </button>
                           {expanded && (
                             <div className="mex-eq-detail">
                               <div className="mex-eq-metrics">
-                                <span>Rate: <b className="num">{num(g.rate)}%</b></span>
-                                <span>Goal: <b className="num">{gGoal}%</b></span>
-                                <span>Delta: <b className={`num ${d < 0 ? 'is-neg' : 'is-pos'}`}>{d >= 0 ? '+' : ''}{d} pts</b></span>
+                                <div><span className="mex-detail-k">Rate</span><span className="mex-detail-v num">{num(g.rate)}%</span></div>
+                                <div><span className="mex-detail-k">Goal</span><span className="mex-detail-v num">{gGoal}%</span></div>
+                                <div><span className="mex-detail-k">Delta</span><span className={`mex-detail-v num ${d < 0 ? 'is-neg' : 'is-pos'}`}>{d >= 0 ? '+' : ''}{d} pts</span></div>
                               </div>
                               <div className="mex-eq-actions">
                                 <button type="button" className="btn btn-primary btn-sm"
@@ -460,16 +471,6 @@ const MeasureExplorer = ({ token, selectedMonth, measure, statusFilter = 'Below 
                       );
                     })}
                   </div>
-                  {chips.length > 0 && (
-                    <div className="mex-eq-tags">
-                      {chips.map((s) => (
-                        <button key={s.status} type="button" className={`mex-eq-tag mex-eq-tag-${s.tone}`}
-                          onClick={() => onStatusFilter && onStatusFilter(s.status)}>
-                          {STATUS_LABEL[s.status]} · {counts[s.status]}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })

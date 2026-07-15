@@ -6,6 +6,19 @@
   .sc2 { padding: 64px 16px 32px; gap: 14px; }
 }
 
+/* Back + breadcrumb row */
+.sc2-topnav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; animation: ov2-fade 0.3s ease both; }
+.sc2-back {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  height: 30px; padding: 0 13px 0 11px; border-radius: var(--r-full);
+  background: var(--c-surface); border: 1px solid var(--c-border); cursor: pointer;
+  font-family: var(--font); font-size: 12.5px; font-weight: 600; color: var(--c-text-2);
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+.sc2-back:hover { background: var(--c-bg-subtle); border-color: var(--c-text-4); color: var(--c-text); }
+.sc2-back:active { transform: scale(0.97); }
+.sc2-back svg { flex-shrink: 0; }
+
 /* Breadcrumb */
 .sc2-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; animation: ov2-fade 0.3s ease both; }
 .sc2-crumb-wrap { display: inline-flex; align-items: center; }
@@ -17,3 +30,25 @@
 }
 .sc2-crumb:hover { color: var(--c-primary); }
 .sc2-crumb.is-current { color: var(--c-text); cursor: default; }
+
+/* ── Category ("sub-category") tabs — shared Overview + Explorer ───── */
+.sc2-cats { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.sc2-cat {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 14px; border-radius: var(--r-full);
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  color: var(--c-text-3); font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  cursor: pointer; transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+.sc2-cat:hover { border-color: var(--c-text-4); color: var(--c-text-2); }
+.sc2-cat:active { transform: scale(0.97); }
+.sc2-cat:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
+.sc2-cat.is-active {
+  background: var(--c-primary-light); color: var(--c-primary-dark);
+  border-color: var(--c-primary-subtle);
+}
+.sc2-cat-count {
+  font-size: 11px; line-height: 1; padding: 2px 6px; border-radius: var(--r-full);
+  background: var(--c-bg-subtle); color: var(--c-text-3);
+}
+.sc2-cat.is-active .sc2-cat-count { background: var(--c-surface); color: var(--c-primary-dark); }

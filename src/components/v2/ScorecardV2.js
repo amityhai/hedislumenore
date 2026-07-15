@@ -3,16 +3,24 @@ import './ScorecardV2.css';
 import OverviewExplore from './OverviewExplore';
 import MeasureExplorer from './MeasureExplorer';
 import MemberWorklist from './MemberWorklist';
+import ProviderAnalysis from './ProviderAnalysis';
 import { shortId } from './v2utils';
 
 // Self-contained v2 flow. Keeps the full drill context (measure → provider →
 // stratum → members) in local state so we get rich breadcrumbs without bolting
 // multi-param routing onto the app's hash router. The flow lives under #/v2.
 const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onSidebar }) => {
-  const [view, setView] = useState('overview'); // overview | explore | worklist
+  const [view, setView] = useState('overview'); // overview | explore | worklist | provider
   const [ctx, setCtx] = useState({ measure: null, provider: null, strat: null });
-  // Shared status filter — chosen on the Overview, carried into the Explorer.
+  // Navigation history — a stack of prior {view, ctx} snapshots so a single Back
+  // button returns to the LAST page (not just a breadcrumb ancestor). Breadcrumb
+  // jumps push onto it too, so Back consistently undoes the previous move.
+  const [history, setHistory] = useState([]);
+  // Status filter drives the Overview bubble field only (bubbles need one lens).
   const [statusFilter, setStatusFilter] = useState('Below Goal');
+  // Category ("sub-category") filter — chosen on the Overview, carried into the
+  // Explorer. null = All categories, so nothing is hidden by default.
+  const [category, setCategory] = useState(null);
 
   // The whole v2 flow is data-dense — the Overview bubble field included — so keep
   // the sidebar collapsed for the room. The user can still expand it manually.
@@ -20,20 +28,28 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
     if (onSidebar) onSidebar(false);
   }, [view, onSidebar]);
 
-  const goOverview = useCallback(() => {
-    setCtx({ measure: null, provider: null, strat: null });
-    setView('overview');
-  }, []);
+  // Every forward move records where we were, then switches. Guard against a
+  // no-op push when a handler is fired for the page we're already on.
+  const navigate = useCallback((nextView, nextCtx) => {
+    setHistory((h) => [...h, { view, ctx }]);
+    setCtx(nextCtx);
+    setView(nextView);
+  }, [view, ctx]);
 
-  const goExplore = useCallback((measure) => {
-    setCtx({ measure, provider: null, strat: null });
-    setView('explore');
-  }, []);
+  const goOverview = useCallback(() => navigate('overview', { measure: null, provider: null, strat: null }), [navigate]);
+  const goExplore = useCallback((measure) => navigate('explore', { measure, provider: null, strat: null }), [navigate]);
+  const goWorklist = useCallback((measure, provider, strat) => navigate('worklist', { measure, provider, strat }), [navigate]);
+  const goProvider = useCallback((measure, provider) => navigate('provider', { measure, provider, strat: null }), [navigate]);
 
-  const goWorklist = useCallback((measure, provider, strat) => {
-    setCtx({ measure, provider, strat });
-    setView('worklist');
-  }, []);
+  // Back pops the stack and restores that snapshot — the last page, whatever it was.
+  const goBack = useCallback(() => {
+    if (!history.length) return;
+    const prev = history[history.length - 1];
+    setHistory((h) => h.slice(0, -1));
+    setView(prev.view);
+    setCtx(prev.ctx);
+  }, [history]);
+  const canBack = history.length > 0;
 
   // Breadcrumb trail — each crumb is clickable and rewinds the flow.
   const crumbs = [{ label: 'Overview', onClick: goOverview }];
@@ -43,8 +59,16 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
       onClick: () => goExplore(ctx.measure),
     });
   }
+  if (view === 'provider' && ctx.provider) {
+    crumbs.push({ label: ctx.provider.crsp });
+  }
   if (view === 'worklist') {
-    if (ctx.provider) crumbs.push({ label: ctx.provider.crsp });
+    if (ctx.provider) {
+      // The provider crumb rewinds to that provider's worklist (drop any stratum).
+      crumbs.push(ctx.strat
+        ? { label: ctx.provider.crsp, onClick: () => goWorklist(ctx.measure, ctx.provider, null) }
+        : { label: ctx.provider.crsp });
+    }
     if (ctx.strat) crumbs.push({ label: ctx.strat.group });
   }
 
@@ -65,9 +89,31 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
     </nav>
   );
 
+  // Back button + breadcrumb share one nav row. Back appears on every page that
+  // has somewhere to return to; the crumb trail is dropped on the Overview root
+  // (it would only read "Overview"). On the Explorer this whole row rides in the
+  // toolbar next to the status pills.
+  const backBtn = canBack ? (
+    <button type="button" className="sc2-back" onClick={goBack}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+      </svg>
+      Back
+    </button>
+  ) : null;
+  const showCrumbs = view !== 'overview';
+  const flowNav = (backBtn || showCrumbs) ? (
+    <div className="sc2-topnav">
+      {backBtn}
+      {showCrumbs && crumbNav}
+    </div>
+  ) : null;
+
   return (
     <div className="sc2">
-      {view === 'worklist' && crumbNav}
+      {/* Explorer renders the nav inside its own toolbar; every other view shows
+          it here at the top. */}
+      {view !== 'explore' && flowNav}
 
       {view === 'overview' && (
         <OverviewExplore
@@ -77,6 +123,8 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           availableMonths={availableMonths}
           statusFilter={statusFilter}
           onStatusFilter={setStatusFilter}
+          category={category}
+          onCategory={setCategory}
           onInvestigate={goExplore}
         />
       )}
@@ -85,10 +133,11 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           token={token}
           selectedMonth={selectedMonth}
           measure={ctx.measure}
-          statusFilter={statusFilter}
-          onStatusFilter={setStatusFilter}
+          category={category}
+          onCategory={setCategory}
           onOpenWorklist={goWorklist}
-          breadcrumb={crumbNav}
+          onAnalyzeProvider={goProvider}
+          breadcrumb={flowNav}
         />
       )}
       {view === 'worklist' && (
@@ -98,6 +147,16 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           measure={ctx.measure}
           provider={ctx.provider}
           strat={ctx.strat}
+          onAnalyzeProvider={goProvider}
+        />
+      )}
+      {view === 'provider' && (
+        <ProviderAnalysis
+          token={token}
+          selectedMonth={selectedMonth}
+          measure={ctx.measure}
+          provider={ctx.provider}
+          onOpenWorklist={goWorklist}
         />
       )}
     </div>

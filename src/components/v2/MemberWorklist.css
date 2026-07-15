@@ -21,12 +21,83 @@
 .mwl-rate-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success-border); }
 .mwl-head-provider { margin-top: 6px; font-size: 12.5px; color: var(--c-text-3); }
 .mwl-head-provider strong { color: var(--c-text-2); font-weight: 600; }
+.mwl-head-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
-.mwl-head-metrics { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
-.mwl-head-metrics > div { display: flex; flex-direction: column; gap: 3px; }
+/* Stratum insight card — reuses the Overview's ov2-intel / Stage / Signals
+   styling (globally loaded via OverviewExplore.css). */
+.mwl-insight {
+  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs); padding: 16px 20px 18px;
+}
+.mwl-insight.is-disparity { border-color: var(--c-error-border); box-shadow: 0 0 0 1px var(--c-error-border), var(--sh-xs); }
+.mwl-insight-head { display: flex; align-items: center; gap: 12px; }
+.mwl-insight-flag {
+  margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--c-error-text); background: var(--c-error-bg); border: 1px solid var(--c-error-border);
+  padding: 2px 8px; border-radius: var(--r-full);
+}
+.mwl-insight .ov2-intel { margin-top: 12px; }
+
+/* Equity segmentation card */
+.mwl-segment {
+  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs); padding: 16px 20px 18px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.mwl-segment.is-filtering { border-color: var(--c-primary-subtle); box-shadow: 0 0 0 1px var(--c-primary-subtle), var(--sh-xs); }
+.mwl-segment-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.mwl-segment-title { font-size: 14px; font-weight: 700; color: var(--c-text); }
+.mwl-segment-sub { font-size: 12px; color: var(--c-text-3); }
+.mwl-segment-sub strong { color: var(--c-primary-dark); font-weight: 700; }
+.mwl-segment-clear {
+  margin-left: auto; border: none; background: none; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--c-text-3);
+  padding: 2px 4px; border-radius: var(--r-xs); transition: color 0.14s ease;
+}
+.mwl-segment-clear:hover { color: var(--c-error-text); }
+.mwl-segment-loading { display: flex; gap: 8px; }
+.mwl-segment-empty { font-size: 12.5px; color: var(--c-text-4); }
+.mwl-segment-dim { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: start; }
+.mwl-segment-dimlabel { font-size: 10.5px; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 600; padding-top: 8px; }
+.mwl-segment-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mwl-segment-chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px;
+  border-radius: var(--r-full); border: 1px solid var(--c-border); background: var(--c-surface);
+  font-family: var(--font); font-size: 12.5px; font-weight: 500; color: var(--c-text-2);
+  cursor: pointer; transition: filter 0.14s ease, transform 0.1s ease, border-color 0.14s ease;
+}
+.mwl-segment-chip:hover { filter: brightness(0.98); border-color: var(--c-text-4); }
+.mwl-segment-chip:active { transform: scale(0.97); }
+.mwl-segment-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
+/* Active filter chip — a solid primary ring + weight so the current stratum is
+   unmistakable, and the others read as dimmed alternatives. */
+.mwl-segment.is-filtering .mwl-segment-chip:not(.is-active) { opacity: 0.55; }
+.mwl-segment-chip.is-active {
+  font-weight: 700; color: var(--c-text); border-color: var(--c-primary);
+  box-shadow: 0 0 0 1px var(--c-primary); opacity: 1;
+}
+.mwl-segment-chip-below { background: var(--c-error-bg); border-color: var(--c-error-border); }
+.mwl-segment-chip-at    { background: var(--c-info-bg);  border-color: var(--c-info-border); }
+.mwl-segment-chip-above { background: var(--c-success-bg); border-color: var(--c-success-border); }
+.mwl-segment-dot { width: 8px; height: 8px; border-radius: var(--r-full); flex-shrink: 0; }
+.mwl-segment-dot-below { background: var(--c-error); }
+.mwl-segment-dot-at    { background: var(--c-info); }
+.mwl-segment-dot-above { background: var(--c-success); }
+.mwl-segment-rate { font-weight: 700; }
+.mwl-segment-chip-below .mwl-segment-rate { color: var(--c-error-text); }
+.mwl-segment-chip-at .mwl-segment-rate    { color: var(--c-info-text); }
+.mwl-segment-chip-above .mwl-segment-rate { color: var(--c-success-text); }
+
+@media (max-width: 640px) {
+  .mwl-segment-dim { grid-template-columns: 1fr; gap: 6px; }
+  .mwl-segment-dimlabel { padding-top: 0; }
+}
+
+.mwl-head-metrics { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.mwl-head-metrics > div { display: flex; flex-direction: column; gap: 4px; }
 .mwl-msep { width: 1px; align-self: stretch; background: var(--c-border); margin: 2px 0; }
-.mwl-mk { font-size: 11.5px; color: var(--c-text-3); font-weight: 500; }
-.mwl-mv { font-size: 17px; font-weight: 700; color: var(--c-text); }
+.mwl-mk { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap; }
+.mwl-mv { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
 .mwl-mv.is-neg { color: var(--c-error-text); }
 .mwl-mv.is-pos { color: var(--c-success-text); }
 

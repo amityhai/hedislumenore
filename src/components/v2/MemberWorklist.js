@@ -1,17 +1,30 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import './MemberWorklist.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import { useToast } from '../ui/Toast';
 import useAsync from '../../hooks/useAsync';
+import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import {
   fetchMemberDetails,
   fetchRaceMemberDetails,
   fetchEthnicityMemberDetails,
   fetchCRSPMemberDetails,
+  fetchMeasureStratification,
+  fetchMeasureStratificationRace,
+  fetchMeasureStratificationEthnicity,
   saveCareAction,
 } from '../../services/workflowService';
-import { num, statusFor, STATUS_TONE, sampleMembers, STAFF, INTERVENTIONS } from './v2utils';
+import { num, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, recommendAction } from './v2utils';
+import { Stage, Signals } from './OverviewExplore';
+
+const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
+
+const EQUITY_DIMS = [
+  { key: 'age', title: 'AGE' },
+  { key: 'race', title: 'RACE' },
+  { key: 'ethnicity', title: 'ETHNICITY' },
+];
 
 const PAGE_SIZE = 12;
 
@@ -33,29 +46,79 @@ const normalize = (m, fallbackCrsp) => ({
   compliant: isCompliant(m),
 });
 
-const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
+const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnalyzeProvider }) => {
   const toast = useToast();
   const [page, setPage] = useState(1);
   const [ncOnly, setNcOnly] = useState(false);     // show only non-compliant
   const [assigned, setAssigned] = useState({});   // memberId -> staff name
   const [modalMember, setModalMember] = useState(null);
+  const [assignPanel, setAssignPanel] = useState(false); // provider-wide assign
+  // Equity segment is an in-place filter, not a navigation: picking a stratum
+  // narrows the member list below without leaving the page. `pickedStrat` holds
+  // the active chip; it composes with the `strat` prop (a stratum this worklist
+  // was opened on already) — the prop wins, and the segment card is hidden then.
+  const [pickedStrat, setPickedStrat] = useState(null);
 
   const measureId = measure?.measure_id;
   const providerCrsp = provider && !provider.overall ? provider.crsp : undefined;
+  // On a provider (or all-provider) worklist that isn't already narrowed to a
+  // stratum, offer an equity-segmentation card up top rather than dropping the
+  // reader straight into a flat member list.
+  const showSegment = !!provider && !strat;
+  // The stratum actually driving the list: an in-page pick, or the prop it opened on.
+  const effStrat = strat || pickedStrat;
+
+  // A different provider/measure is a different population — drop any in-page pick.
+  useEffect(() => { setPickedStrat(null); setPage(1); }, [measureId, providerCrsp]);
+
+  // Equity strata power three things now: the segmentation card, the provider-wide
+  // Assign panel, and the stratum-level insight read (which needs the sibling
+  // strata to rank the active group). So fetch whenever there's a measure and
+  // either a provider worklist or an already-picked stratum — not only when the
+  // segment card is showing.
+  const wantEquity = !!measureId && (!!provider || !!strat);
+  const equityAsync = useAsync(async () => {
+    if (!wantEquity) return null;
+    try {
+      const [a, r, e] = await Promise.all([
+        fetchMeasureStratification(measureId, token),
+        fetchMeasureStratificationRace(measureId, token),
+        fetchMeasureStratificationEthnicity(measureId, token),
+      ]);
+      const age = a?.[measureId]?.age || [];
+      const race = r?.[measureId]?.race || [];
+      const ethnicity = e?.[measureId]?.ethnicity || [];
+      if (age.length + race.length + ethnicity.length === 0) throw new Error('empty');
+      return { age, race, ethnicity };
+    } catch (err) { return sampleEquity(measureId); }
+  }, [measureId, wantEquity, selectedMonth], { enabled: !!token && wantEquity });
+  const equity = equityAsync.data || { age: [], race: [], ethnicity: [] };
+
+  // Stratum-level intelligence — the same shape of read the Overview gives a
+  // measure, but about the active equity group: where it sits vs goal, how it
+  // ranks against its sibling strata, and a targeted next move.
+  const stratInsight = useMemo(() => {
+    if (!effStrat) return null;
+    const siblings = equity[effStrat.type] || [];
+    const read = stratumRead(effStrat, siblings, measure);
+    if (!read) return null;
+    const rec = measure ? recommendAction(measure, read) : null;
+    return { read, rec };
+  }, [effStrat, equity, measure]);
 
   const { data, loading, error, refetch } = useAsync(async () => {
     try {
       let rows = [];
-      if (strat?.type === 'age') rows = await fetchMemberDetails({ measureId, ageStrat: strat.group, crsp: providerCrsp }, token);
-      else if (strat?.type === 'race') rows = await fetchRaceMemberDetails({ measureId, raceStrat: strat.group, crsp: providerCrsp }, token);
-      else if (strat?.type === 'ethnicity') rows = await fetchEthnicityMemberDetails({ measureId, ethnicityStrat: strat.group, crsp: providerCrsp }, token);
+      if (effStrat?.type === 'age') rows = await fetchMemberDetails({ measureId, ageStrat: effStrat.group, crsp: providerCrsp }, token);
+      else if (effStrat?.type === 'race') rows = await fetchRaceMemberDetails({ measureId, raceStrat: effStrat.group, crsp: providerCrsp }, token);
+      else if (effStrat?.type === 'ethnicity') rows = await fetchEthnicityMemberDetails({ measureId, ethnicityStrat: effStrat.group, crsp: providerCrsp }, token);
       else rows = await fetchCRSPMemberDetails({ measureId, crsp: provider?.crsp }, token);
       if (!rows || rows.length === 0) throw new Error('empty');
       return { rows: rows.map((r) => normalize(r, providerCrsp)), sample: false };
     } catch (e) {
       return { rows: sampleMembers(20, providerCrsp).map((r) => normalize(r, providerCrsp)), sample: true };
     }
-  }, [measureId, providerCrsp, strat?.type, strat?.group, selectedMonth], { enabled: !!token && !!measureId });
+  }, [measureId, providerCrsp, effStrat?.type, effStrat?.group, selectedMonth], { enabled: !!token && !!measureId });
 
   const members = data?.rows || [];
   const nonCompliant = members.filter((m) => !m.compliant).length;
@@ -66,12 +129,13 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
   const pageRows = useMemo(() => shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [shown, page]);
   const setFilter = (v) => { setNcOnly(v); setPage(1); };
 
-  // Context header metrics.
-  const rate = num(strat?.rate ?? provider?.rate ?? measure?.rate);
-  const goal = num(strat?.goal ?? provider?.goal ?? measure?.goal_50th);
+  // Context header metrics — reflect the effective stratum so the header follows
+  // an in-page equity filter, not just the stratum this worklist opened on.
+  const rate = num(effStrat?.rate ?? provider?.rate ?? measure?.rate);
+  const goal = num(effStrat?.goal ?? provider?.goal ?? measure?.goal_50th);
   const delta = Math.round((rate - goal) * 10) / 10;
   const tone = STATUS_TONE[statusFor(rate, goal)] || 'below';
-  const title = strat?.group || (provider && !provider.overall ? provider.crsp : null) || measure?.display_name || 'Members';
+  const title = effStrat?.group || (provider && !provider.overall ? provider.crsp : null) || measure?.display_name || 'Members';
   const providerName = provider ? (provider.overall ? 'All providers (Overall)' : provider.crsp) : null;
 
   const saveAssignment = async ({ member, staff, intervention, notes }) => {
@@ -96,6 +160,23 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
             <span className={`mwl-head-rate mwl-rate-${tone} num`}>{rate}%</span>
           </div>
           {providerName && <div className="mwl-head-provider">Provider · <strong>{providerName}</strong></div>}
+          {provider && (
+            <div className="mwl-head-actions">
+              <button type="button" className="btn btn-tonal btn-sm"
+                onClick={() => setAssignPanel(true)}>
+                Assign intervention
+              </button>
+              {!provider.overall && onAnalyzeProvider && (
+                <button type="button" className="btn btn-secondary btn-sm"
+                  onClick={() => onAnalyzeProvider(measure, provider)}>
+                  Analyze provider
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="mwl-head-metrics">
           <div><span className="mwl-mk">Rate</span><span className="mwl-mv num">{rate}%</span></div>
@@ -107,6 +188,25 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
           <div><span className="mwl-mk">Compliant</span><span className="mwl-mv num is-pos">{loading ? '—' : compliant}</span></div>
         </div>
       </div>
+
+      {/* Equity segmentation — segregate this provider's members by stratum
+          instead of dropping straight into a flat list. */}
+      {showSegment && (
+        <EquitySegment equity={equity} loading={equityAsync.loading} measureGoal={goal}
+          selected={pickedStrat}
+          onPick={(dim, g) => {
+            const pick = { type: dim, ...g, goal: num(g.goal ?? goal) };
+            // Toggle: re-picking the active stratum clears the filter.
+            setPickedStrat((cur) => (cur && cur.type === dim && cur.group === g.group ? null : pick));
+            setPage(1);
+          }}
+          onClear={() => { setPickedStrat(null); setPage(1); }} />
+      )}
+
+      {/* Stratum insight — a read relevant to the active equity group */}
+      {effStrat && stratInsight && (
+        <StratumInsight insight={stratInsight} stratum={effStrat} loading={equityAsync.loading} />
+      )}
 
       {/* Table */}
       <div className="mwl-card">
@@ -185,6 +285,107 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat }) => {
         <AssignModal member={modalMember} providerName={providerName} current={assigned[modalMember.memberId]}
           onClose={() => setModalMember(null)} onSave={saveAssignment} />,
         document.body
+      )}
+
+      {/* Provider-wide assign, launched from the header. Scoped to this provider;
+          equity is the same measure-level set the segmentation card uses. */}
+      {assignPanel && provider && createPortal(
+        <AssignPanel measure={measure}
+          providers={provider.overall ? [] : [provider]}
+          equity={equity}
+          scope={provider.overall ? { level: 'measure' } : { level: 'provider', provider }}
+          onClose={() => setAssignPanel(false)}
+          onAssign={(payload) => {
+            setAssignPanel(false);
+            const where = provider.overall ? 'all providers' : provider.crsp;
+            toast({ type: 'success', message: `${payload.preview.created.toLocaleString()} tasks queued for ${where} · ${payload.assignedTo === UNASSIGNED ? 'unassigned pool' : payload.assignedTo}` });
+          }} />,
+        document.body
+      )}
+    </div>
+  );
+};
+
+// ── Equity segmentation card ─────────────────────────────────
+// Sits above the member list on a provider worklist and acts as an in-place
+// FILTER: picking a stratum narrows the member list below (scoped to the
+// provider by the member fetch) without leaving the page; re-picking it clears.
+// Each stratum is a color-coded chip. Reads all strata — the equity picture is a
+// comparison, so nothing is hidden.
+const EquitySegment = ({ equity, loading, measureGoal, selected, onPick, onClear }) => {
+  const dims = EQUITY_DIMS.filter((d) => (equity[d.key] || []).length > 0);
+  return (
+    <div className={`mwl-segment ${selected ? 'is-filtering' : ''}`}>
+      <div className="mwl-segment-head">
+        <span className="mwl-segment-title">Filter by equity</span>
+        <span className="mwl-segment-sub">
+          {selected ? <>Showing <strong>{selected.group}</strong> · the list below is filtered</> : 'Pick a stratum to narrow the list below'}
+        </span>
+        {selected && (
+          <button type="button" className="mwl-segment-clear" onClick={onClear}>Clear filter ✕</button>
+        )}
+      </div>
+      {loading ? (
+        <div className="mwl-segment-loading">{[...Array(3)].map((_, i) => <Skeleton key={i} height={30} width={120} radius={9999} />)}</div>
+      ) : dims.length === 0 ? (
+        <div className="mwl-segment-empty">No equity strata for this measure.</div>
+      ) : (
+        dims.map((d) => (
+          <div key={d.key} className="mwl-segment-dim">
+            <span className="mwl-segment-dimlabel mono">{d.title}</span>
+            <div className="mwl-segment-chips">
+              {(equity[d.key] || []).slice().sort((a, b) => num(a.rate) - num(b.rate)).map((g, i) => {
+                const gGoal = num(g.goal ?? measureGoal);
+                const active = selected && selected.type === d.key && selected.group === g.group;
+                return (
+                  <button key={i} type="button" aria-pressed={!!active}
+                    className={`mwl-segment-chip mwl-segment-chip-${toneFor(g.rate, gGoal)} ${active ? 'is-active' : ''}`}
+                    onClick={() => onPick(d.key, g)}>
+                    <span className={`mwl-segment-dot mwl-segment-dot-${toneFor(g.rate, gGoal)}`} aria-hidden="true" />
+                    <span className="mwl-segment-name">{g.group}</span>
+                    <span className="mwl-segment-rate num">{num(g.rate)}%</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+// ── Stratum insight card ─────────────────────────────────────
+// Shown when a worklist is scoped to an equity stratum (opened on one, or
+// filtered to one). Carries the same Behavior / Recommended-action read the
+// Overview gives a measure, but framed for the group — reusing the Overview's
+// Stage / Signals so it reads identically across surfaces.
+const StratumInsight = ({ insight, stratum, loading }) => {
+  const { read, rec } = insight;
+  return (
+    <div className={`mwl-insight ${read.isDisparity ? 'is-disparity' : ''}`}>
+      <div className="mwl-insight-head">
+        <span className="eyebrow">EQUITY INSIGHT · {stratum.group}</span>
+        {read.isDisparity && <span className="mwl-insight-flag mono">WIDEST DISPARITY</span>}
+      </div>
+      {loading ? (
+        <Skeleton height={64} radius={10} />
+      ) : (
+        <div className="ov2-intel">
+          <Stage label="Standing" summary={read.synthesis} tag={`Confidence · ${read.confidence.level}`} defaultOpen>
+            <Signals items={read.signals} />
+            <p className="ov2-read-why mono">{read.confidence.why}</p>
+          </Stage>
+          {rec && (
+            <Stage label="Recommended action" summary={rec.action} tag="Suggested" tagKind="preview">
+              <p className="ov2-stage-lead">Targeted at the {stratum.group} group — {rec.action.toLowerCase()}. Because {rec.rationale}.</p>
+              <div className="ov2-rec-chips">
+                {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
+              </div>
+              <p className="ov2-read-why mono">{rec.basis}</p>
+            </Stage>
+          )}
+        </div>
       )}
     </div>
   );

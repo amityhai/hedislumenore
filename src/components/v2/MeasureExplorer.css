@@ -18,10 +18,12 @@
   padding: 24px 28px 28px;
 }
 
-/* Connector overlay */
-.mex-links { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: visible; }
+/* Connector overlay — painted ABOVE the columns (z-index 3 > .mex-col's 2) so the
+   equity card's own background can't mask the wire's last stretch before it meets
+   the status dot sitting on each stratum's left border. The wires only occupy the
+   inter-column gutter and terminate at the dots, so they never cross row text. */
+.mex-links { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: visible; }
 .mex-link { fill: none; stroke-linecap: round; }
-.mex-link-mp { stroke: var(--c-border); stroke-width: 1.5; }
 .mex-link-pe { stroke: var(--c-primary-subtle); stroke-width: 1.5; }
 
 /* Active measure card — the rich detail (rate, gap, trend, stats) lives inside
@@ -56,6 +58,7 @@
 .mex-detail-k { font-size: 10px; font-weight: 600; letter-spacing: 0.03em; color: var(--c-text-4); text-transform: uppercase; }
 .mex-detail-v { font-size: 15px; font-weight: 700; color: var(--c-text); }
 .mex-detail-v.is-neg { color: var(--c-error-text); }
+.mex-detail-v.is-pos { color: var(--c-success-text); }
 
 /* Columns sit above the links */
 .mex-col { position: relative; z-index: 2; min-width: 0; }
@@ -80,17 +83,7 @@
 .mex-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; flex-wrap: wrap; }
 .mex-toolbar-left { min-width: 0; display: flex; align-items: center; }
 .mex-toolbar-left .sc2-crumbs { margin: 0; }
-.mex-pills { display: inline-flex; gap: 8px; flex-shrink: 0; }
-.mex-pill {
-  border: 1px solid var(--c-border); background: var(--c-surface); padding: 7px 16px; border-radius: var(--r-full);
-  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--c-text-3); cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
-}
-.mex-pill:hover { border-color: var(--c-text-4); }
-.mex-pill:active { transform: scale(0.96); }
-.mex-pill-below.is-active { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error); }
-.mex-pill-at.is-active    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info); }
-.mex-pill-above.is-active { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success); }
+.mex-toolbar .sc2-cats { flex-shrink: 0; }
 
 /* Measure cards */
 .mex-card {
@@ -158,13 +151,21 @@
 .mex-eq-head { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 600; margin-bottom: 8px; }
 .mex-eq-list { display: flex; flex-direction: column; gap: 6px; }
 .mex-eq-row {
+  position: relative;
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   width: 100%; text-align: left; background: transparent; border: 1px solid transparent;
   border-radius: var(--r-sm); padding: 8px 10px; cursor: pointer; font-family: var(--font);
   transition: background 0.14s ease, border-color 0.14s ease;
 }
 .mex-eq-row:hover { background: var(--c-bg-subtle); border-color: var(--c-border); }
-.mex-eq-name { font-size: 12.5px; font-weight: 500; color: var(--c-text-2); }
+.mex-eq-name { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--c-text-2); }
+/* Status dot pinned to the row's left border, centred on it, so the connector
+   wire (which ends at the row's left edge) reads as running into the dot. Given
+   a ring so it stays legible sitting on the tinted row background. */
+.mex-eq-dot {
+  position: absolute; left: 0; top: 50%; transform: translate(-50%, -50%);
+  width: 9px; height: 9px; box-shadow: 0 0 0 2px var(--c-surface); z-index: 1;
+}
 .mex-eq-empty { font-size: 12px; color: var(--c-text-4); padding: 8px 10px; }
 
 /* Expanded stratum — a single boxed, tinted card */
@@ -180,27 +181,36 @@
 .mex-eq-rowwrap.is-expanded .mex-eq-row { background: transparent; border-color: transparent; padding: 4px 0; }
 .mex-eq-rowwrap.is-expanded .mex-eq-row:hover { background: transparent; }
 .mex-eq-rowwrap.is-expanded .mex-eq-name { font-size: 16px; font-weight: 700; color: var(--c-text); }
+/* Expanded is a detail card, not a wire target: the border-riding dot would sit
+   on top of the enlarged title, so drop it here (Rate/Goal/Delta already carry
+   the standing). */
+.mex-eq-rowwrap.is-expanded .mex-eq-dot { display: none; }
 
-.mex-eq-detail { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
-.mex-eq-metrics { display: flex; gap: 18px; flex-wrap: wrap; }
-.mex-eq-metrics span { font-size: 12.5px; color: var(--c-text-3); }
-.mex-eq-metrics b { font-weight: 700; color: var(--c-text); margin-left: 4px; }
-.mex-eq-metrics b.is-neg { color: var(--c-error-text); }
-.mex-eq-metrics b.is-pos { color: var(--c-success-text); }
+.mex-eq-detail { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
+/* Stacked label-over-value stats (same treatment as the active measure card) */
+.mex-eq-metrics { display: flex; gap: 26px; flex-wrap: wrap; }
+.mex-eq-metrics > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mex-eq-actions { display: inline-flex; gap: 8px; }
 
-/* Status count chips (clickable → switch filter) */
-.mex-eq-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.mex-eq-tag {
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: var(--r-full);
-  border: 1px solid transparent; cursor: pointer; font-family: var(--font);
-  transition: filter 0.14s ease, transform 0.1s ease;
-}
-.mex-eq-tag:hover { filter: brightness(0.96); }
-.mex-eq-tag:active { transform: scale(0.96); }
-.mex-eq-tag-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success-border); }
-.mex-eq-tag-at { background: var(--c-info-bg); color: var(--c-info-text); border-color: var(--c-info-border); }
-.mex-eq-tag-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }
+/* Goal-status dot — "circled color, not full text" (measures + strata) */
+.mex-dot { width: 8px; height: 8px; border-radius: var(--r-full); flex-shrink: 0; display: inline-block; }
+.mex-dot-below { background: var(--c-error); }
+.mex-dot-at    { background: var(--c-info); }
+.mex-dot-above { background: var(--c-success); }
+.mex-card-idrow { display: inline-flex; align-items: center; gap: 7px; }
+
+/* Goal-status row tints — every provider + stratum is shown, so standing is
+   carried by the row background instead of a filter. */
+.mex-prow-below { background: var(--c-error-bg); border-color: var(--c-error-border); }
+.mex-prow-at    { background: var(--c-info-bg);  border-color: var(--c-info-border); }
+.mex-prow-above { background: var(--c-success-bg); border-color: var(--c-success-border); }
+.mex-eq-row-below { background: var(--c-error-bg); border-color: var(--c-error-border); }
+.mex-eq-row-at    { background: var(--c-info-bg);  border-color: var(--c-info-border); }
+.mex-eq-row-above { background: var(--c-success-bg); border-color: var(--c-success-border); }
+
+/* Provider row action cluster — Assign · open worklist (primary) · Analyze */
+.mex-prow-open { flex-shrink: 0; }
+.mex-prow-analyze { flex-shrink: 0; }
 
 /* Rate badges (shared) */
 .mex-rate { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-xs); border: 1px solid; }

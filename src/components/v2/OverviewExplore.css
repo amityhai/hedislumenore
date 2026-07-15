@@ -37,6 +37,10 @@
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 16px 20px; border-bottom: 1px solid var(--c-border-light); flex-wrap: wrap;
 }
+.ov2-toolbar-left { display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+/* Section heading — stands in for the lens control when there's only one lens. */
+.ov2-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
 
 /* Lens segmented control */
 .ov2-lenses { display: inline-flex; gap: 4px; padding: 4px; background: var(--c-bg-subtle); border-radius: var(--r-md); }
@@ -261,9 +265,11 @@
    the math on click. Keeping them separate (not one flat strip) makes the opened
    card read as a distinct, foregrounded panel. */
 .ov2-intel { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-.ov2-st { border: 1px solid var(--c-border-light); border-radius: var(--r-sm);
+.ov2-st { border: 1px solid var(--c-border-light); border-radius: var(--r-md);
   background: var(--c-bg-subtle); overflow: hidden;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
+/* Hover affordance only when there's a body to expand */
+.ov2-st:not(.is-open):has(.ov2-st-head:not(:disabled)):hover { border-color: var(--c-border); background: var(--c-surface); }
 .ov2-st.is-open { background: var(--c-surface); border-color: var(--c-border); box-shadow: var(--sh-sm); }
 .ov2-st-head { width: 100%; display: flex; flex-direction: column; gap: 5px; align-items: stretch;
   padding: 12px 13px; background: none; border: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
@@ -276,18 +282,22 @@
 .ov2-st-tag.is-preview { color: var(--c-warn-text); background: var(--c-warn-bg); border-color: var(--c-warn-border); text-transform: uppercase; }
 .ov2-st-chev { flex: none; color: var(--c-text-4); display: inline-flex; transition: transform 0.18s ease; }
 .ov2-st.is-open .ov2-st-chev { transform: rotate(180deg); }
-.ov2-st-summary { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--c-text); }
+/* Cap the measure so summaries stay a readable line on ultra-wide cards */
+.ov2-st-summary { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--c-text); max-width: 84ch; }
 .ov2-st-body { padding: 0 13px 14px; }
 
 .ov2-read-signals { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .ov2-read-signals li { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 12px; align-items: baseline;
   font-size: 12.5px; color: var(--c-text-2); line-height: 1.4; }
-.ov2-read-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--c-text-4); white-space: nowrap; }
-.ov2-read-v { color: var(--c-text-2); }
+/* min-width lines the values up across rows (longest label ≈ "CONCENTRATION") */
+.ov2-read-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--c-text-4); white-space: nowrap; min-width: 104px; }
+.ov2-read-v { color: var(--c-text-2); max-width: 72ch; }
 .ov2-read-why { margin: 11px 0 0; padding-top: 9px; border-top: 1px solid var(--c-border-light);
   font-size: 10.5px; color: var(--c-text-4); letter-spacing: 0.01em; }
 .ov2-stage-note { margin: 0 0 4px; font-size: 12px; color: var(--c-text-3); line-height: 1.45; }
 .ov2-stage-note b { color: var(--c-text-2); }
+/* Frames the recommendation: what it is, before the supporting evidence. */
+.ov2-stage-lead { margin: 0 0 4px; font-size: 12.5px; color: var(--c-text-2); line-height: 1.5; }
 .ov2-intel-stats { margin-top: 14px; }
 
 /* Stage 2 priority meter — neutral slate fill (magnitude, not status). */
@@ -303,6 +313,8 @@
 .ov2-rec-chip { font-size: 10.5px; padding: 3px 9px; border-radius: var(--r-full);
   background: var(--c-bg-subtle); border: 1px solid var(--c-border); color: var(--c-text-3); white-space: nowrap; }
 .ov2-rec-chip.is-strong { color: var(--c-primary-dark); background: var(--c-primary-light); border-color: var(--c-primary-subtle); }
+/* Says plainly what the "Mark applied" button is for. */
+.ov2-rec-applynote { margin: 12px 0 0; font-size: 12px; color: var(--c-text-3); line-height: 1.45; }
 
 /* Stage 4 learning loop */
 .ov2-learn-loop { display: flex; flex-direction: column; gap: 0; margin: 4px 0 2px; }
@@ -417,6 +429,7 @@
   .ov2-title { font-size: 22px; }
 
   .ov2-toolbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 14px; }
+  .ov2-toolbar-left { align-items: stretch; gap: 10px; }
   .ov2-lenses { overflow-x: auto; scrollbar-width: none; }
   .ov2-lenses::-webkit-scrollbar { display: none; }
   .ov2-lens { flex: 1 0 auto; padding: 7px 14px; }
