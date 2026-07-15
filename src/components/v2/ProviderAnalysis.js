@@ -11,9 +11,9 @@ import {
 import {
   num, shortId, statusFor, STATUS_TONE,
   SAMPLE_MEASURES, providerProfile, sampleEquity,
-  portfolioRead, rankByPriority, priorityFactors, recommendAction,
+  providerSummary, providerIntel,
 } from './v2utils';
-import { Stage, Signals } from './OverviewExplore';
+import { ProviderIntel } from './OverviewExplore';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
 const byRateAsc = (a, b) => num(a.rate) - num(b.rate);
@@ -53,31 +53,10 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
     [providerName, provider, grid]
   );
 
-  // Provider-level intelligence — the same read the Overview gives a measure, but
-  // rolled up across everything this provider supports: where it stands, which
-  // measure to work first, and the intervention with the biggest lever here.
-  const providerIntel = useMemo(() => {
-    if (!profile.length) return null;
-    const below = profile.filter((m) => toneFor(m.rate, m.goal_50th) === 'below');
-    const set = below.length ? below : profile;
-    const read = portfolioRead(set, below.length ? 'Below Goal' : 'At Goal', profile.length);
-    const ranked = rankByPriority(profile);
-    const top = ranked[0];
-    const rec = top ? recommendAction(top.measure, read) : null;
-    return { read, top, rec };
-  }, [profile]);
-
-  const summary = useMemo(() => {
-    const c = { below: 0, at: 0, above: 0 };
-    let gapSum = 0;
-    profile.forEach((m) => {
-      c[toneFor(m.rate, m.goal_50th)] += 1;
-      gapSum += num(m.rate) - num(m.goal_50th);
-    });
-    const members = profile.reduce((s, m) => s + num(m.denominator), 0);
-    const open = profile.reduce((s, m) => s + Math.max(0, num(m.denominator) - num(m.numerator)), 0);
-    return { ...c, total: profile.length, avgGap: profile.length ? Math.round((gapSum / profile.length) * 10) / 10 : 0, members, open };
-  }, [profile]);
+  // Provider-level intelligence + goal-standing roll-up — extracted so the
+  // Explorer's active-provider card computes them identically (see v2utils).
+  const intel = useMemo(() => providerIntel(profile), [profile]);
+  const summary = useMemo(() => providerSummary(profile), [profile]);
 
   // Equity read for the measure this analysis was opened from.
   const equityAsync = useAsync(async () => {
@@ -146,37 +125,7 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
               <span className="pva-dist-key"><span className="pva-dot pva-dot-above" />Above goal · {summary.above}</span>
             </div>
 
-            {providerIntel && providerIntel.read && (
-              <div className="ov2-intel pva-intel">
-                <Stage label="Standing" summary={providerIntel.read.synthesis}
-                  tag={`Confidence · ${providerIntel.read.confidence.level}`} defaultOpen>
-                  <Signals items={providerIntel.read.signals} />
-                  <p className="ov2-read-why mono">{providerIntel.read.confidence.why}</p>
-                </Stage>
-
-                {providerIntel.top && (
-                  <Stage label="Where to focus"
-                    summary={`Work ${shortId(providerIntel.top.measure.measure_id)} first — ${providerIntel.top.open.toLocaleString()} members open · ${providerIntel.top.gap} pts under goal.`}
-                    tag={`Score ${providerIntel.top.score}`}>
-                    <div className="ov2-prio">
-                      <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, providerIntel.top.score)}%` }} /></span>
-                      <span className="ov2-prio-score mono num">{providerIntel.top.score}</span>
-                    </div>
-                    <Signals items={priorityFactors(providerIntel.top)} className="ov2-prio-factors" />
-                  </Stage>
-                )}
-
-                {providerIntel.rec && providerIntel.top && (
-                  <Stage label="Recommended action" summary={providerIntel.rec.action} tag="Suggested" tagKind="preview">
-                    <p className="ov2-stage-lead">Biggest lever for this provider — on {shortId(providerIntel.top.measure.measure_id)}, run {providerIntel.rec.action.toLowerCase()}. Because {providerIntel.rec.rationale}.</p>
-                    <div className="ov2-rec-chips">
-                      {providerIntel.rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
-                    </div>
-                    <p className="ov2-read-why mono">{providerIntel.rec.basis}</p>
-                  </Stage>
-                )}
-              </div>
-            )}
+            <ProviderIntel intel={intel} />
           </>
         )}
       </section>

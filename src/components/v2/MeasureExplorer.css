@@ -142,6 +142,27 @@
 .mex-prow.is-overall .mex-prow-name { font-weight: 700; color: var(--c-text); }
 .mex-prow-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
+/* Active provider card — the selected provider gets the same expanded detail a
+   selected measure does (standing on the active measure + portfolio KPIs + the
+   rolled-up read), instead of a one-line row. */
+/* The expanded provider card pins so it (and its equity connectors) stay in view
+   while the rest of the provider list scrolls past. Both `top` and `bottom` are
+   set so it holds against whichever edge it is leaving: pinned to the top when a
+   provider low in the list is scrolled up to, and to the bottom when one high in
+   the list is scrolled down past — it never scrolls fully out of view. */
+.mex-pv-detail {
+  position: sticky; top: 16px; bottom: 16px; z-index: 4;
+  max-height: calc(100vh - 32px); overflow-y: auto;
+}
+.mex-pv-eyebrow { color: var(--c-primary-dark); }
+.mex-pv-kpis {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin-top: 16px;
+  padding-top: 14px; border-top: 1px solid var(--c-border-light);
+}
+.mex-pv-kpis > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mex-pv-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.mex-pv-actions > .btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
+
 /* Equity cards */
 .mex-col-equity { display: flex; flex-direction: column; }
 .mex-eq-card {
@@ -225,4 +246,5 @@
   .mex-links { display: none; }
   .mex-col-sticky { position: static; }
   .mex-prow.is-active { position: static; }
+  .mex-pv-detail { position: static; max-height: none; overflow: visible; }
 }

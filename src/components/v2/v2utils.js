@@ -417,6 +417,37 @@ export const providerProfile = (providerName, overall, measures) =>
     };
   });
 
+// Goal-standing roll-up over a provider profile (rate-vs-goal per measure): the
+// KPI-header numbers — counts by tone, average gap, member totals, open gaps.
+export const providerSummary = (profile) => {
+  const set = (profile || []).filter((m) => m && m.measure_id);
+  const c = { below: 0, at: 0, above: 0 };
+  let gapSum = 0;
+  set.forEach((m) => {
+    c[STATUS_TONE[statusFor(m.rate, m.goal_50th)] || 'below'] += 1;
+    gapSum += num(m.rate) - num(m.goal_50th);
+  });
+  const total = set.length;
+  const members = set.reduce((s, m) => s + num(m.denominator), 0);
+  const open = set.reduce((s, m) => s + Math.max(0, num(m.denominator) - num(m.numerator)), 0);
+  return { ...c, total, avgGap: total ? Math.round((gapSum / total) * 10) / 10 : 0, members, open };
+};
+
+// Provider-level intelligence: the same read the Overview gives a single measure,
+// but rolled up across everything a provider supports — where it stands, which
+// measure to work first, and the intervention with the biggest lever here. Shared
+// by the Provider Analysis page and the Explorer's active-provider card so a
+// provider reads identically on both surfaces.
+export const providerIntel = (profile) => {
+  const set = (profile || []).filter((m) => m && m.measure_id);
+  if (!set.length) return null;
+  const below = set.filter((m) => (STATUS_TONE[statusFor(m.rate, m.goal_50th)] || 'below') === 'below');
+  const read = portfolioRead(below.length ? below : set, below.length ? 'Below Goal' : 'At Goal', set.length);
+  const top = rankByPriority(set)[0];
+  const rec = top ? recommendAction(top.measure, read) : null;
+  return { read, top, rec };
+};
+
 // Providers (CRSP-level) for a measure.
 export const sampleProviders = (measureId) => {
   const base = SAMPLE_MEASURES.find((m) => m.measure_id === measureId)?.rate || 60;

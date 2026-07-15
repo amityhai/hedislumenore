@@ -15,8 +15,9 @@ import {
 import {
   num, shortId, statusFor, STATUS_TONE, categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleProviders, sampleEquity,
+  providerProfile, providerSummary, providerIntel,
 } from './v2utils';
-import { MeasureIntel } from './OverviewExplore';
+import { MeasureIntel, ProviderIntel } from './OverviewExplore';
 import CategoryTabs from './CategoryTabs';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
@@ -80,6 +81,66 @@ const ActiveMeasureCard = ({ measure, token, selectedMonth, peers, crsps, nodeRe
         <button type="button" className="btn btn-tonal" onClick={onAssign}>
           Assign intervention · all providers
         </button>
+      </div>
+    </div>
+  );
+};
+
+// The active provider's card carries the same expanded read a selected measure
+// gets: the provider's standing on the active measure (rate, gap, goal), the
+// portfolio KPIs (measures / at-above / below / avg gap — the same numbers the
+// Provider Analysis header shows), and the rolled-up Standing / Where-to-focus /
+// Recommended-action intelligence. It shares the exact ProviderIntel block so a
+// provider reads identically here and on the full analysis page. `measures` is the
+// full grid the provider profile is derived from.
+const ActiveProviderCard = ({ provider, measures, nodeRef, onAssign, onAnalyze, onOpenWorklist }) => {
+  const overall = !!provider?.overall;
+  const providerName = overall ? 'All providers (Overall)' : (provider?.crsp || 'Provider');
+  const profile = useMemo(() => providerProfile(providerName, overall, measures), [providerName, overall, measures]);
+  const summary = useMemo(() => providerSummary(profile), [profile]);
+  const intel = useMemo(() => providerIntel(profile), [profile]);
+
+  if (!provider) return null;
+  const rate = num(provider.rate), goal = num(provider.goal);
+  const gap = Math.round((rate - goal) * 10) / 10;
+  const tone = toneFor(rate, goal);
+
+  return (
+    <div ref={nodeRef} className="mex-card mex-card-detail mex-pv-detail is-active">
+      <div className="mex-detail-head">
+        <span className="mex-card-idrow">
+          {!overall && <StatusDot rate={rate} goal={goal} />}
+          <span className="eyebrow mex-pv-eyebrow">Provider</span>
+        </span>
+        <RateBadge rate={rate} goal={goal} />
+      </div>
+      <h3 className="mex-detail-name">{providerName}</h3>
+
+      <div className="mex-detail-rate">
+        <span className="num">{rate}%</span>
+        <span className={`mex-detail-gap mex-detail-gap-${gap >= 0 ? 'pos' : 'neg'} num`}>
+          {gap === 0 ? 'at goal' : `${gap > 0 ? '↗' : '↘'} ${Math.abs(gap)} pts ${gap > 0 ? 'above' : 'below'} goal`}
+        </span>
+      </div>
+      <div className="mex-goalbar" title={`Goal ${goal}%`}>
+        <span className={`mex-goalbar-fill mex-bar-${tone}`} style={{ width: `${Math.min(100, Math.max(0, rate))}%` }} />
+        {goal > 0 && <span className="mex-goalbar-marker" style={{ left: `${Math.min(100, goal)}%` }} />}
+      </div>
+
+      {/* Portfolio KPIs — the Provider Analysis header numbers, inline */}
+      <div className="mex-pv-kpis">
+        <div><span className="mex-detail-k">Measures</span><span className="mex-detail-v num">{summary.total}</span></div>
+        <div><span className="mex-detail-k">At / above</span><span className="mex-detail-v num is-pos">{summary.at + summary.above}</span></div>
+        <div><span className="mex-detail-k">Below goal</span><span className="mex-detail-v num is-neg">{summary.below}</span></div>
+        <div><span className="mex-detail-k">Avg gap</span><span className={`mex-detail-v num ${summary.avgGap < 0 ? 'is-neg' : 'is-pos'}`}>{summary.avgGap >= 0 ? '+' : ''}{summary.avgGap} pts</span></div>
+      </div>
+
+      <ProviderIntel intel={intel} />
+
+      <div className="mex-pv-actions">
+        <button type="button" className="btn btn-tonal btn-sm" onClick={onAssign}>Assign intervention</button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onAnalyze}>Full analysis</button>
+        <button type="button" className="btn btn-primary btn-sm" onClick={onOpenWorklist}>Open worklist</button>
       </div>
     </div>
   );
@@ -181,6 +242,9 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
   const activeProvider = providersFiltered[providerIdx] || providersFiltered[0];
 
   const pickMeasure = useCallback((id) => { setMeasureId(id); setProviderIdx(0); setShowMeasures(false); }, []);
+  // Selecting a provider promotes it to the card at the top of the column; the
+  // rest of the providers stay listed below it (always visible).
+  const pickProvider = useCallback((i) => { setProviderIdx(i); }, []);
 
   // The Overall row isn't a provider — assigning against it is a measure-wide fan-out.
   const openAssign = useCallback((p) => setAssignScope(p && !p.overall ? { level: 'provider', provider: p } : { level: 'measure' }), []);
@@ -303,6 +367,46 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
     );
   };
 
+  // A compact provider row for the folded remainder of the column — the active
+  // provider is promoted to ActiveProviderCard, so rows here are always inactive.
+  const renderProviderRow = (p, i) => {
+    // Overall is the aggregate, not a goal-standing row — keep it neutral.
+    const tone = p.overall ? '' : `mex-prow-${toneFor(p.rate, p.goal)}`;
+    return (
+      <div key={`${p.crsp}-${i}`} ref={setNode(`p:${i}`)}
+        className={`mex-prow ${tone} ${p.overall ? 'is-overall' : ''}`}
+        role="button" tabIndex={0} aria-pressed={false}
+        onClick={() => pickProvider(i)}
+        onKeyDown={(ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pickProvider(i); }
+        }}>
+        <span className="mex-prow-name">{p.crsp}</span>
+        <span className="mex-prow-right">
+          <RateBadge rate={p.rate} goal={p.goal} />
+          <button type="button" className="btn btn-tonal btn-sm"
+            title={p.overall ? 'Assign across all providers' : `Assign intervention · ${p.crsp}`}
+            onClick={(ev) => { ev.stopPropagation(); openAssign(p); }}>
+            Assign
+          </button>
+          <button type="button" className="btn btn-secondary btn-icon btn-sm mex-prow-analyze"
+            title={p.overall ? 'Analyze all providers' : `Analyze ${p.crsp}`} aria-label="Analyze provider"
+            onClick={(ev) => { ev.stopPropagation(); onAnalyzeProvider && onAnalyzeProvider(activeMeasure, p); }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </button>
+          <button type="button" className="btn btn-primary btn-icon btn-sm mex-prow-open"
+            title="Open member worklist" aria-label="Open member worklist"
+            onClick={(ev) => { ev.stopPropagation(); onOpenWorklist(activeMeasure, p, null); }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        </span>
+      </div>
+    );
+  };
+
   if (measuresAsync.error) {
     return <ErrorState message="Couldn't load the explorer." onRetry={measuresAsync.refetch} />;
   }
@@ -369,46 +473,20 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
               [...Array(8)].map((_, i) => <Skeleton key={i} height={46} radius={10} style={{ marginBottom: 8 }} />)
             ) : providersFiltered.length === 0 ? (
               <EmptyState icon="—" hint="No providers in this status." />
-            ) : (
-              providersFiltered.map((p, i) => {
-                const active = i === providerIdx;
-                // Overall is the aggregate, not a goal-standing row — keep it neutral.
-                const tone = p.overall ? '' : `mex-prow-${toneFor(p.rate, p.goal)}`;
-                return (
-                  <div key={`${p.crsp}-${i}`} ref={setNode(`p:${i}`)}
-                    className={`mex-prow ${tone} ${active ? 'is-active' : ''} ${p.overall ? 'is-overall' : ''}`}
-                    role="button" tabIndex={0} aria-pressed={active}
-                    onClick={() => setProviderIdx(i)}
-                    onKeyDown={(ev) => {
-                      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setProviderIdx(i); }
-                    }}>
-                    <span className="mex-prow-name">{p.crsp}</span>
-                    <span className="mex-prow-right">
-                      <RateBadge rate={p.rate} goal={p.goal} />
-                      <button type="button" className="btn btn-tonal btn-sm"
-                        title={p.overall ? 'Assign across all providers' : `Assign intervention · ${p.crsp}`}
-                        onClick={(ev) => { ev.stopPropagation(); openAssign(p); }}>
-                        Assign
-                      </button>
-                      <button type="button" className="btn btn-primary btn-icon btn-sm mex-prow-open"
-                        title="Open member worklist" aria-label="Open member worklist"
-                        onClick={(ev) => { ev.stopPropagation(); onOpenWorklist(activeMeasure, p, null); }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                      </button>
-                      <button type="button" className="btn btn-secondary btn-icon btn-sm mex-prow-analyze"
-                        title={p.overall ? 'Analyze all providers' : `Analyze ${p.crsp}`} aria-label="Analyze provider"
-                        onClick={(ev) => { ev.stopPropagation(); onAnalyzeProvider && onAnalyzeProvider(activeMeasure, p); }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-                        </svg>
-                      </button>
-                    </span>
-                  </div>
-                );
-              })
-            )}
+            ) : (() => {
+              // The selected provider expands into its detail card *in place* —
+              // its position in the list never changes, the others stay as rows.
+              const activeIdx = providerIdx < providersFiltered.length ? providerIdx : 0;
+              return providersFiltered.map((p, i) => (
+                i === activeIdx ? (
+                  <ActiveProviderCard key={`p-card-${i}`} provider={p} measures={measures}
+                    nodeRef={setNode(`p:${i}`)}
+                    onAssign={() => openAssign(p)}
+                    onAnalyze={() => onAnalyzeProvider && onAnalyzeProvider(activeMeasure, p)}
+                    onOpenWorklist={() => onOpenWorklist(activeMeasure, p, null)} />
+                ) : renderProviderRow(p, i)
+              ));
+            })()}
           </div>
         </section>
 

@@ -809,6 +809,46 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth 
   );
 };
 
+// The provider counterpart to MeasureIntel: the same three-stage read, but rolled
+// up across everything a provider supports (Standing / Where to focus / Next move).
+// Takes a pre-computed `intel` object (see providerIntel in v2utils) so both the
+// Provider Analysis page and the Explorer's active-provider card render it the same.
+export const ProviderIntel = ({ intel }) => {
+  if (!intel || !intel.read) return null;
+  const { read, top, rec } = intel;
+  return (
+    <div className="ov2-intel pva-intel">
+      <Stage label="Standing" summary={read.synthesis}
+        tag={`Confidence · ${read.confidence.level}`} defaultOpen>
+        <Signals items={read.signals} />
+        <p className="ov2-read-why mono">{read.confidence.why}</p>
+      </Stage>
+
+      {top && (
+        <Stage label="Where to focus"
+          summary={`Work ${shortId(top.measure.measure_id)} first — ${top.open.toLocaleString()} members open · ${top.gap} pts under goal.`}
+          tag={`Score ${top.score}`}>
+          <div className="ov2-prio">
+            <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, top.score)}%` }} /></span>
+            <span className="ov2-prio-score mono num">{top.score}</span>
+          </div>
+          <Signals items={priorityFactors(top)} className="ov2-prio-factors" />
+        </Stage>
+      )}
+
+      {rec && top && (
+        <Stage label="Recommended action" summary={rec.action} tag="Suggested" tagKind="preview">
+          <p className="ov2-stage-lead">Biggest lever for this provider — on {shortId(top.measure.measure_id)}, run {rec.action.toLowerCase()}. Because {rec.rationale}.</p>
+          <div className="ov2-rec-chips">
+            {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
+          </div>
+          <p className="ov2-read-why mono">{rec.basis}</p>
+        </Stage>
+      )}
+    </div>
+  );
+};
+
 const DefaultPanel = ({ loading, panel, onPick }) => (
   <div className="ov2-panel-inner">
     <div className="eyebrow">{panel.eyebrow}</div>
