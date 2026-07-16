@@ -448,6 +448,69 @@ export const providerIntel = (profile) => {
   return { read, top, rec };
 };
 
+// Where a single provider sits among the others ON THE CURRENT MEASURE. `providers`
+// is the CRSP list for the active measure (Overall excluded here). Rank is stated
+// as "behind N of M" — how many peers post a higher rate — which is the one thing
+// an individual provider card can say that the aggregate can't. Returns null when
+// there aren't enough peers to rank against.
+export const peerRank = (provider, providers) => {
+  const peers = (providers || []).filter((p) => p && !p.overall);
+  const total = peers.length;
+  if (!provider || total <= 1) return null;
+  const rate = num(provider.rate);
+  const ahead = peers.filter((p) => num(p.rate) > rate).length;
+  return { rate, total, ahead };
+};
+
+// The individual-provider Standing read: leads with peer standing on the current
+// measure, then the portfolio breadth; expands to concentration, recoverable
+// members, and the category the provider is weakest in. Distinct from the
+// aggregate `providerIntel` read, which has no single-measure peer context.
+export const providerCardRead = (profile, summary, peer) => {
+  const set = (profile || []).filter((m) => m && m.measure_id);
+  if (!set.length || !summary) return null;
+  const below = set.filter((m) => (STATUS_TONE[statusFor(m.rate, m.goal_50th)] || 'below') === 'below');
+
+  const peerLine = peer
+    ? (peer.ahead === 0
+      ? `${peer.rate}% here — strongest of ${peer.total} providers on this measure.`
+      : peer.ahead >= peer.total - 1
+        ? `${peer.rate}% here — weakest of ${peer.total} providers on this measure.`
+        : `${peer.rate}% here — behind ${peer.ahead} of ${peer.total} providers on this measure.`)
+    : '';
+  const gapWord = summary.avgGap < 0 ? 'under' : 'over';
+  const breadth = `${summary.below} of ${summary.total} measures below goal · avg ${Math.abs(summary.avgGap)} pts ${gapWord}.`;
+  const synthesis = peerLine ? `${peerLine} ${breadth}` : breadth;
+
+  const signals = [];
+  // Concentration: how many below-goal measures hold ~half the members-to-goal.
+  const need = (m) => Math.max(0, Math.ceil((num(m.goal_50th) / 100) * num(m.denominator)) - num(m.numerator));
+  const belowSorted = [...below].sort((a, b) => need(b) - need(a));
+  const totalNeed = belowSorted.reduce((s, m) => s + need(m), 0);
+  if (totalNeed > 0 && belowSorted.length >= 3) {
+    let cum = 0;
+    let k = 0;
+    while (k < belowSorted.length && cum < totalNeed * 0.5) { cum += need(belowSorted[k]); k += 1; }
+    if (k > 0 && k < belowSorted.length) {
+      signals.push({ k: 'Concentration', v: `${k} of ${belowSorted.length} below-goal measures hold ~half the shortfall.` });
+    }
+  }
+  if (summary.open > 0) {
+    signals.push({ k: 'Recoverable', v: `~${fmtCompact(summary.open)} members carry an open gap.` });
+  }
+  // Category tilt: where the provider trails on the most measures.
+  const byCat = {};
+  below.forEach((m) => { const c = m.category || 'Other'; byCat[c] = (byCat[c] || 0) + 1; });
+  const worstCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
+  if (worstCat && worstCat[1] >= 2) {
+    signals.push({ k: 'Weakest in', v: `${worstCat[0]} — ${worstCat[1]} measures below goal.` });
+  }
+
+  const totalDenom = set.reduce((s, m) => s + num(m.denominator), 0);
+  const level = totalDenom >= 5000 ? 'High' : totalDenom >= 1000 ? 'Moderate' : 'Low';
+  return { synthesis, signals, confidence: { level, why: `${totalDenom.toLocaleString()} eligible across ${set.length} measures` } };
+};
+
 // Providers (CRSP-level) for a measure.
 export const sampleProviders = (measureId) => {
   const base = SAMPLE_MEASURES.find((m) => m.measure_id === measureId)?.rate || 60;

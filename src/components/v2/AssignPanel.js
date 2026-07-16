@@ -92,7 +92,16 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   // stratum shouldn't wipe a provider selection, or vice versa.
   const [provPick, setProvPick] = useState(null); // null | provider rows
   const [strata, setStrata] = useState([]);       // stratum rows, multi-select
-  const [intervention, setIntervention] = useState(INTERVENTIONS[0]);
+  // A recommended action can seed the intervention (see the "Assign this
+  // intervention" button on the measure card's Recommended-action stage). The
+  // recommendation vocabulary is separate from the assign list, so a preset that
+  // isn't already an option gets prepended rather than dropped.
+  const [intervention, setIntervention] = useState(scope.intervention || INTERVENTIONS[0]);
+  const interventionOptions = useMemo(
+    () => (scope.intervention && !INTERVENTIONS.includes(scope.intervention)
+      ? [scope.intervention, ...INTERVENTIONS] : INTERVENTIONS),
+    [scope.intervention]
+  );
   const [staff, setStaff] = useState(UNASSIGNED);
   const [due, setDue] = useState(defaultDue);
   const [why, setWhy] = useState('');
@@ -330,7 +339,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
             <label className="apx-field">
               <span>Intervention</span>
               <select value={intervention} onChange={(e) => setIntervention(e.target.value)}>
-                {INTERVENTIONS.map((x) => <option key={x}>{x}</option>)}
+                {interventionOptions.map((x) => <option key={x}>{x}</option>)}
               </select>
             </label>
             <label className="apx-field">

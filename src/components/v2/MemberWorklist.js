@@ -52,7 +52,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
   const [ncOnly, setNcOnly] = useState(false);     // show only non-compliant
   const [assigned, setAssigned] = useState({});   // memberId -> staff name
   const [modalMember, setModalMember] = useState(null);
-  const [assignPanel, setAssignPanel] = useState(false); // provider-wide assign
+  const [assignState, setAssignState] = useState(null); // null | { intervention? } — provider-wide / stratum assign
   // Equity segment is an in-place filter, not a navigation: picking a stratum
   // narrows the member list below without leaving the page. `pickedStrat` holds
   // the active chip; it composes with the `strat` prop (a stratum this worklist
@@ -163,7 +163,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
           {provider && (
             <div className="mwl-head-actions">
               <button type="button" className="btn btn-tonal btn-sm"
-                onClick={() => setAssignPanel(true)}>
+                onClick={() => setAssignState({})}>
                 Assign intervention
               </button>
               {!provider.overall && onAnalyzeProvider && (
@@ -205,7 +205,8 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
 
       {/* Stratum insight — a read relevant to the active equity group */}
       {effStrat && stratInsight && (
-        <StratumInsight insight={stratInsight} stratum={effStrat} loading={equityAsync.loading} />
+        <StratumInsight insight={stratInsight} stratum={effStrat} loading={equityAsync.loading}
+          onAssign={(intervention) => setAssignState({ intervention })} />
       )}
 
       {/* Table */}
@@ -287,17 +288,22 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
         document.body
       )}
 
-      {/* Provider-wide assign, launched from the header. Scoped to this provider;
-          equity is the same measure-level set the segmentation card uses. */}
-      {assignPanel && provider && createPortal(
+      {/* Assign, launched from the header (provider-wide) or a stratum's
+          Recommended-action button (seeded with that play). Scoped to this
+          provider when there is one, else measure-wide; equity is the same
+          measure-level set the segmentation card uses. */}
+      {assignState && measure && createPortal(
         <AssignPanel measure={measure}
-          providers={provider.overall ? [] : [provider]}
+          providers={provider ? (provider.overall ? [] : [provider]) : []}
           equity={equity}
-          scope={provider.overall ? { level: 'measure' } : { level: 'provider', provider }}
-          onClose={() => setAssignPanel(false)}
+          scope={{
+            ...(provider && !provider.overall ? { level: 'provider', provider } : { level: 'measure' }),
+            intervention: assignState.intervention,
+          }}
+          onClose={() => setAssignState(null)}
           onAssign={(payload) => {
-            setAssignPanel(false);
-            const where = provider.overall ? 'all providers' : provider.crsp;
+            setAssignState(null);
+            const where = provider && !provider.overall ? provider.crsp : 'all providers';
             toast({ type: 'success', message: `${payload.preview.created.toLocaleString()} tasks queued for ${where} · ${payload.assignedTo === UNASSIGNED ? 'unassigned pool' : payload.assignedTo}` });
           }} />,
         document.body
@@ -360,7 +366,7 @@ const EquitySegment = ({ equity, loading, measureGoal, selected, onPick, onClear
 // filtered to one). Carries the same Behavior / Recommended-action read the
 // Overview gives a measure, but framed for the group — reusing the Overview's
 // Stage / Signals so it reads identically across surfaces.
-const StratumInsight = ({ insight, stratum, loading }) => {
+const StratumInsight = ({ insight, stratum, loading, onAssign }) => {
   const { read, rec } = insight;
   return (
     <div className={`mwl-insight ${read.isDisparity ? 'is-disparity' : ''}`}>
@@ -383,6 +389,15 @@ const StratumInsight = ({ insight, stratum, loading }) => {
                 {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
               </div>
               <p className="ov2-read-why mono">{rec.basis}</p>
+              {onAssign && (
+                <button type="button" className="btn btn-tonal btn-sm ov2-rec-assign"
+                  onClick={() => onAssign(rec.action)}>
+                  Assign this intervention
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              )}
             </Stage>
           )}
         </div>

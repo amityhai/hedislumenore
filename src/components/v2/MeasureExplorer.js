@@ -15,7 +15,7 @@ import {
 import {
   num, shortId, statusFor, STATUS_TONE, categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleProviders, sampleEquity,
-  providerProfile, providerSummary, providerIntel,
+  providerProfile, providerSummary, providerIntel, peerRank, providerCardRead,
 } from './v2utils';
 import { MeasureIntel, ProviderIntel } from './OverviewExplore';
 import CategoryTabs from './CategoryTabs';
@@ -75,13 +75,9 @@ const ActiveMeasureCard = ({ measure, token, selectedMonth, peers, crsps, nodeRe
         {goal > 0 && <span className="mex-goalbar-marker" style={{ left: `${Math.min(100, goal)}%` }} />}
       </div>
 
-      <MeasureIntel measure={measure} crsps={crsps} token={token} peers={peers} selectedMonth={selectedMonth} />
-
-      <div className="mex-detail-assign">
-        <button type="button" className="btn btn-tonal" onClick={onAssign}>
-          Assign intervention · all providers
-        </button>
-      </div>
+      {/* The assign action lives inside the Recommended-action stage (seeded with
+          the recommended play) — no separate footer button. */}
+      <MeasureIntel measure={measure} crsps={crsps} token={token} peers={peers} selectedMonth={selectedMonth} onAssign={onAssign} />
     </div>
   );
 };
@@ -93,12 +89,18 @@ const ActiveMeasureCard = ({ measure, token, selectedMonth, peers, crsps, nodeRe
 // Recommended-action intelligence. It shares the exact ProviderIntel block so a
 // provider reads identically here and on the full analysis page. `measures` is the
 // full grid the provider profile is derived from.
-const ActiveProviderCard = ({ provider, measures, nodeRef, onAssign, onAnalyze, onOpenWorklist }) => {
+const ActiveProviderCard = ({ provider, measures, peers, nodeRef, onAssign, onAnalyze, onOpenWorklist }) => {
   const overall = !!provider?.overall;
   const providerName = overall ? 'All providers (Overall)' : (provider?.crsp || 'Provider');
   const profile = useMemo(() => providerProfile(providerName, overall, measures), [providerName, overall, measures]);
   const summary = useMemo(() => providerSummary(profile), [profile]);
-  const intel = useMemo(() => providerIntel(profile), [profile]);
+  // Overall keeps the aggregate roll-up read; an individual provider gets the
+  // peer-rank + breadth read — how it ranks against the other CRSPs on the active
+  // measure, then the shape of its own portfolio gap.
+  const read = useMemo(() => {
+    if (overall) return providerIntel(profile)?.read;
+    return providerCardRead(profile, summary, peerRank(provider, peers));
+  }, [overall, profile, summary, provider, peers]);
 
   if (!provider) return null;
   const rate = num(provider.rate), goal = num(provider.goal);
@@ -135,7 +137,7 @@ const ActiveProviderCard = ({ provider, measures, nodeRef, onAssign, onAnalyze, 
         <div><span className="mex-detail-k">Avg gap</span><span className={`mex-detail-v num ${summary.avgGap < 0 ? 'is-neg' : 'is-pos'}`}>{summary.avgGap >= 0 ? '+' : ''}{summary.avgGap} pts</span></div>
       </div>
 
-      <ProviderIntel intel={intel} />
+      <ProviderIntel intel={{ read }} compact />
 
       <div className="mex-pv-actions">
         <button type="button" className="btn btn-tonal btn-sm" onClick={onAssign}>Assign intervention</button>
@@ -246,8 +248,14 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
   // rest of the providers stay listed below it (always visible).
   const pickProvider = useCallback((i) => { setProviderIdx(i); }, []);
 
-  // The Overall row isn't a provider — assigning against it is a measure-wide fan-out.
-  const openAssign = useCallback((p) => setAssignScope(p && !p.overall ? { level: 'provider', provider: p } : { level: 'measure' }), []);
+  // The Overall row isn't a provider — assigning against it is a measure-wide
+  // fan-out. `intervention` is an optional preset carried in from a Recommended-
+  // action button so the panel opens with that play already selected.
+  const openAssign = useCallback((p, intervention) => setAssignScope(
+    p && !p.overall
+      ? { level: 'provider', provider: p, intervention }
+      : { level: 'measure', intervention }
+  ), []);
 
   // No assignments API yet, so this confirms the scope rather than persisting it.
   const runAssign = useCallback((payload) => {
@@ -278,6 +286,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
   // ONLY write when they actually change, so the layout effect + ResizeObserver
   // can't drive an infinite update loop.
   const boardRef = useRef(null);
+  const equityColRef = useRef(null);
   const nodeRefs = useRef({});
   const setNode = (key) => (el) => { if (el) nodeRefs.current[key] = el; };
   // Only the selected-provider → equity wires are drawn now: with every provider
@@ -335,9 +344,14 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
       raf = requestAnimationFrame(() => { raf = 0; recompute(); });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
+    // The Equity column is sticky with its own internal scroll, so its rows (the
+    // connector endpoints) move independently of the page — track that too.
+    const equityCol = equityColRef.current;
+    if (equityCol) equityCol.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       ro.disconnect();
       window.removeEventListener('scroll', onScroll);
+      if (equityCol) equityCol.removeEventListener('scroll', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [recompute]);
@@ -446,7 +460,8 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
                 <>
                   <ActiveMeasureCard measure={active} token={token} selectedMonth={selectedMonth}
                     peers={measuresFiltered} crsps={crspsForRead}
-                    nodeRef={setNode(`m:${active.measure_id}`)} onAssign={() => openAssign(null)} />
+                    nodeRef={setNode(`m:${active.measure_id}`)}
+                    onAssign={(intervention) => openAssign(null, intervention)} />
                   {rest.length > 0 && (
                     <button type="button" className="mex-showall" aria-expanded={showMeasures} onClick={() => setShowMeasures((s) => !s)}>
                       <span>{showMeasures ? 'HIDE MEASURES' : `SHOW REMAINING ${rest.length} MEASURES`}</span>
@@ -480,6 +495,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
               return providersFiltered.map((p, i) => (
                 i === activeIdx ? (
                   <ActiveProviderCard key={`p-card-${i}`} provider={p} measures={measures}
+                    peers={providersFiltered}
                     nodeRef={setNode(`p:${i}`)}
                     onAssign={() => openAssign(p)}
                     onAnalyze={() => onAnalyzeProvider && onAnalyzeProvider(activeMeasure, p)}
@@ -491,7 +507,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
         </section>
 
         {/* Column 3 — Equity */}
-        <section className="mex-col mex-col-equity">
+        <section ref={equityColRef} className="mex-col mex-col-equity">
           <div className="mex-col-head">
             <h2 className="mex-col-title">Equity</h2>
           </div>

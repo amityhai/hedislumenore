@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './ProviderAnalysis.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
+import { useToast } from '../ui/Toast';
 import useAsync from '../../hooks/useAsync';
+import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import {
   fetchAllMeasuresGrid,
   fetchMeasureStratification,
@@ -36,6 +39,8 @@ const FOCUS_N = 8;
 const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorklist }) => {
   const providerName = provider?.overall ? 'All providers (Overall)' : (provider?.crsp || 'Provider');
   const [showAll, setShowAll] = useState(false); // fold the measure long-tail by default
+  const [assign, setAssign] = useState(null); // { intervention, measure } — recommended-action assign
+  const toast = useToast();
 
   const gridAsync = useAsync(async () => {
     try {
@@ -125,7 +130,8 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
               <span className="pva-dist-key"><span className="pva-dot pva-dot-above" />Above goal · {summary.above}</span>
             </div>
 
-            <ProviderIntel intel={intel} />
+            <ProviderIntel intel={intel}
+              onAssign={(intervention, targetMeasure) => setAssign({ intervention, measure: targetMeasure || measure })} />
           </>
         )}
       </section>
@@ -262,6 +268,35 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
           )}
         </section>
       </div>
+
+      {/* Recommended-action assign — seeded with the provider's biggest-lever play
+          and scoped to the measure that lever targets. Provider-scoped counts come
+          from that measure's profile row; equity narrowing lives in the Explorer. */}
+      {assign && createPortal(
+        (() => {
+          const m = assign.measure;
+          const row = {
+            crsp: providerName, rate: num(m?.rate), goal: num(m?.goal_50th),
+            numerator: num(m?.numerator), denominator: num(m?.denominator),
+          };
+          const isOverall = !!provider?.overall;
+          return (
+            <AssignPanel measure={m}
+              providers={isOverall ? [] : [row]}
+              equity={{ age: [], race: [], ethnicity: [] }}
+              scope={isOverall
+                ? { level: 'measure', intervention: assign.intervention }
+                : { level: 'provider', provider: row, intervention: assign.intervention }}
+              onClose={() => setAssign(null)}
+              onAssign={(payload) => {
+                setAssign(null);
+                const where = isOverall ? 'all providers' : providerName;
+                toast({ type: 'success', message: `${payload.preview.created.toLocaleString()} tasks queued for ${where} · ${payload.assignedTo === UNASSIGNED ? 'unassigned pool' : payload.assignedTo}` });
+              }} />
+          );
+        })(),
+        document.body
+      )}
     </div>
   );
 };

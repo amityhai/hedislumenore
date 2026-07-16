@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback, Component } from 'reac
 import './App.css';
 import CareActionCenter from './components/CareActionCenter';
 import ScorecardV2 from './components/v2/ScorecardV2';
+import OutcomeAnalysis from './components/v2/OutcomeAnalysis';
+import TrackingBoard from './components/v2/TrackingBoard';
 // Parked pages (see PAGES / NAV_ITEMS below):
 // import Dashboard from './components/Dashboard';
 // import MeasureDetail from './components/MeasureDetail';
@@ -16,7 +18,7 @@ import { setSelectedWorkflowMonth, fetchAvailableMonths } from './services/workf
 // refresh. Format: #/<page>[/<measureId>], e.g. #/detail/BCS_E.
 // Only the two active flows are routable while the redesign focuses on them —
 // the rest of the list is parked below; move entries back to re-enable.
-const PAGES = ['v2', 'cac'];
+const PAGES = ['v2', 'cac', 'tracking', 'outcome'];
 // Parked: 'dashboard', 'detail', 'sim', 'prov'
 const ALIASES = { rateSimulator: 'sim', providerScores: 'prov' };
 
@@ -29,6 +31,8 @@ const mq = (q) => (typeof window === 'undefined' ? { matches: false } : window.m
 // Sidebar navigation (single source of truth for the nav list).
 const NAV_ITEMS = [
   { page: 'v2', label: 'Overview', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm5 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM7 19a2 2 0 1 1 0-4 2 2 0 0 1 0 4z' },
+  { page: 'tracking', label: 'Risk Tracking', icon: 'M3 12h4l2 6 4-14 2 8h6' },
+  { page: 'outcome', label: 'Outcome Analysis', icon: 'M4 20h16v2H2V4h2v16zm3-4h2v-6H7v6zm4 0h2V7h-2v9zm4 0h2v-3h-2v3z' },
   { page: 'cac', label: 'Care Action Center', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z' },
   // Parked while the redesign focuses on Overview + Care Action Center —
   // uncomment (and restore the page in PAGES above) to bring a tab back:
@@ -265,6 +269,8 @@ function App() {
         <div className="content">
           <ErrBoundary>
           {currentPage === 'v2' && <ScorecardV2 token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} onSidebar={requestSidebar} />}
+          {currentPage === 'tracking' && <TrackingBoard />}
+          {currentPage === 'outcome' && <OutcomeAnalysis />}
           {currentPage === 'cac' && <CareActionCenter onBack={handleBack} token={token} />}
           {/* Parked pages — restore alongside their PAGES / NAV_ITEMS entries:
           {currentPage === 'dashboard' && <Dashboard onNavigate={handleNavigate} token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />}

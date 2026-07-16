@@ -1,8 +1,11 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './OverviewExplore.css';
 import MonthFilter from '../MonthFilter';
 import { Skeleton, SkeletonText, EmptyState, ErrorState } from '../ui/Feedback';
+import { useToast } from '../ui/Toast';
 import useAsync from '../../hooks/useAsync';
+import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import {
   fetchAllMeasuresGrid,
   fetchDashboardKPI,
@@ -10,12 +13,17 @@ import {
   fetchCRSPsNeedingAttention,
   fetchEquityAlerts,
   fetchMiniChartData,
+  fetchCRSPLevelData,
+  fetchMeasureStratification,
+  fetchMeasureStratificationRace,
+  fetchMeasureStratificationEthnicity,
 } from '../../services/workflowService';
 import {
   STATUS_TONE, num, shortId, behaviorRead, portfolioRead,
   rankByPriority, priorityFactors, recommendAction, learningState, recordApplied,
   categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
+  sampleProviders, sampleEquity,
 } from './v2utils';
 import CategoryTabs from './CategoryTabs';
 
@@ -270,6 +278,8 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   const setStatusFilter = onStatusFilter || (() => {});
   const setCategory = onCategory || (() => {});
   const [selectedId, setSelectedId] = useState(null);
+  const [assignScope, setAssignScope] = useState(null); // {measure, level, intervention}
+  const toast = useToast();
 
   const { data, loading, error, refetch } = useAsync(async () => {
     try {
@@ -665,7 +675,8 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
               {selected ? (
                 <SelectedPanel measure={selected} crsps={data?.crsps || []} token={token}
                   peers={statusMeasures} selectedMonth={selectedMonth}
-                  onInvestigate={() => onInvestigate && onInvestigate(selected)} />
+                  onInvestigate={() => onInvestigate && onInvestigate(selected)}
+                  onAssign={(intervention) => setAssignScope({ measure: selected, level: 'measure', intervention })} />
               ) : (
                 <DefaultPanel loading={loading} panel={activePanel} onPick={setSelectedId} />
               )}
@@ -673,7 +684,61 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
           </aside>
         </div>
       </div>
+
+      {/* Assign flow, portaled so its fixed scrim escapes the board's stacking
+          context — same panel the Explorer uses, seeded with the recommended play. */}
+      {assignScope && createPortal(
+        <OverviewAssign scope={assignScope} token={token} selectedMonth={selectedMonth}
+          onClose={() => setAssignScope(null)}
+          onAssign={(payload) => {
+            setAssignScope(null);
+            const { preview, assignedTo } = payload;
+            toast({ type: 'success', message: `${preview.created.toLocaleString()} tasks queued · ${assignedTo === UNASSIGNED ? 'unassigned pool' : assignedTo}` });
+          }} />,
+        document.body
+      )}
     </div>
+  );
+};
+
+// Assign flow for the Overview's selected measure. The Overview's board data is
+// cross-measure, so providers and equity for THIS measure are fetched on demand
+// (mirroring the Explorer), letting the panel narrow by provider/stratum the same
+// way. Falls back to the deterministic sample profile when the workflow is down.
+const OverviewAssign = ({ scope, token, selectedMonth, onClose, onAssign }) => {
+  const measure = scope.measure;
+  const goal = num(measure?.goal_50th);
+
+  const provAsync = useAsync(async () => {
+    try {
+      const crsps = await fetchCRSPLevelData(measure.measure_id, token);
+      const rows = crsps.map((c) => ({ ...c, goal, overall: false }));
+      if (!rows.length) throw new Error('empty');
+      return rows;
+    } catch (e) {
+      return sampleProviders(measure.measure_id).map((p) => ({ ...p, goal, overall: p.crsp === 'Overall' }));
+    }
+  }, [measure.measure_id, token, selectedMonth], { enabled: !!measure });
+
+  const eqAsync = useAsync(async () => {
+    try {
+      const [a, r, e] = await Promise.all([
+        fetchMeasureStratification(measure.measure_id, token),
+        fetchMeasureStratificationRace(measure.measure_id, token),
+        fetchMeasureStratificationEthnicity(measure.measure_id, token),
+      ]);
+      const age = a?.[measure.measure_id]?.age || [];
+      const race = r?.[measure.measure_id]?.race || [];
+      const ethnicity = e?.[measure.measure_id]?.ethnicity || [];
+      if (age.length + race.length + ethnicity.length === 0) throw new Error('empty');
+      return { age, race, ethnicity };
+    } catch (e) { return sampleEquity(measure.measure_id); }
+  }, [measure.measure_id, token, selectedMonth], { enabled: !!measure });
+
+  return (
+    <AssignPanel measure={measure} providers={provAsync.data || []}
+      equity={eqAsync.data || { age: [], race: [], ethnicity: [] }}
+      scope={scope} onClose={onClose} onAssign={onAssign} />
   );
 };
 
@@ -744,7 +809,7 @@ const LearningInline = ({ measure, rec }) => {
 // Overview's selected panel and the Explorer's active-measure card, so a measure
 // reads the same way wherever it is opened. `peers` are the measures it is ranked
 // against (same status group); `crsps` are the CRSP rows behind its driver line.
-export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth }) => {
+export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth, onAssign }) => {
   const rate = num(measure.rate);
   const numerator = num(measure.numerator);
   const denominator = num(measure.denominator);
@@ -802,8 +867,22 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth 
           {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
         </div>
         <p className="ov2-read-why mono">{rec.basis}</p>
-        <p className="ov2-rec-applynote">Ran this play? Mark it applied — we log the action and weight it higher for measures like this next cycle.</p>
-        <LearningInline measure={measure} rec={rec} />
+        {onAssign ? (
+          // Recommend → assign is one flow: this seeds the assign panel with the
+          // recommended play so the reader can queue the tasks that run it.
+          <button type="button" className="btn btn-tonal btn-sm ov2-rec-assign"
+            onClick={() => onAssign(rec.action)}>
+            Assign this intervention
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        ) : (
+          <>
+            <p className="ov2-rec-applynote">Ran this play? Mark it applied — we log the action and weight it higher for measures like this next cycle.</p>
+            <LearningInline measure={measure} rec={rec} />
+          </>
+        )}
       </Stage>
     </div>
   );
@@ -813,18 +892,24 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth 
 // up across everything a provider supports (Standing / Where to focus / Next move).
 // Takes a pre-computed `intel` object (see providerIntel in v2utils) so both the
 // Provider Analysis page and the Explorer's active-provider card render it the same.
-export const ProviderIntel = ({ intel }) => {
+// `compact` (the Explorer's inline provider card) keeps this to the provider's
+// own standing — where it sits across its portfolio — and drops the measure-
+// specific "work X first" / recommended-action drill, which belongs to the
+// measure, not the provider. It also leaves Standing collapsed so the card stays
+// short and the rest of the provider list below it stays visible. The full
+// Provider Analysis page (non-compact) still shows the complete read.
+export const ProviderIntel = ({ intel, compact = false, onAssign }) => {
   if (!intel || !intel.read) return null;
   const { read, top, rec } = intel;
   return (
     <div className="ov2-intel pva-intel">
       <Stage label="Standing" summary={read.synthesis}
-        tag={`Confidence · ${read.confidence.level}`} defaultOpen>
+        tag={`Confidence · ${read.confidence.level}`} defaultOpen={!compact}>
         <Signals items={read.signals} />
         <p className="ov2-read-why mono">{read.confidence.why}</p>
       </Stage>
 
-      {top && (
+      {!compact && top && (
         <Stage label="Where to focus"
           summary={`Work ${shortId(top.measure.measure_id)} first — ${top.open.toLocaleString()} members open · ${top.gap} pts under goal.`}
           tag={`Score ${top.score}`}>
@@ -836,13 +921,22 @@ export const ProviderIntel = ({ intel }) => {
         </Stage>
       )}
 
-      {rec && top && (
+      {!compact && rec && top && (
         <Stage label="Recommended action" summary={rec.action} tag="Suggested" tagKind="preview">
           <p className="ov2-stage-lead">Biggest lever for this provider — on {shortId(top.measure.measure_id)}, run {rec.action.toLowerCase()}. Because {rec.rationale}.</p>
           <div className="ov2-rec-chips">
             {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
           </div>
           <p className="ov2-read-why mono">{rec.basis}</p>
+          {onAssign && (
+            <button type="button" className="btn btn-tonal btn-sm ov2-rec-assign"
+              onClick={() => onAssign(rec.action, top.measure)}>
+              Assign this intervention
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+          )}
         </Stage>
       )}
     </div>
@@ -893,7 +987,7 @@ const DefaultPanel = ({ loading, panel, onPick }) => (
   </div>
 );
 
-const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestigate }) => {
+const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestigate, onAssign }) => {
   const rate = num(measure.rate), goal = num(measure.goal_50th);
   const gap = Math.round((rate - goal) * 10) / 10;
   const tone = STATUS_TONE[measure.kpi_status] || 'below';
@@ -916,7 +1010,7 @@ const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestig
         {goal > 0 && <span className="ov2-goalbar-marker" style={{ left: `${Math.min(100, goal)}%` }} />}
       </div>
 
-      <MeasureIntel measure={measure} crsps={crsps} token={token} peers={peers} selectedMonth={selectedMonth} />
+      <MeasureIntel measure={measure} crsps={crsps} token={token} peers={peers} selectedMonth={selectedMonth} onAssign={onAssign} />
 
       {/* Pinned to the panel's bottom edge: the panel scrolls, the action doesn't. */}
       <div className="ov2-panel-cta">

@@ -324,6 +324,8 @@
 .ov2-learn-step.is-round { border-color: var(--c-primary-subtle); background: var(--c-primary-light); color: var(--c-primary-dark); }
 .ov2-learn-arrow { text-align: center; color: var(--c-text-4); font-size: 12px; line-height: 1; padding: 3px 0; }
 .ov2-learn-btn { margin-top: 11px; }
+/* Recommend → assign CTA: seeds the assign panel with the recommended play. */
+.ov2-rec-assign { margin-top: 13px; display: inline-flex; align-items: center; gap: 6px; }
 
 .ov2-trend { width: 100%; height: 70px; margin-top: 14px; overflow: visible; }
 .ov2-trend-line { fill: none; stroke: var(--c-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
