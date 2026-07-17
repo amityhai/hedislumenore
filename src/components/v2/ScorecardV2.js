@@ -52,8 +52,12 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
   const canBack = history.length > 0;
 
   // Breadcrumb trail — each crumb is clickable and rewinds the flow.
+  // Provider Analysis is deliberately NOT filed under the measure crumb: the page
+  // spans every measure the provider supports, so "Overview / AAP / Ashford" would
+  // frame a whole-portfolio read as a slice of AAP. Back still returns to the
+  // measure — that's the history stack's job, not the trail's.
   const crumbs = [{ label: 'Overview', onClick: goOverview }];
-  if (ctx.measure && view !== 'overview') {
+  if (ctx.measure && view !== 'overview' && view !== 'provider') {
     crumbs.push({
       label: shortId(ctx.measure.measure_id),
       onClick: () => goExplore(ctx.measure),
@@ -136,7 +140,6 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           category={category}
           onCategory={setCategory}
           onOpenWorklist={goWorklist}
-          onAnalyzeProvider={goProvider}
           breadcrumb={flowNav}
         />
       )}

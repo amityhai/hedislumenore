@@ -3,40 +3,56 @@
 
 .mwl { display: flex; flex-direction: column; gap: 18px; animation: ov2-fade 0.35s ease both; }
 
-/* Context header card */
+/* Context header card — carries the stratum read too. With a read attached the
+   card runs edge to edge and the strip/columns supply their own padding, so the
+   rules between them can span the full width. */
 .mwl-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
-  background: var(--c-bg-subtle); border: 1px solid var(--c-border); border-radius: var(--r-lg);
-  padding: 18px 24px; border-left: 4px solid var(--c-border);
+  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs); padding: 18px 24px; border-left: 4px solid var(--c-border);
 }
+.mwl-head.has-read { padding: 0; overflow: hidden; }
+.mwl-head-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.mwl-head.has-read .mwl-head-main { padding: 16px 24px; }
 .mwl-head-below { border-left-color: var(--c-error); }
 .mwl-head-at { border-left-color: var(--c-info); }
 .mwl-head-above { border-left-color: var(--c-success); }
+.mwl-head.is-disparity { border-color: var(--c-error-border); }
 .mwl-head-left { min-width: 0; }
-.mwl-head-titlerow { display: flex; align-items: center; gap: 14px; }
+/* Identity on one line: group, flag, provider. */
+.mwl-head-titlerow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .mwl-head-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); }
-.mwl-head-rate { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: var(--r-xs); border: 1px solid; }
-.mwl-rate-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }
-.mwl-rate-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info-border); }
-.mwl-rate-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success-border); }
-.mwl-head-provider { margin-top: 6px; font-size: 12.5px; color: var(--c-text-3); }
+.mwl-head-flag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--c-error-text); background: var(--c-error-bg); border: 1px solid var(--c-error-border);
+  padding: 3px 10px; border-radius: var(--r-full); white-space: nowrap;
+}
+.mwl-head-provider { font-size: 12.5px; color: var(--c-text-3); }
 .mwl-head-provider strong { color: var(--c-text-2); font-weight: 600; }
 .mwl-head-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
-/* Stratum insight card — reuses the Overview's ov2-intel / Stage / Signals
-   styling (globally loaded via OverviewExplore.css). */
-.mwl-insight {
-  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg);
-  box-shadow: var(--sh-xs); padding: 16px 20px 18px;
+/* Stratum read inside the header — standing and next move side by side, both open.
+   Reuses the Overview's Signals / chip / tag styling (globally loaded via
+   OverviewExplore.css). */
+.mwl-read {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-top: 1px solid var(--c-border-light);
 }
-.mwl-insight.is-disparity { border-color: var(--c-error-border); box-shadow: 0 0 0 1px var(--c-error-border), var(--sh-xs); }
-.mwl-insight-head { display: flex; align-items: center; gap: 12px; }
-.mwl-insight-flag {
-  margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-  color: var(--c-error-text); background: var(--c-error-bg); border: 1px solid var(--c-error-border);
-  padding: 2px 8px; border-radius: var(--r-full);
+.mwl-read-col { padding: 16px 24px 18px; min-width: 0; }
+.mwl-read-col + .mwl-read-col { border-left: 1px solid var(--c-border-light); }
+.mwl-read-top { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+.mwl-read-top .eyebrow { margin: 0; }
+.mwl-read-top .ov2-st-tag { margin-left: auto; }
+.mwl-read-lead { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--c-text); margin-bottom: 8px; }
+/* Basis and CTA share the last line — the note explains what the button commits to. */
+.mwl-read-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.mwl-read-foot .ov2-read-why { flex: 1; margin-top: 12px; }
+.mwl-read-cta { flex: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .mwl-read { grid-template-columns: minmax(0, 1fr); }
+  .mwl-read-col + .mwl-read-col { border-left: none; border-top: 1px solid var(--c-border-light); }
+  .mwl-read-foot { flex-direction: column; align-items: stretch; }
 }
-.mwl-insight .ov2-intel { margin-top: 12px; }
 
 /* Equity segmentation card */
 .mwl-segment {

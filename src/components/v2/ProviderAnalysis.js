@@ -36,7 +36,12 @@ const FOCUS_N = 8;
 // and a member roll-up. Provider-per-measure rates are profiled deterministically
 // (no provider-→-all-measures endpoint), so the page announces itself as a
 // profile the same way the rest of v2 announces its sample fallback.
-const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorklist }) => {
+// `origin` says how the reader got here, because the subline is a different
+// claim in each case. Drilling in from a measure, this page was *opened from*
+// that measure. Opening a provider cold from the directory, no measure was
+// chosen — the entry measure is the provider's widest gap, picked for them — and
+// saying "opened from" there would invent a step the reader never took.
+const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorklist, origin = 'measure' }) => {
   const providerName = provider?.overall ? 'All providers (Overall)' : (provider?.crsp || 'Provider');
   const [showAll, setShowAll] = useState(false); // fold the measure long-tail by default
   const [assign, setAssign] = useState(null); // { intervention, measure } — recommended-action assign
@@ -98,7 +103,11 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
           <div className="eyebrow">PROVIDER ANALYSIS</div>
           <h1 className="pva-title">{providerName}</h1>
           {measure && (
-            <p className="pva-sub">Opened from <strong>{shortId(measure.measure_id)}</strong> · profile spans all {summary.total} measures this provider supports</p>
+            origin === 'directory' ? (
+              <p className="pva-sub">Profile spans all {summary.total} measures this provider supports · equity and members shown for <strong>{shortId(measure.measure_id)}</strong>, its widest gap</p>
+            ) : (
+              <p className="pva-sub">Opened from <strong>{shortId(measure.measure_id)}</strong> · profile spans all {summary.total} measures this provider supports</p>
+            )
           )}
         </div>
         <div className="pva-kpis">

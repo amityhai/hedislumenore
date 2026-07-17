@@ -67,13 +67,31 @@ const CareActionCenter = ({ token }) => {
 
   const filteredData = useMemo(() => {
     return gridData.filter((row) => {
+      // Measure and CRSP are server-side filters on the live path — the fetch
+      // re-runs and hands back an already-narrowed set. On the sample path there
+      // is no server to narrow anything, so the same two have to be applied here
+      // or picking a measure would visibly do nothing.
+      if (gridSample && selectedMeasure && row[2] !== selectedMeasure) return false;
+      if (gridSample && selectedCrsp && row[3] !== selectedCrsp) return false;
       if (assignmentFilter === 'unassigned' && !isUnassigned(row)) return false;
       if (assignmentFilter === 'assigned' && isUnassigned(row)) return false;
       if (staffFilter && row[4] !== staffFilter) return false;
       return true;
     });
-  }, [gridData, assignmentFilter, staffFilter]);
+  }, [gridData, gridSample, selectedMeasure, selectedCrsp, assignmentFilter, staffFilter]);
 
+  // Option lists. The live endpoints supply the measure/CRSP vocabularies; when
+  // they're down the dropdowns fall back to the values actually present in the
+  // rows on screen. Without this they hold a lone "All …" and read as broken —
+  // the filter isn't decorative, it just had nothing to offer.
+  const measureOptions = useMemo(
+    () => (measures.length ? measures : [...new Set(gridData.map((r) => r[2]).filter(Boolean))].sort()),
+    [measures, gridData]
+  );
+  const crspOptions = useMemo(
+    () => (crsps.length ? crsps : [...new Set(gridData.map((r) => r[3]).filter(Boolean))].sort()),
+    [crsps, gridData]
+  );
   const staffOptions = useMemo(() => {
     const set = new Set();
     gridData.forEach((row) => { if (row[4] && row[4] !== 'Unassigned') set.add(row[4]); });
@@ -259,15 +277,15 @@ const CareActionCenter = ({ token }) => {
         <CustomSelect
           value={selectedMeasure}
           onChange={setSelectedMeasure}
-          options={[{ value: '', label: 'All Measures' }, ...measures.map((m) => ({ value: m, label: m }))]}
-          disabled={loadingMeasures}
+          options={[{ value: '', label: 'All Measures' }, ...measureOptions.map((m) => ({ value: m, label: m }))]}
+          disabled={loadingMeasures || loadingGrid}
           title="Filter by measure"
         />
         <CustomSelect
           value={selectedCrsp}
           onChange={setSelectedCrsp}
-          options={[{ value: '', label: 'All CRSP Groups' }, ...crsps.map((c) => ({ value: c, label: c }))]}
-          disabled={loadingCrsps}
+          options={[{ value: '', label: 'All CRSP Groups' }, ...crspOptions.map((c) => ({ value: c, label: c }))]}
+          disabled={loadingCrsps || loadingGrid}
           title="Filter by CRSP"
         />
         <CustomSelect
@@ -330,7 +348,7 @@ const CareActionCenter = ({ token }) => {
                   </td>
                   <td className="ta-r">
                     <button
-                      className={`btn ${isUnassigned(row) ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+                      className={`btn ${isUnassigned(row) ? 'btn-assign' : 'btn-secondary'} btn-sm`}
                       onClick={(e) => { e.stopPropagation(); handleOpenModal(row); }}
                     >
                       {isUnassigned(row) ? 'Assign' : 'View / Edit'}

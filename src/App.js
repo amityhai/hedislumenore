@@ -3,8 +3,9 @@ import './App.css';
 import CareActionCenter from './components/CareActionCenter';
 import ScorecardV2 from './components/v2/ScorecardV2';
 import OutcomeAnalysis from './components/v2/OutcomeAnalysis';
-import TrackingBoard from './components/v2/TrackingBoard';
+import ProviderDirectory from './components/v2/ProviderDirectory';
 // Parked pages (see PAGES / NAV_ITEMS below):
+// import TrackingBoard from './components/v2/TrackingBoard';
 // import Dashboard from './components/Dashboard';
 // import MeasureDetail from './components/MeasureDetail';
 // import RateSimulator from './components/RateSimulator';
@@ -18,8 +19,8 @@ import { setSelectedWorkflowMonth, fetchAvailableMonths } from './services/workf
 // refresh. Format: #/<page>[/<measureId>], e.g. #/detail/BCS_E.
 // Only the two active flows are routable while the redesign focuses on them —
 // the rest of the list is parked below; move entries back to re-enable.
-const PAGES = ['v2', 'cac', 'tracking', 'outcome'];
-// Parked: 'dashboard', 'detail', 'sim', 'prov'
+const PAGES = ['v2', 'providers', 'cac', 'outcome'];
+// Parked: 'tracking', 'dashboard', 'detail', 'sim', 'prov'
 const ALIASES = { rateSimulator: 'sim', providerScores: 'prov' };
 
 // Breakpoints mirror App.css: below MOBILE_Q the sidebar is an overlay drawer;
@@ -31,11 +32,12 @@ const mq = (q) => (typeof window === 'undefined' ? { matches: false } : window.m
 // Sidebar navigation (single source of truth for the nav list).
 const NAV_ITEMS = [
   { page: 'v2', label: 'Overview', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm5 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM7 19a2 2 0 1 1 0-4 2 2 0 0 1 0 4z' },
-  { page: 'tracking', label: 'Risk Tracking', icon: 'M3 12h4l2 6 4-14 2 8h6' },
+  { page: 'providers', label: 'Providers', icon: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z' },
   { page: 'outcome', label: 'Outcome Analysis', icon: 'M4 20h16v2H2V4h2v16zm3-4h2v-6H7v6zm4 0h2V7h-2v9zm4 0h2v-3h-2v3z' },
   { page: 'cac', label: 'Care Action Center', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z' },
   // Parked while the redesign focuses on Overview + Care Action Center —
   // uncomment (and restore the page in PAGES above) to bring a tab back:
+  // { page: 'tracking', label: 'Risk Tracking', icon: 'M3 12h4l2 6 4-14 2 8h6' },
   // { page: 'dashboard', label: 'Overview (classic)', icon: 'M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-4h2v18h-2z' },
   // { page: 'detail', label: 'Measure Detail', icon: 'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.5v2.71h2v-2.71h2.5l-2.75-3.54z' },
   // { page: 'sim', label: 'Rate Simulator', icon: 'M3 3h18v2H3zm2 4h14v2H5zm-2 4h18v2H3zm2 4h14v2H5zm-2 4h18v2H3z' },
@@ -269,10 +271,11 @@ function App() {
         <div className="content">
           <ErrBoundary>
           {currentPage === 'v2' && <ScorecardV2 token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} onSidebar={requestSidebar} />}
-          {currentPage === 'tracking' && <TrackingBoard />}
+          {currentPage === 'providers' && <ProviderDirectory token={token} selectedMonth={selectedMonth} onSidebar={requestSidebar} />}
           {currentPage === 'outcome' && <OutcomeAnalysis />}
           {currentPage === 'cac' && <CareActionCenter onBack={handleBack} token={token} />}
           {/* Parked pages — restore alongside their PAGES / NAV_ITEMS entries:
+          {currentPage === 'tracking' && <TrackingBoard />}
           {currentPage === 'dashboard' && <Dashboard onNavigate={handleNavigate} token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />}
           {currentPage === 'detail' && <MeasureDetail measureId={selectedMeasure} onBack={handleBack} onNavigate={handleNavigate} token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />}
           {currentPage === 'sim' && <RateSimulator onBack={handleBack} token={token} />}

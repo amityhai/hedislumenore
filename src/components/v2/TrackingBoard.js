@@ -243,12 +243,12 @@ const TrackingBoard = () => {
                               <button type="button" className="tb-link" onClick={(e) => { e.stopPropagation(); setActive(m); }}>View profile</button>
                             )}
                             {wlTab === 'facilitate' && (
-                              <button type="button" className="tb-assign-btn" onClick={(e) => { e.stopPropagation(); assign(m); }}>Assign</button>
+                              <button type="button" className="btn btn-assign btn-sm" onClick={(e) => { e.stopPropagation(); assign(m); }}>Assign</button>
                             )}
                             {wlTab === 'automated' && (
                               m.risk === 'High'
                                 ? <button type="button" className="tb-link" onClick={(e) => { e.stopPropagation(); toast({ type: 'info', message: `Automation paused for ${m.name}` }); }}>Pause</button>
-                                : <button type="button" className="tb-assign-btn" onClick={(e) => { e.stopPropagation(); toast({ type: 'success', message: `Automation enabled for ${m.name}` }); }}>Enable</button>
+                                : <button type="button" className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); toast({ type: 'success', message: `Automation enabled for ${m.name}` }); }}>Enable</button>
                             )}
                           </td>
                         </tr>
@@ -334,7 +334,7 @@ const TrackingBoard = () => {
               <span className="tb-drawer-reco-k">Recommended intervention</span>
               <span className="tb-drawer-reco-v">{active.recommended}</span>
             </div>
-            <button type="button" className="btn btn-primary tb-drawer-assign" onClick={() => assign(active)}>
+            <button type="button" className="btn btn-assign tb-drawer-assign" onClick={() => assign(active)}>
               Assign intervention
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
             </button>

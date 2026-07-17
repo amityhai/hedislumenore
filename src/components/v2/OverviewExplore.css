@@ -245,7 +245,58 @@
 .ov2-list-rate-at { color: var(--c-info-text); background: var(--c-info-bg); }
 .ov2-list-rate-above { color: var(--c-success-text); background: var(--c-success-bg); }
 
+/* Where to focus — the three lag lists, one at a time, inside the panel. Set
+   off from the board read above it by a rule rather than a card: it already sits
+   in the panel's card, and a card inside a card is chrome for its own sake. */
+.ov2-focus {
+  display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--c-border-light);
+  animation: ov2-fade 0.35s ease both;
+}
+/* Header holds the title on the left and the pager pinned top-right. It never
+   wraps: the heading takes min-width 0 so a long title wraps its own text
+   instead of shoving the control onto a second row. */
+.ov2-focus-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.ov2-focus-heading { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.ov2-focus-eyebrowrow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ov2-focus-title { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); line-height: 1.3; }
+.ov2-focus-badge {
+  flex-shrink: 0; font-size: 11px; font-weight: 600; white-space: nowrap;
+  color: var(--c-warn-text); background: var(--c-warn-bg); border: 1px solid var(--c-warn-border);
+  padding: 2px 8px; border-radius: var(--r-full);
+}
+
+/* Pager — arrows flank the dots, so which list you're on and how to reach the
+   others are one control rather than two. Tight gaps: it has a panel corner to
+   fit into, not a page width. */
+.ov2-focus-nav { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.ov2-focus-dots { display: flex; align-items: center; gap: 6px; }
+.ov2-focus-dot {
+  width: 7px; height: 7px; padding: 0; border-radius: var(--r-full);
+  border: none; background: var(--c-border); cursor: pointer;
+  transition: background 0.14s ease, transform 0.14s ease;
+}
+.ov2-focus-dot:hover { background: var(--c-text-4); }
+.ov2-focus-dot.is-active { background: var(--c-primary); transform: scale(1.3); }
+.ov2-focus-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
+
 /* Selected panel — measure card */
+.ov2-panel-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* Step through the ranking. Sits between the measure's id chip and Clear: it
+   moves the selection, so it belongs with the thing being selected, not with the
+   actions further down that act on it. */
+.ov2-step { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.ov2-step-pos { font-size: 11.5px; font-weight: 600; color: var(--c-text-3); min-width: 42px; text-align: center; white-space: nowrap; }
+.ov2-clear {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  padding: 4px 10px; border-radius: var(--r-xs); border: 1px solid var(--c-border-light);
+  background: transparent; color: var(--c-text-3); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: color .14s ease, border-color .14s ease, background .14s ease;
+}
+.ov2-clear:hover { color: var(--c-text); border-color: var(--c-border); background: var(--c-surface-2, rgba(0,0,0,0.03)); }
+.ov2-clear svg { flex-shrink: 0; }
+
 .ov2-chip { align-self: flex-start; padding: 4px 10px; border-radius: var(--r-xs); font-size: 12px; font-weight: 600; border: 1px solid; }
 .ov2-chip-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }
 .ov2-chip-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info-border); }
@@ -397,7 +448,10 @@
    stack and the page scrolls instead, so the lock only applies above that.
    72px = .sc2's 28px top + 44px bottom padding (it's the overview's sole child). */
 @media (min-width: 981px) {
-  .ov2 { max-height: calc(100vh - 72px); }
+  /* Pin the board card to ~one viewport so the bubble field's height stays
+     stable (no re-pack churn), but let the page itself grow past the fold so
+     the "Where to focus" cards scroll into view beneath it. */
+  .ov2-card { flex: none; height: calc(100vh - 150px); min-height: 480px; }
 }
 
 /* Below ~980px the two columns stop fitting side by side: the field stacks on

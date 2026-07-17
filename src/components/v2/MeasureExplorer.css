@@ -34,6 +34,9 @@
   animation: ov2-rise 0.24s ease both;
 }
 .mex-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Rate badge + the goal it is judged against, paired in the card header. */
+.mex-detail-rvg { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.mex-detail-goal { font-size: 11px; font-weight: 600; color: var(--c-text-4); white-space: nowrap; }
 .mex-detail-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); margin-top: 8px; line-height: 1.3; }
 .mex-detail-def { font-size: 12px; color: var(--c-text-3); margin-top: 5px; line-height: 1.45; }
 .mex-detail-rate { display: flex; align-items: baseline; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
@@ -152,11 +155,6 @@
   position: relative; z-index: 4;
 }
 .mex-pv-eyebrow { color: var(--c-primary-dark); }
-.mex-pv-kpis {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin-top: 16px;
-  padding-top: 14px; border-top: 1px solid var(--c-border-light);
-}
-.mex-pv-kpis > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mex-pv-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .mex-pv-actions > .btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
 
@@ -235,7 +233,6 @@
 
 /* Provider row action cluster — Assign · open worklist (primary) · Analyze */
 .mex-prow-open { flex-shrink: 0; }
-.mex-prow-analyze { flex-shrink: 0; }
 
 /* Rate badges (shared) */
 .mex-rate { flex-shrink: 0; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-xs); border: 1px solid; }

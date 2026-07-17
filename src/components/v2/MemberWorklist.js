@@ -15,8 +15,8 @@ import {
   fetchMeasureStratificationEthnicity,
   saveCareAction,
 } from '../../services/workflowService';
-import { num, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, recommendAction } from './v2utils';
-import { Stage, Signals } from './OverviewExplore';
+import { num, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, worklistRead, recommendAction } from './v2utils';
+import { Signals } from './OverviewExplore';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
 
@@ -94,18 +94,6 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
   }, [measureId, wantEquity, selectedMonth], { enabled: !!token && wantEquity });
   const equity = equityAsync.data || { age: [], race: [], ethnicity: [] };
 
-  // Stratum-level intelligence — the same shape of read the Overview gives a
-  // measure, but about the active equity group: where it sits vs goal, how it
-  // ranks against its sibling strata, and a targeted next move.
-  const stratInsight = useMemo(() => {
-    if (!effStrat) return null;
-    const siblings = equity[effStrat.type] || [];
-    const read = stratumRead(effStrat, siblings, measure);
-    if (!read) return null;
-    const rec = measure ? recommendAction(measure, read) : null;
-    return { read, rec };
-  }, [effStrat, equity, measure]);
-
   const { data, loading, error, refetch } = useAsync(async () => {
     try {
       let rows = [];
@@ -124,6 +112,19 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
   const nonCompliant = members.filter((m) => !m.compliant).length;
   const compliant = members.length - nonCompliant;
 
+  // The header's intelligence read. With an equity stratum driving the list it's
+  // that group's standing; with nothing picked it's the population the list is
+  // actually showing — this provider (or all providers) on this measure. An
+  // unfiltered list isn't a list with nothing to say, so the read is always
+  // there and the header renders one component either way.
+  const insight = useMemo(() => {
+    const read = effStrat
+      ? stratumRead(effStrat, equity[effStrat.type] || [], measure)
+      : worklistRead(measure, provider, equity, { members: members.length, nonCompliant });
+    if (!read) return null;
+    return { read, rec: measure ? recommendAction(measure, read) : null };
+  }, [effStrat, equity, measure, provider, members.length, nonCompliant]);
+
   const shown = useMemo(() => (ncOnly ? members.filter((m) => !m.compliant) : members), [members, ncOnly]);
   const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   const pageRows = useMemo(() => shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [shown, page]);
@@ -137,6 +138,11 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
   const tone = STATUS_TONE[statusFor(rate, goal)] || 'below';
   const title = effStrat?.group || (provider && !provider.overall ? provider.crsp : null) || measure?.display_name || 'Members';
   const providerName = provider ? (provider.overall ? 'All providers (Overall)' : provider.crsp) : null;
+  const hasRead = !!insight;
+  // Who the recommended action is aimed at, in the read's own words.
+  const recTarget = effStrat
+    ? `the ${effStrat.group} group`
+    : (providerName && !provider?.overall ? providerName : 'this list');
 
   const saveAssignment = async ({ member, staff, intervention, notes }) => {
     setAssigned((a) => ({ ...a, [member.memberId]: staff }));
@@ -152,41 +158,61 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
 
   return (
     <div className="mwl">
-      {/* Context header */}
-      <div className={`mwl-head mwl-head-${tone}`}>
-        <div className="mwl-head-left">
-          <div className="mwl-head-titlerow">
-            <h2 className="mwl-head-title">{title}</h2>
-            <span className={`mwl-head-rate mwl-rate-${tone} num`}>{rate}%</span>
-          </div>
-          {providerName && <div className="mwl-head-provider">Provider · <strong>{providerName}</strong></div>}
-          {provider && (
-            <div className="mwl-head-actions">
-              <button type="button" className="btn btn-tonal btn-sm"
-                onClick={() => setAssignState({})}>
-                Assign intervention
-              </button>
-              {!provider.overall && onAnalyzeProvider && (
-                <button type="button" className="btn btn-secondary btn-sm"
-                  onClick={() => onAnalyzeProvider(measure, provider)}>
-                  Analyze provider
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-                  </svg>
-                </button>
-              )}
+      {/* Context header — who/what this list is, its numbers, and its intelligence
+          read, all in one card. The read used to be a second card below; it named
+          the same group, rate and goal the header already states, so it now hangs
+          off the header it belongs to. The identity strip stays one line: title,
+          disparity flag, provider, metrics. */}
+      <div className={`mwl-head mwl-head-${tone} ${hasRead ? 'has-read' : ''} ${insight?.read.isDisparity ? 'is-disparity' : ''}`}>
+        <div className="mwl-head-main">
+          <div className="mwl-head-left">
+            <div className="mwl-head-titlerow">
+              <h2 className="mwl-head-title">{title}</h2>
+              {insight?.read.isDisparity && <span className="mwl-head-flag mono">WIDEST DISPARITY</span>}
+              {/* No rate badge — the Rate metric on the right already states it. */}
+              {providerName && <span className="mwl-head-provider">Provider · <strong>{providerName}</strong></span>}
             </div>
-          )}
+            {/* The read's "Assign this intervention" is the assign CTA — it carries
+                the recommended play, where a bare button opens the panel empty. So
+                only fall back to one when there's no read at all. Analyze provider
+                is a different destination and always stands on its own. */}
+            {provider && (
+              <div className="mwl-head-actions">
+                {!hasRead && (
+                  <button type="button" className="btn btn-assign btn-sm"
+                    onClick={() => setAssignState({})}>
+                    Assign intervention
+                  </button>
+                )}
+                {!provider.overall && onAnalyzeProvider && (
+                  <button type="button" className="btn btn-secondary btn-sm"
+                    onClick={() => onAnalyzeProvider(measure, provider)}>
+                    Analyze provider
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="mwl-head-metrics">
+            <div><span className="mwl-mk">Rate</span><span className="mwl-mv num">{rate}%</span></div>
+            <div><span className="mwl-mk">Goal</span><span className="mwl-mv num">{goal}%</span></div>
+            <div><span className="mwl-mk">Delta</span><span className={`mwl-mv num ${delta < 0 ? 'is-neg' : 'is-pos'}`}>{delta >= 0 ? '+' : ''}{delta} pts</span></div>
+            <div className="mwl-msep" />
+            <div><span className="mwl-mk">Members</span><span className="mwl-mv num">{loading ? '—' : members.length}</span></div>
+            <div><span className="mwl-mk">Non-comp.</span><span className="mwl-mv num is-neg">{loading ? '—' : nonCompliant}</span></div>
+            <div><span className="mwl-mk">Compliant</span><span className="mwl-mv num is-pos">{loading ? '—' : compliant}</span></div>
+          </div>
         </div>
-        <div className="mwl-head-metrics">
-          <div><span className="mwl-mk">Rate</span><span className="mwl-mv num">{rate}%</span></div>
-          <div><span className="mwl-mk">Goal</span><span className="mwl-mv num">{goal}%</span></div>
-          <div><span className="mwl-mk">Delta</span><span className={`mwl-mv num ${delta < 0 ? 'is-neg' : 'is-pos'}`}>{delta >= 0 ? '+' : ''}{delta} pts</span></div>
-          <div className="mwl-msep" />
-          <div><span className="mwl-mk">Members</span><span className="mwl-mv num">{loading ? '—' : members.length}</span></div>
-          <div><span className="mwl-mk">Non-compliant</span><span className="mwl-mv num is-neg">{loading ? '—' : nonCompliant}</span></div>
-          <div><span className="mwl-mk">Compliant</span><span className="mwl-mv num is-pos">{loading ? '—' : compliant}</span></div>
-        </div>
+
+        {/* The read — the active equity group's when one is filtering, otherwise
+            the provider/measure population the list is showing. */}
+        {hasRead && (
+          <HeadRead insight={insight} target={recTarget} loading={loading || equityAsync.loading}
+            onAssign={(intervention) => setAssignState({ intervention })} />
+        )}
       </div>
 
       {/* Equity segmentation — segregate this provider's members by stratum
@@ -201,12 +227,6 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
             setPage(1);
           }}
           onClear={() => { setPickedStrat(null); setPage(1); }} />
-      )}
-
-      {/* Stratum insight — a read relevant to the active equity group */}
-      {effStrat && stratInsight && (
-        <StratumInsight insight={stratInsight} stratum={effStrat} loading={equityAsync.loading}
-          onAssign={(intervention) => setAssignState({ intervention })} />
       )}
 
       {/* Table */}
@@ -254,7 +274,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                       {who ? <span className="mwl-assigned">{who}</span> : <span className="mwl-unassigned">Unassigned</span>}
                     </span>
                     <span className="ta-r">
-                      <button type="button" className={`btn ${who ? 'btn-secondary' : 'btn-primary'} btn-sm`} onClick={() => setModalMember(m)}>
+                      <button type="button" className="btn btn-assign btn-sm" onClick={() => setModalMember(m)}>
                         {who ? 'Reassign' : 'Assign'}
                       </button>
                     </span>
@@ -361,46 +381,58 @@ const EquitySegment = ({ equity, loading, measureGoal, selected, onPick, onClear
   );
 };
 
-// ── Stratum insight card ─────────────────────────────────────
-// Shown when a worklist is scoped to an equity stratum (opened on one, or
-// filtered to one). Carries the same Behavior / Recommended-action read the
-// Overview gives a measure, but framed for the group — reusing the Overview's
-// Stage / Signals so it reads identically across surfaces.
-const StratumInsight = ({ insight, stratum, loading, onAssign }) => {
+// ── Header read ──────────────────────────────────────────────
+// Carries the same Standing / Recommended-action read the Overview gives a
+// measure, framed for whatever the list is scoped to — an equity stratum when
+// one is filtering, otherwise the provider/measure population itself. Reuses the
+// Overview's Signals and tag/chip styling so it reads identically across
+// surfaces. `target` names who the recommendation is aimed at.
+const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+// Rendered INSIDE the context header card: standing and the recommended action
+// side by side, both open. It carries no card chrome and no eyebrow of its own —
+// the header it sits in already names and rates the population, so either would
+// be an echo. Nothing here collapses: two short columns cost less height than the
+// stacked rows they replace, so hiding them behind a chevron only buys a click.
+const HeadRead = ({ insight, target, loading, onAssign }) => {
   const { read, rec } = insight;
+  if (loading) return <div className="mwl-read"><Skeleton height={64} radius={10} /></div>;
   return (
-    <div className={`mwl-insight ${read.isDisparity ? 'is-disparity' : ''}`}>
-      <div className="mwl-insight-head">
-        <span className="eyebrow">EQUITY INSIGHT · {stratum.group}</span>
-        {read.isDisparity && <span className="mwl-insight-flag mono">WIDEST DISPARITY</span>}
-      </div>
-      {loading ? (
-        <Skeleton height={64} radius={10} />
-      ) : (
-        <div className="ov2-intel">
-          <Stage label="Standing" summary={read.synthesis} tag={`Confidence · ${read.confidence.level}`} defaultOpen>
-            <Signals items={read.signals} />
-            <p className="ov2-read-why mono">{read.confidence.why}</p>
-          </Stage>
-          {rec && (
-            <Stage label="Recommended action" summary={rec.action} tag="Suggested" tagKind="preview">
-              <p className="ov2-stage-lead">Targeted at the {stratum.group} group — {rec.action.toLowerCase()}. Because {rec.rationale}.</p>
-              <div className="ov2-rec-chips">
-                {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
-              </div>
-              <p className="ov2-read-why mono">{rec.basis}</p>
-              {onAssign && (
-                <button type="button" className="btn btn-tonal btn-sm ov2-rec-assign"
-                  onClick={() => onAssign(rec.action)}>
-                  Assign this intervention
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              )}
-            </Stage>
-          )}
+    <div className="mwl-read">
+      <section className="mwl-read-col">
+        <div className="mwl-read-top">
+          <span className="eyebrow">Standing</span>
+          <span className="ov2-st-tag mono">Confidence · {read.confidence.level}</span>
         </div>
+        <p className="mwl-read-lead">{read.synthesis}</p>
+        <Signals items={read.signals} />
+        <p className="ov2-read-why mono">{read.confidence.why}</p>
+      </section>
+
+      {rec && (
+        <section className="mwl-read-col">
+          <div className="mwl-read-top">
+            <span className="eyebrow">Recommended action</span>
+            <span className="ov2-st-tag mono is-preview">Suggested</span>
+          </div>
+          <p className="mwl-read-lead">{rec.action}</p>
+          <p className="ov2-stage-lead">{cap(rec.rationale)} — targeted at {target}.</p>
+          <div className="ov2-rec-chips">
+            {rec.chips.map((c, i) => <span key={i} className={`ov2-rec-chip mono ${c.strong ? 'is-strong' : ''}`}>{c.label}</span>)}
+          </div>
+          <div className="mwl-read-foot">
+            <p className="ov2-read-why mono">{rec.basis}</p>
+            {onAssign && (
+              <button type="button" className="btn btn-assign btn-sm mwl-read-cta"
+                onClick={() => onAssign(rec.action)}>
+                Assign this intervention
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </section>
       )}
     </div>
   );
@@ -444,7 +476,7 @@ const AssignModal = ({ member, providerName, current, onClose, onSave }) => {
 
         <div className="mwl-modal-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn btn-primary" onClick={() => onSave({ member, staff, intervention, notes })}>Assign</button>
+          <button type="button" className="btn btn-assign" onClick={() => onSave({ member, staff, intervention, notes })}>Assign</button>
         </div>
       </div>
     </div>

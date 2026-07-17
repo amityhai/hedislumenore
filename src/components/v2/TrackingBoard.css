@@ -103,8 +103,9 @@
 .tb-row-actions { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
 .tb-link { border: none; background: transparent; color: var(--c-primary-dark); font-family: var(--font); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; }
 .tb-link:hover { text-decoration: underline; }
-.tb-assign-btn { border: 1px solid var(--c-primary-subtle); background: var(--c-primary-light); color: var(--c-primary-dark); border-radius: var(--r-full); padding: 5px 14px; font-family: var(--font); font-size: 12.5px; font-weight: 700; cursor: pointer; transition: background 0.14s ease, color 0.14s ease; }
-.tb-assign-btn:hover { background: var(--c-primary); color: #fff; }
+/* Row actions use the shared .btn system (.btn-assign / .btn-secondary) — the
+   hand-rolled pill that lived here rounded a button, which the shape rule
+   reserves for filter/describe controls. */
 
 /* Pager */
 .tb-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }

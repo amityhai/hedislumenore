@@ -10,6 +10,9 @@ export const STATUS_TONE = {
 export const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 export const shortId = (id) => (id || '').replace(/_/g, ' ');
 
+// Compact badge for a long CRSP name, e.g. "Riverside Behavioral Health" → "RBH".
+export const acronym = (name) => ((name || '').split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 3).toUpperCase() || '—');
+
 // HEDIS reporting domains ("sub-categories"). Live grid rows carry their own
 // `category`; the sample set below is tagged from this map so the category tabs
 // are demonstrable on the fallback path too. Anything unmapped falls to EOC.
@@ -312,9 +315,12 @@ export const stratumRead = (pick, siblings, measure) => {
   }
 
   const disparity = rank === 1 && n >= 2 && gap < 0;
+  // No group prefix: the only surface for this read is the worklist header card,
+  // whose title is already the group. "6 - 17 is 16 pts below goal" under a "6 - 17"
+  // heading just says it twice.
   const synthesis = goal > 0
-    ? `${pick.group} is ${Math.abs(gap)} pts ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal${disparity ? ' — the widest disparity in this group' : ''}.`
-    : `${pick.group} · ${rate}%.`;
+    ? `${Math.abs(gap)} pts ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal${disparity ? ' — the widest disparity in this group' : ''}.`
+    : `${rate}% — no goal set for this group.`;
 
   const denom = num(measure?.denominator);
   const level = denom >= 3000 ? 'High' : denom >= 800 ? 'Moderate' : 'Low';
@@ -323,6 +329,78 @@ export const stratumRead = (pick, siblings, measure) => {
     synthesis,
     isDisparity: disparity,
     confidence: { level, why: `stratified rate · ${dim} cut · claims only` },
+  };
+};
+
+// The worklist's own read, for when NO equity stratum is filtering the list —
+// the population the list is actually showing: this provider (or all providers)
+// on this measure. Companion to stratumRead and the same shape, so the worklist
+// header renders one component either way. Nothing is selected is not the same
+// as nothing to say: the standing, the open work, and the widest stratum gap
+// underneath are all knowable before a chip is picked.
+//   `stats`  — { members, nonCompliant } counted from the rows on screen.
+//   `equity` — the measure's strata, used only to name the widest gap; it's a
+//              network-wide cut, so the signal says so rather than implying the
+//              disparity was measured inside this provider.
+export const worklistRead = (measure, provider, equity, stats) => {
+  if (!measure) return null;
+  const overall = !provider || !!provider.overall;
+  const rate = num(provider && !overall ? provider.rate : measure.rate);
+  const goal = num(provider && !overall ? provider.goal : measure.goal_50th);
+  const gap = Math.round((rate - goal) * 10) / 10;
+  const who = overall ? 'across all providers' : `at ${provider.crsp}`;
+
+  const signals = [];
+  if (goal > 0) {
+    if (gap <= -0.5) signals.push({ k: 'Gap', v: `${Math.abs(gap)} pts below the ${goal}% goal.` });
+    else if (gap < 2) signals.push({ k: 'Gap', v: `Holding right at the ${goal}% goal.` });
+    else signals.push({ k: 'Gap', v: `${gap} pts above the ${goal}% goal.` });
+  }
+
+  // What the list in front of the reader actually holds.
+  const shown = num(stats?.members);
+  const open = num(stats?.nonCompliant);
+  if (shown > 0) {
+    const pct = Math.round((open / shown) * 100);
+    signals.push({ k: 'Open gaps', v: `${open.toLocaleString()} of ${shown.toLocaleString()} members listed carry an open gap — ${pct}%.` });
+  }
+
+  // Members that must convert for this population to reach goal — the number
+  // that decides whether the list below is even big enough to close the gap.
+  const denom = num(measure.denominator);
+  if (goal > 0 && gap < 0 && denom > 0) {
+    const need = Math.max(0, Math.ceil((goal / 100) * denom) - num(measure.numerator));
+    if (need > 0) signals.push({ k: 'To goal', v: `~${fmtCompact(need)} members must close to reach ${goal}%.` });
+  }
+
+  // The widest stratum gap sitting under this population — the reason to reach
+  // for the equity filter rather than work the list flat.
+  const all = ['age', 'race', 'ethnicity'].flatMap((type) =>
+    (equity?.[type] || []).filter((g) => g && g.group).map((g) => ({ ...g, type })));
+  const worst = all.length >= 2
+    ? all.reduce((lo, g) => (num(g.rate) < num(lo.rate) ? g : lo), all[0])
+    : null;
+  if (worst) {
+    const wGap = Math.round((num(worst.rate) - num(worst.goal ?? goal)) * 10) / 10;
+    signals.push({
+      k: 'Widest gap',
+      v: `${worst.group} at ${num(worst.rate)}%${wGap < 0 ? ` — ${Math.abs(wGap)} pts under goal` : ''} · network-wide ${DIM_LABEL[worst.type]} cut.`,
+    });
+  }
+
+  const stance = goal > 0
+    ? `${Math.abs(gap)} pts ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal ${who}`
+    : `${rate}% ${who}`;
+  const synthesis = open > 0
+    ? `${stance} — ${open.toLocaleString()} ${open === 1 ? 'member' : 'members'} still open on this list.`
+    : `${stance}.`;
+
+  const level = denom >= 3000 ? 'High' : denom >= 800 ? 'Moderate' : 'Low';
+  return {
+    signals,
+    synthesis: synthesis.charAt(0).toUpperCase() + synthesis.slice(1),
+    isDisparity: false,
+    confidence: { level, why: `${shown.toLocaleString()} members listed · claims only` },
   };
 };
 
@@ -510,6 +588,14 @@ export const providerCardRead = (profile, summary, peer) => {
   const level = totalDenom >= 5000 ? 'High' : totalDenom >= 1000 ? 'Moderate' : 'Low';
   return { synthesis, signals, confidence: { level, why: `${totalDenom.toLocaleString()} eligible across ${set.length} measures` } };
 };
+
+// Every provider in the network, name only — the directory's spine. There is no
+// provider-roster endpoint (fetchCRSPLevelData is per-measure and
+// fetchCRSPsNeedingAttention only returns the flagged ones), so the directory
+// derives each provider's standing from providerProfile over the measure grid,
+// the same deterministic profile the Provider Analysis page reads. Names come
+// from live CRSP rows when any are available; otherwise this roster.
+export const sampleProviderNames = () => [...CRSP_NAMES];
 
 // Providers (CRSP-level) for a measure.
 export const sampleProviders = (measureId) => {

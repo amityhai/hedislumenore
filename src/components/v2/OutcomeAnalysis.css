@@ -1,5 +1,7 @@
-/* ── Outcome Analysis (recidivism-prevention impact) ──────────────────
-   Ported flow, restyled on the app's Direction A · Clarity tokens. */
+/* ── Outcome Analysis (measure progress vs interventions) ─────────────
+   Leads on what each intervention did to the measure it was run against;
+   recidivism prevention rides at the bottom as downstream context.
+   Restyled on the app's Direction A · Clarity tokens. */
 
 .oa { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 100vh; padding: 28px 32px 44px; animation: oa-fade 0.35s ease both; }
 @media (max-width: 768px) { .oa { padding: 64px 16px 32px; } }
@@ -50,9 +52,127 @@
   background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-xl);
   box-shadow: var(--sh-sm); padding: 18px 20px 22px;
 }
-.oa-card-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.oa-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 4px; flex-wrap: wrap; }
+/* Scoped to the heading block by class, never `> div` — the segmented control is
+   a div in this row too, and a bare child selector stacked its buttons. */
+.oa-card-heading { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .oa-card-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
-.oa-card-sub { font-size: 12px; color: var(--c-text-4); }
+.oa-card-sub { font-size: 12px; color: var(--c-text-4); max-width: 78ch; }
+
+/* Segmented sort — a filter/describe control, so it keeps the pill shape */
+.oa-seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--c-bg-subtle); border: 1px solid var(--c-border); border-radius: var(--r-full); flex-shrink: 0; }
+.oa-seg-btn {
+  border: none; background: transparent; cursor: pointer; white-space: nowrap;
+  padding: 5px 12px; border-radius: var(--r-full);
+  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--c-text-3);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.oa-seg-btn:hover { color: var(--c-text); }
+.oa-seg-btn.is-active { background: var(--c-surface); color: var(--c-primary-dark); box-shadow: var(--sh-xs); }
+
+/* ── Measure progress rows ──────────────────────────────────────────
+   The page's lead. A grid, so the head and every row share one set of
+   column edges and the progress tracks stack into a single readable axis. */
+.oa-legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 11.5px; color: var(--c-text-3); }
+.oa-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.oa-key { width: 14px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.oa-key-base { background: var(--c-text-4); }
+.oa-key-gain { background: var(--c-primary); }
+.oa-key-miss { background: repeating-linear-gradient(45deg, var(--c-warn-border) 0 3px, var(--c-warn-bg) 3px 6px); border: 1px solid var(--c-warn-border); }
+.oa-key-goal { width: 3px; height: 12px; border-radius: 1px; background: var(--c-text); }
+
+.oa-mlist { display: flex; flex-direction: column; gap: 4px; }
+.oa-mrow {
+  display: grid;
+  grid-template-columns: 62px minmax(120px, 1.4fr) minmax(105px, 1.1fr) 104px minmax(115px, 1.5fr) 66px 44px 108px;
+  align-items: center; gap: 12px; padding: 0 8px; min-height: 44px;
+}
+.oa-mrow-head {
+  min-height: 32px; border-bottom: 1px solid var(--c-border);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-4);
+}
+.oa-mrow:not(.oa-mrow-head) {
+  border-radius: var(--r-sm); border: 1px solid var(--c-border-light);
+  animation: ov2-rise 0.3s ease both;
+}
+.oa-mrow.is-met { background: var(--c-success-bg); border-color: var(--c-success-border); }
+.oa-mrow-id { font-size: 11.5px; font-weight: 600; color: var(--c-text-3); }
+.oa-mrow-name { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-mrow-play { font-size: 12px; color: var(--c-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-mrow-rates { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; white-space: nowrap; }
+.oa-mrow-from { color: var(--c-text-4); font-weight: 600; }
+.oa-mrow-arrow { color: var(--c-text-4); }
+.oa-mrow-to { color: var(--c-text); font-weight: 700; }
+.oa-mrow-track { min-width: 0; }
+.oa-mrow-lift { text-align: right; font-size: 13px; font-weight: 700; color: var(--c-primary-dark); }
+.oa-mrow-done { text-align: right; font-size: 12.5px; font-weight: 600; color: var(--c-text-3); }
+.oa-mrow-status { text-align: right; }
+
+/* Progress track — baseline, the gain on top of it, the miss beyond the tip,
+   and the goal as a hard tick. Absolute segments on one 100% axis: every bar
+   shares the same scale, so two rows are directly comparable. */
+.oa-track { position: relative; display: block; height: 10px; width: 100%; background: var(--c-bg-subtle); border-radius: var(--r-full); overflow: hidden; }
+.oa-track-base { position: absolute; left: 0; top: 0; height: 100%; background: var(--c-text-4); border-radius: var(--r-full) 0 0 var(--r-full); }
+.oa-track-gain { position: absolute; top: 0; height: 100%; background: var(--c-primary); }
+.oa-track-gain.is-met { background: var(--c-success); }
+.oa-track-miss {
+  position: absolute; top: 0; height: 100%;
+  background: repeating-linear-gradient(45deg, var(--c-warn-border) 0 3px, transparent 3px 6px);
+}
+.oa-track-goal { position: absolute; top: -2px; width: 2px; height: 14px; background: var(--c-text); border-radius: 1px; }
+
+/* Tags */
+.oa-tag { display: inline-block; padding: 3px 9px; border-radius: var(--r-full); font-size: 11px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.oa-tag-met { color: var(--c-success-text); background: var(--c-success-bg); border-color: var(--c-success-border); }
+.oa-tag-short { color: var(--c-error-text); background: var(--c-error-bg); border-color: var(--c-error-border); }
+.oa-tag-would { color: var(--c-warn-text); background: var(--c-warn-bg); border-color: var(--c-warn-border); }
+.oa-tag-quiet { color: var(--c-text-3); background: var(--c-bg-subtle); border-color: var(--c-border); }
+
+.oa-showall {
+  margin-top: 12px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px; border: 1px dashed var(--c-border); border-radius: var(--r-sm); background: transparent;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--c-text-3); cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
+}
+.oa-showall:hover { border-color: var(--c-primary-subtle); color: var(--c-primary-dark); background: var(--c-primary-light); }
+.oa-showall-chev { transition: transform 0.2s ease; }
+.oa-showall-chev.is-open { transform: rotate(180deg); }
+
+/* ── Scope of opportunity ───────────────────────────────────────────
+   Amber throughout: this is caution, not failure — the work was reachable
+   and can still be reached next cycle. Red is reserved for below-goal. */
+.oa-scope { border-color: var(--c-warn-border); }
+.oa-scope-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0 18px; }
+.oa-scope-empty { margin-top: 14px; font-size: 13px; color: var(--c-success-text); }
+
+.oa-orow {
+  display: grid;
+  grid-template-columns: minmax(160px, 2fr) minmax(180px, 1.7fr) 84px 96px 150px;
+  align-items: center; gap: 12px; padding: 0 8px; min-height: 44px;
+}
+.oa-orow-head {
+  min-height: 32px; border-bottom: 1px solid var(--c-border);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-4);
+}
+.oa-orow-data { border-radius: var(--r-sm); border: 1px solid var(--c-border-light); animation: ov2-rise 0.3s ease both; }
+.oa-orow-data.is-flag { background: var(--c-warn-bg); border-color: var(--c-warn-border); }
+.oa-orow-m { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.oa-orow-name { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-why { display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; color: var(--c-text-3); }
+.oa-why-part { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.oa-why-part b { color: var(--c-text-2); }
+.oa-why-dot { width: 6px; height: 6px; border-radius: var(--r-full); flex-shrink: 0; }
+.oa-why-never { background: var(--c-error); }
+.oa-why-late { background: var(--c-warn); }
+.oa-orow-members { font-size: 12.5px; font-weight: 600; color: var(--c-text-2); }
+.oa-orow-pts { font-size: 13px; font-weight: 700; color: var(--c-warn-text); }
+
+/* Program impact — demoted below the measure story, so its KPIs are a strip
+   inside the card rather than the page's hero band. */
+.oa-prog-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0 4px; }
 
 /* Charts row */
 .oa-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 14px; }
@@ -74,12 +194,6 @@
 .oa-bars-neg .oa-bar-fill { background: linear-gradient(180deg, #e77a74, var(--c-error)); }
 .oa-bar-x { font-size: 12px; font-weight: 600; color: var(--c-text-3); }
 .oa-chart-axis { font-size: 11px; color: var(--c-text-4); text-align: center; letter-spacing: 0.02em; }
-
-/* Missed opportunities */
-.oa-missed-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr); gap: 26px; margin-top: 14px; align-items: start; }
-.oa-missed-kpis { display: grid; grid-template-columns: 1fr; gap: 12px; }
-.oa-missed-trend { min-width: 0; }
-.oa-missed-trend .oa-bars { height: 150px; }
 
 /* Tables */
 .oa-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -104,12 +218,29 @@
 .oa-td-num.is-neg { color: var(--c-error-text); }
 .oa-td-num.is-muted { color: var(--c-text-4); }
 
-/* Responsive */
+/* Responsive — the measure rows carry more columns than a narrow viewport can
+   hold, so they shed the ones whose story the track already tells (the run
+   intervention, the numeric movement, completion) before the identity, the
+   track and the outcome. */
+@media (max-width: 1240px) {
+  .oa-mrow { grid-template-columns: 62px minmax(120px, 1.5fr) 104px minmax(120px, 1.5fr) 66px 108px; }
+  .oa-mrow-play, .oa-mrow-done { display: none; }
+}
 @media (max-width: 1100px) {
-  .oa-kpis { grid-template-columns: repeat(2, 1fr); }
-  .oa-charts, .oa-missed-body, .oa-tables { grid-template-columns: 1fr; }
+  .oa-kpis, .oa-scope-kpis, .oa-prog-kpis { grid-template-columns: repeat(2, 1fr); }
+  .oa-charts, .oa-tables { grid-template-columns: 1fr; }
+  .oa-orow { grid-template-columns: minmax(140px, 2fr) minmax(160px, 1.6fr) 90px 150px; }
+  .oa-orow-members { display: none; }
+}
+@media (max-width: 860px) {
+  .oa-mrow { grid-template-columns: 62px minmax(110px, 1.4fr) minmax(100px, 1.4fr) 108px; }
+  .oa-mrow-rates, .oa-mrow-lift { display: none; }
 }
 @media (max-width: 620px) {
-  .oa-kpis { grid-template-columns: 1fr; }
+  .oa-kpis, .oa-scope-kpis, .oa-prog-kpis { grid-template-columns: 1fr; }
   .oa-tr { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 56px; gap: 8px; }
+  .oa-orow { grid-template-columns: minmax(120px, 1.6fr) minmax(120px, 1.4fr) 96px; }
+  .oa-orow > :last-child { display: none; }
+  .oa-seg { width: 100%; }
+  .oa-seg-btn { flex: 1; }
 }

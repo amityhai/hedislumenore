@@ -12,6 +12,23 @@
   --c-primary-subtle: #cfe7e7;
   --c-primary-ring:   rgba(14, 138, 140, 0.18);
 
+  /* Assignment — Muted indigo. The one workflow verb that repeats on every
+     surface (measure card, provider row, stratum read, member row, the panel
+     itself), so it gets its own hue: teal already means "navigate/act generally"
+     and every status hue is spoken for.
+     Deliberately desaturated. A bright violet was tried first and read as a
+     different product bolted onto the page — on a calm slate canvas the assign
+     button has to be *distinguishable*, not loud. This sits in the canvas's own
+     cool family while staying obviously not-teal and not-a-status.
+     It is the nearest neighbour to --c-info (at goal), which is why that blue is
+     only ever spent on small dots and pills — never a button fill. Keep it that
+     way and the two can't be confused. */
+  --c-assign:        #4a4f7c;
+  --c-assign-dark:   #3b4064;
+  --c-assign-light:  #ecedf4;
+  --c-assign-subtle: #d2d5e4;
+  --c-assign-ring:   rgba(74, 79, 124, 0.24);
+
   /* Status — Above goal (green) */
   --c-success:        #1f9d6b;
   --c-success-bg:     #e3f4ec;
@@ -158,9 +175,18 @@ body {
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* ── Variants — teal only; status colors never fill an action ── */
+/* ── Variants — teal + violet; status colors never fill an action ── */
 .btn-primary { background: var(--c-primary); color: #fff; }
 .btn-primary:hover { background: var(--c-primary-dark); }
+
+/* Assign: every button that queues an intervention, wherever it appears —
+   measure card, provider row, stratum read, member row, the assign panel's own
+   submit. One variant, one hue, one shape, so "assign" is recognisable before
+   the label is read. Pair it with .btn-sm in lists; it needs no tonal sibling —
+   a second assign style would defeat the point. */
+.btn-assign { background: var(--c-assign); color: #fff; }
+.btn-assign:hover { background: var(--c-assign-dark); }
+.btn-assign:focus-visible { box-shadow: 0 0 0 3px var(--c-assign-ring); }
 
 /* Tonal: an action in the brand family that isn't *the* action. Use where the
    same button repeats down a list and a wall of solid teal would shout. */

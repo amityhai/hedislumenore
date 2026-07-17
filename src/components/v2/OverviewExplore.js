@@ -19,7 +19,7 @@ import {
   fetchMeasureStratificationEthnicity,
 } from '../../services/workflowService';
 import {
-  STATUS_TONE, num, shortId, behaviorRead, portfolioRead,
+  STATUS_TONE, num, shortId, acronym, behaviorRead, portfolioRead,
   rankByPriority, priorityFactors, recommendAction, learningState, recordApplied,
   categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
@@ -90,9 +90,6 @@ const SHADE_ENDS = {
   above: ['at goal', 'furthest above'],
   at: null,
 };
-
-// Compact badge for a long CRSP name, e.g. "Riverside Behavioral Health" → "RBH".
-const acronym = (name) => ((name || '').split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 3).toUpperCase() || '—');
 
 const fmtCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(n)));
 
@@ -550,6 +547,51 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
 
   const fieldTotal = lens === 'Providers' ? crspList.length : lens === 'Equity' ? equityList.length : matchCount;
 
+  // The focus cards live inside the panel now, so picking one selects the measure
+  // right where the reader already is — no scroll back up to a board a viewport away.
+  const pickFromFocus = (id) => { if (id) setSelectedId(id); };
+
+  // Stepping through measures with the panel's arrows follows the SAME ranked
+  // order the panel's own list uses (worst-first below goal, best-first above),
+  // not the bubble field's packing order — the field is a spatial layout with no
+  // meaningful "next". Arrows are the keyboard-free way to walk the ranking.
+  const panelIds = useMemo(() => panelList.map((m) => m.measure_id), [panelList]);
+  const selIdx = selectedId ? panelIds.indexOf(selectedId) : -1;
+  const stepMeasure = (dir) => {
+    if (selIdx < 0 || !panelIds.length) return;
+    const next = (selIdx + dir + panelIds.length) % panelIds.length;
+    setSelectedId(panelIds[next]);
+  };
+
+  // The three "where to focus" lists, one card at a time in the panel. They read
+  // the worst performers, the flagged CRSPs and the equity gaps regardless of the
+  // board's active pill — so they stay the highest-signal lists on the page while
+  // costing the panel's width instead of a whole band along the bottom.
+  const lowestList = data?.lowest || [];
+  const focusCards = useMemo(() => [
+    {
+      key: 'measures', title: 'Lowest Performing Measures',
+      rows: lowestList.slice(0, 5).map((m) => ({
+        key: m.measure_id, label: m.display_name, rate: Math.round(num(m.rate)), measureId: m.measure_id,
+      })),
+    },
+    {
+      key: 'crsps', title: 'CRSPs Needing Attention',
+      rows: crspList.slice(0, 5).map((c, i) => ({
+        key: `focus-crsp-${i}`, label: c.crsp_name, meta: shortId(c.measure_id),
+        rate: Math.round(num(c.rate)), measureId: c.measure_id,
+      })),
+    },
+    {
+      key: 'equity', title: 'Equity Alerts',
+      badge: equityList.length ? `${equityList.length} active` : null,
+      rows: equityList.slice(0, 5).map((a, i) => ({
+        key: `focus-eq-${i}`, label: a.race_strat, meta: shortId(a.measure_id),
+        rate: Math.round(num(a.rate)), measureId: a.measure_id,
+      })),
+    },
+  ], [lowestList, crspList, equityList]);
+
   return (
     <div className="ov2">
       <header className="ov2-head">
@@ -675,10 +717,13 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
               {selected ? (
                 <SelectedPanel measure={selected} crsps={data?.crsps || []} token={token}
                   peers={statusMeasures} selectedMonth={selectedMonth}
+                  pos={selIdx >= 0 ? selIdx + 1 : null} total={panelIds.length}
+                  onStep={stepMeasure}
+                  onClear={() => setSelectedId(null)}
                   onInvestigate={() => onInvestigate && onInvestigate(selected)}
                   onAssign={(intervention) => setAssignScope({ measure: selected, level: 'measure', intervention })} />
               ) : (
-                <DefaultPanel loading={loading} panel={activePanel} onPick={setSelectedId} />
+                <DefaultPanel loading={loading} panel={activePanel} cards={focusCards} onPick={pickFromFocus} />
               )}
             </div>
           </aside>
@@ -870,7 +915,7 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth,
         {onAssign ? (
           // Recommend → assign is one flow: this seeds the assign panel with the
           // recommended play so the reader can queue the tasks that run it.
-          <button type="button" className="btn btn-tonal btn-sm ov2-rec-assign"
+          <button type="button" className="btn btn-assign btn-sm ov2-rec-assign"
             onClick={() => onAssign(rec.action)}>
             Assign this intervention
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -929,7 +974,7 @@ export const ProviderIntel = ({ intel, compact = false, onAssign }) => {
           </div>
           <p className="ov2-read-why mono">{rec.basis}</p>
           {onAssign && (
-            <button type="button" className="btn btn-tonal btn-sm ov2-rec-assign"
+            <button type="button" className="btn btn-assign btn-sm ov2-rec-assign"
               onClick={() => onAssign(rec.action, top.measure)}>
               Assign this intervention
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -943,7 +988,77 @@ export const ProviderIntel = ({ intel, compact = false, onAssign }) => {
   );
 };
 
-const DefaultPanel = ({ loading, panel, onPick }) => (
+// One "Where to focus" list: lag rows with a red rate pill. Rows carrying a
+// measureId select that measure in the board beside it.
+const FocusCard = ({ loading, rows, onPick }) => (
+  <div className="ov2-list">
+    {loading ? <SkeletonText lines={5} /> : rows.length === 0 ? (
+      <EmptyState icon="—" hint="Nothing to focus on here." />
+    ) : rows.map((r, i) => (
+      <button key={r.key} className={`ov2-list-row ${r.measureId ? '' : 'ov2-list-static'}`}
+        style={{ animationDelay: `${i * 45}ms` }}
+        onClick={() => onPick(r.measureId)}>
+        <span className="ov2-list-label">
+          {r.meta && <span className="ov2-list-meta mono">{r.meta}</span>}
+          {r.label}
+        </span>
+        <span className="ov2-list-rates">
+          <span className="ov2-list-rate num">{r.rate}%</span>
+        </span>
+      </button>
+    ))}
+  </div>
+);
+
+// The three focus lists, one at a time. They used to run as a three-up band
+// along the page bottom, a full scroll away from the board they act on; in the
+// panel they sit beside it, and picking a row selects the measure in place.
+// Paging is explicit — arrows plus dots, nothing auto-advances — because these
+// are worklists to read, not a slideshow.
+const FocusCarousel = ({ cards, loading, onPick }) => {
+  const [i, setI] = useState(0);
+  const n = cards.length;
+  if (!n) return null;
+  const card = cards[Math.min(i, n - 1)];
+  const step = (d) => setI((c) => (c + d + n) % n);
+  return (
+    <section className="ov2-focus" aria-label="Where to focus" aria-live="polite">
+      {/* Pager rides the header, not the card's foot: it names which of the three
+          lists you're on, so it belongs with the title that names it — and the
+          list below can then run to the bottom edge without a control under it. */}
+      <div className="ov2-focus-head">
+        <div className="ov2-focus-heading">
+          {/* Badge rides the eyebrow, not the right edge — the pager needs that
+              corner, and "4 active" describes the list, so it belongs with the
+              label rather than with the control that switches lists. */}
+          <div className="ov2-focus-eyebrowrow">
+            <div className="eyebrow">Where to focus</div>
+            {card.badge && <span className="ov2-focus-badge">{card.badge}</span>}
+          </div>
+          <h3 className="ov2-focus-title">{card.title}</h3>
+        </div>
+        {n > 1 && (
+          <div className="ov2-focus-nav">
+            <button type="button" className="btn btn-secondary btn-icon btn-sm"
+              aria-label="Previous list" onClick={() => step(-1)}>‹</button>
+            <div className="ov2-focus-dots" role="tablist" aria-label="Focus list">
+              {cards.map((c, k) => (
+                <button key={c.key} role="tab" aria-selected={k === i} aria-label={c.title}
+                  className={`ov2-focus-dot ${k === i ? 'is-active' : ''}`} onClick={() => setI(k)} />
+              ))}
+            </div>
+            <button type="button" className="btn btn-secondary btn-icon btn-sm"
+              aria-label="Next list" onClick={() => step(1)}>›</button>
+          </div>
+        )}
+      </div>
+
+      <FocusCard loading={loading} rows={card.rows} onPick={onPick} />
+    </section>
+  );
+};
+
+const DefaultPanel = ({ loading, panel, cards, onPick }) => (
   <div className="ov2-panel-inner">
     <div className="eyebrow">{panel.eyebrow}</div>
     {loading ? <Skeleton width={140} height={40} radius={8} style={{ marginTop: 8 }} /> : (
@@ -965,36 +1080,41 @@ const DefaultPanel = ({ loading, panel, onPick }) => (
       </div>
     )}
 
-    <div className="eyebrow ov2-panel-sub">{panel.listLabel}</div>
-    <div className="ov2-list">
-      {loading ? <SkeletonText lines={5} /> : panel.rows.length === 0 ? (
-        <EmptyState icon="—" hint="Nothing to focus on here." />
-      ) : panel.rows.map((r, i) => (
-        <button key={r.key || i} className={`ov2-list-row ${r.pick ? '' : 'ov2-list-static'}`} style={{ animationDelay: `${i * 45}ms` }}
-          onClick={() => (r.pick ? onPick(r.measureId) : null)}
-          title={r.goal > 0 ? `${r.rate}% vs ${r.goal}% goal` : undefined}>
-          <span className="ov2-list-label">
-            {r.meta && <span className="ov2-list-meta mono">{r.meta}</span>}
-            {r.label}
-          </span>
-          <span className="ov2-list-rates">
-            {r.goal > 0 && <span className="ov2-list-goal num">goal {r.goal}%</span>}
-            <span className={`ov2-list-rate ov2-list-rate-${panel.tone} num`}>{r.rate}%</span>
-          </span>
-        </button>
-      ))}
-    </div>
+    <FocusCarousel cards={cards} loading={loading} onPick={onPick} />
   </div>
 );
 
-const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, onInvestigate, onAssign }) => {
+const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, pos, total, onStep, onClear, onInvestigate, onAssign }) => {
   const rate = num(measure.rate), goal = num(measure.goal_50th);
   const gap = Math.round((rate - goal) * 10) / 10;
   const tone = STATUS_TONE[measure.kpi_status] || 'below';
+  // Arrows walk the panel's ranked order, so the position has to be stated —
+  // "3 / 15" is what makes ‹ › mean "one place along the ranking" instead of
+  // "some other measure". Wraps at both ends, so neither arrow is ever dead.
+  const canStep = onStep && total > 1 && pos != null;
 
   return (
     <div className="ov2-panel-inner ov2-panel-inner-cta">
-      <span className={`ov2-chip ov2-chip-${tone} mono`}>{shortId(measure.measure_id)}</span>
+      <div className="ov2-panel-top">
+        <span className={`ov2-chip ov2-chip-${tone} mono`}>{shortId(measure.measure_id)}</span>
+        {canStep && (
+          <div className="ov2-step">
+            <button type="button" className="btn btn-secondary btn-icon btn-sm"
+              aria-label="Previous measure" title="Previous measure" onClick={() => onStep(-1)}>‹</button>
+            <span className="ov2-step-pos num">{pos} / {total}</span>
+            <button type="button" className="btn btn-secondary btn-icon btn-sm"
+              aria-label="Next measure" title="Next measure" onClick={() => onStep(1)}>›</button>
+          </div>
+        )}
+        {onClear && (
+          <button type="button" className="ov2-clear" onClick={onClear} title="Clear selection">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            Clear
+          </button>
+        )}
+      </div>
       <h2 className="ov2-measure-name">{measure.display_name}</h2>
       {measure.measure_definition && <p className="ov2-measure-def">{measure.measure_definition}</p>}
 

@@ -9,6 +9,8 @@
 // deltas actually derive from the quarter series) and ordered
 // chronologically (Q1 → Q2 → Q3) rather than the source's shuffled order.
 
+import { SAMPLE_MEASURES } from './v2utils';
+
 // Deterministic integer mix (mulberry-style) — scatters consecutive seeds so
 // member rows look varied but stay stable across renders (no Math.random).
 // Returns a well-distributed unsigned 32-bit int.
@@ -19,7 +21,99 @@ const mix = (n) => {
   return (x ^ (x >>> 15)) >>> 0;
 };
 
-// ── Outcome Analysis ─────────────────────────────────────────────────
+// ── Outcome Analysis · measure progress vs interventions ─────────────
+// The page's lead: what each intervention did to the measure it was run against.
+// Built on SAMPLE_MEASURES so the measures, goals and denominators here are the
+// same ones the Overview reads — an outcome page that invented its own measure
+// set would be reporting on a different organisation.
+//
+// Every figure derives from one chain, so the arithmetic holds together:
+//   baseline + lift = current                     (the rate moved by `lift`)
+//   closed = lift% × denominator                  (that's what moving it took)
+//   perTask = closed / completed                  (conversion of a completed task)
+//   missed = (late + neverCompleted) × perTask    (what the rest would have closed)
+// Nothing is asserted that isn't a consequence of the line above it.
+
+const PLAYS = [
+  { test: /^(FUM|FUA|FUH)/, name: 'Post-discharge outreach + scheduling' },
+  { test: /^(APM|SSD|AMM|SPC|SPD|PCE|HBD|BPD|CBP)/, name: 'Pharmacy adherence + records reconciliation' },
+  { test: /^(BCS|CCS|COL|CIS|IMA|W30|WCV|CHL|AAP|PPC|ADD)/, name: 'Screening & visit reminder campaign' },
+];
+const playFor = (id) => (PLAYS.find((p) => p.test.test(id)) || { name: 'Coding & records review' }).name;
+
+const round1 = (n) => Math.round(n * 10) / 10;
+
+export const MEASURE_OUTCOMES = SAMPLE_MEASURES.map((m, i) => {
+  const goal = m.goal_50th;
+  const current = m.rate;
+  const denom = m.denominator;
+
+  // What the intervention moved the rate by, and therefore what it took.
+  const lift = round1(1.8 + (mix(i * 13 + 5) % 92) / 10); // 1.8 – 11.0 pts
+  const baseline = round1(Math.max(8, current - lift));
+  const closed = Math.round((lift / 100) * denom);
+
+  // The campaign behind it. Completion is the lever the opportunity section
+  // reads: the tasks that never closed are the points still on the table.
+  const assigned = 380 + (mix(i * 7 + 11) % 2400);
+  const completionPct = 52 + (mix(i * 17 + 3) % 45); // 52 – 96%
+  const completed = Math.max(1, Math.round((assigned * completionPct) / 100));
+  const neverCompleted = assigned - completed;
+  // Of the ones that did complete, some landed after the measure's closing
+  // window — the work happened, it just didn't count this cycle.
+  const late = Math.round((completed * (mix(i * 23 + 9) % 19)) / 100);
+
+  const perTask = closed / completed; // members closed per completed task
+  const missedMembers = Math.round((neverCompleted + late) * perTask);
+  const ptsMissed = round1((missedMembers / denom) * 100);
+  const potential = round1(current + ptsMissed);
+
+  return {
+    measureId: m.measure_id,
+    name: m.display_name,
+    goal,
+    baseline,
+    current,
+    lift,
+    denominator: denom,
+    intervention: playFor(m.measure_id),
+    assigned,
+    completed,
+    completionPct: Math.round((completed / assigned) * 100),
+    closed,
+    // Opportunity side
+    late,
+    lateMembers: Math.round(late * perTask),
+    neverCompleted,
+    neverCompletedMembers: Math.round(neverCompleted * perTask),
+    missedMembers,
+    ptsMissed,
+    potential,
+    reachedGoal: current >= goal,
+    // The line that makes the section matter: the goal was reachable, and the
+    // only thing between the two was interventions that didn't land.
+    wouldHaveReached: current < goal && potential >= goal,
+  };
+});
+
+export const outcomeMeasureKpis = () => {
+  const set = MEASURE_OUTCOMES;
+  const improved = set.filter((m) => m.lift > 0);
+  return {
+    total: set.length,
+    improved: improved.length,
+    avgLift: round1(improved.reduce((s, m) => s + m.lift, 0) / Math.max(1, improved.length)),
+    reachedGoal: set.filter((m) => m.reachedGoal).length,
+    membersClosed: set.reduce((s, m) => s + m.closed, 0),
+    ptsMissed: round1(set.reduce((s, m) => s + m.ptsMissed, 0)),
+    missedMembers: set.reduce((s, m) => s + m.missedMembers, 0),
+    late: set.reduce((s, m) => s + m.late, 0),
+    neverCompleted: set.reduce((s, m) => s + m.neverCompleted, 0),
+    wouldHaveReached: set.filter((m) => m.wouldHaveReached).length,
+  };
+};
+
+// ── Outcome Analysis · recidivism program impact ─────────────────────
 
 // Quarter series (chronological). Members prevented trends up; savings peak
 // mid-year then dip slightly — which is what drives the QoQ deltas below.
@@ -49,13 +143,10 @@ export const outcomeKpis = () => {
   };
 };
 
-// Missed opportunities — interventions that should have fired but didn't.
-export const MISSED_KPIS = {
-  count: 19,
-  recidivistMembers: 0,
-  cost: 9.71, // $M
-};
-
+// Where the misses concentrate. The scope-of-opportunity KPIs are derived from
+// MEASURE_OUTCOMES above (they have to agree with the per-measure rows), so the
+// old hand-set MISSED_KPIS block is gone — two sources for one number is how
+// they drift apart.
 export const MISSED_BY_INTERVENTION = [
   { name: 'Housing First & Supportive Housing', total: 263, recidivists: 0 },
   { name: 'Med Drop – Modifier PH', total: 252, recidivists: 0 },

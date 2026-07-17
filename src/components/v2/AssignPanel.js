@@ -373,7 +373,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           </p>
           <div className="apx-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="button" className="btn btn-primary" disabled={!created} onClick={submit}>
+            <button type="button" className="btn btn-assign" disabled={!created} onClick={submit}>
               Assign {created > 0 ? created.toLocaleString() : ''}
             </button>
           </div>
