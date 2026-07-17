@@ -20,11 +20,11 @@
 
 .cac-kpi {
   background: var(--c-surface);
-  border: 1px solid var(--c-border-light);
+  border: 1px solid var(--c-border);
   border-radius: var(--r-xl);
   padding: 18px 20px;
   position: relative;
-  box-shadow: var(--sh-xs);
+  box-shadow: var(--sh-card);
 }
 .cac-kpi::before {
   content: '';
@@ -81,9 +81,9 @@
 /* ── Table ───────────────────────────────────────────────────── */
 .cac-table-wrap {
   background: var(--c-surface);
-  border: 1px solid var(--c-border-light);
+  border: 1px solid var(--c-border);
   border-radius: var(--r-xl);
-  box-shadow: var(--sh-xs);
+  box-shadow: var(--sh-card);
   overflow: hidden;
 }
 

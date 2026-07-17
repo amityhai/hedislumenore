@@ -118,7 +118,7 @@
 .mwl-mv.is-pos { color: var(--c-success-text); }
 
 /* Table card */
-.mwl-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-xl); box-shadow: var(--sh-sm); padding: 8px 8px 14px; }
+.mwl-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-xl); box-shadow: var(--sh-card); padding: 8px 8px 14px; }
 .mwl-loading { padding: 16px; }
 
 /* Filter toolbar */

@@ -54,7 +54,9 @@
   --c-warn-border:    #f1dcae;
 
   /* Neutrals — slate (page canvas is cool slate-teal so white cards separate) */
-  --c-bg:             #eef2f4;
+  /* The page ground is white. Cards used to be white-on-grey and let the
+     canvas do the separating; now the border and --sh-card do it instead. */
+  --c-bg:             #ffffff;
   --c-bg-subtle:      #f6f8f9;
   --c-surface:        #ffffff;
   --c-border:         #e2e8ea;
@@ -83,6 +85,12 @@
   /* Shadows — soft, cool-tinted */
   --sh-xs: 0 1px 2px rgba(20, 40, 50, 0.04);
   --sh-sm: 0 1px 3px rgba(20, 40, 50, 0.05), 0 1px 2px rgba(20, 40, 50, 0.03);
+  /* Page-level cards only. --sh-sm is tuned for controls that sit ON a card and
+     for the old grey canvas, which did the separating itself; on a white ground
+     a card has to lift off nothing, so it needs a wider, softer spread. Kept as
+     its own token rather than bumping --sh-sm, which 28 rules share — including
+     inputs and buttons that should stay flat. */
+  --sh-card: 0 1px 2px rgba(20, 40, 50, 0.05), 0 4px 16px rgba(20, 40, 50, 0.06);
   --sh-md: 0 6px 18px rgba(20, 40, 50, 0.07), 0 2px 6px rgba(20, 40, 50, 0.04);
   --sh-lg: 0 14px 36px rgba(20, 40, 50, 0.08), 0 1px 3px rgba(20, 40, 50, 0.05);
   --sh-xl: 0 24px 60px rgba(20, 40, 50, 0.12), 0 8px 20px rgba(20, 40, 50, 0.06);

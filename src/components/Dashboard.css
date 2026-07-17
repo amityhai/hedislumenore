@@ -113,7 +113,7 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  box-shadow: none;
+  box-shadow: var(--sh-card);
   margin-bottom: 20px;
   overflow: hidden;
 }
@@ -302,7 +302,7 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  box-shadow: none;
+  box-shadow: var(--sh-card);
   padding: 18px 20px;
   min-width: 0;
 }

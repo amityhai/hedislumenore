@@ -258,7 +258,7 @@
   width: 100%;
   max-width: 100%;
   overflow-x: clip; /* clip, not hidden — preserves sticky (see .main-content) */
-  background: var(--c-bg); /* one page canvas everywhere; white cards sit on top */
+  background: var(--c-bg); /* one page canvas everywhere; cards are lifted off it by border + --sh-card */
 }
 
 /* ── Top header ─────────────────────────────────────────────── */

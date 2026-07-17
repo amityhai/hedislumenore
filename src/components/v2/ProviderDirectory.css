@@ -43,7 +43,7 @@
   display: flex; flex-direction: column; gap: 12px; text-align: left;
   padding: 16px 16px 14px; cursor: pointer;
   background: var(--c-surface); border: 1px solid var(--c-border);
-  border-radius: var(--r-xl); box-shadow: var(--sh-sm);
+  border-radius: var(--r-xl); box-shadow: var(--sh-card);
   /* Worst standing rides the top edge — legible before a number is read. */
   border-top: 3px solid var(--c-border);
   transition: box-shadow 0.16s ease, border-color 0.16s ease, transform 0.16s ease;

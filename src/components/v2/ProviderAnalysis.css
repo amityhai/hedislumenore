@@ -21,7 +21,7 @@
 .pva-kpi-v.is-pos { color: var(--c-success-text); }
 
 /* Cards */
-.pva-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-xl); box-shadow: var(--sh-sm); padding: 18px 20px; }
+.pva-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-xl); box-shadow: var(--sh-card); padding: 18px 20px; }
 .pva-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .pva-card-title { font-size: 15px; font-weight: 700; color: var(--c-text); }
 .pva-card-sub { font-size: 12px; color: var(--c-text-3); }

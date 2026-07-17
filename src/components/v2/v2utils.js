@@ -417,6 +417,10 @@ export const worklistRead = (measure, provider, equity, stats) => {
     ? `${stance} — ${open.toLocaleString()} ${open === 1 ? 'member' : 'members'} still open on this list.`
     : `${stance}.`;
 
+  // Confidence rides the eligible population, same as the measure-level read.
+  // (This used a local `denom` that the neededToGoal extraction removed; it's
+  // the measure's denominator, so read it straight.)
+  const denom = num(measure?.denominator);
   const level = denom >= 3000 ? 'High' : denom >= 800 ? 'Moderate' : 'Low';
   return {
     signals,
