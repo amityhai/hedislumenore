@@ -9,21 +9,6 @@
 .ov2-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .ov2-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 2px; }
 
-/* Sample-data notice */
-.ov2-notice {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; background: var(--c-warn-bg); color: var(--c-warn-text);
-  border: 1px solid var(--c-warn-border); border-radius: var(--r-md);
-  font-size: 13px; font-weight: 500;
-  animation: ov2-fade 0.3s ease both;
-}
-.ov2-notice-retry {
-  margin-left: auto; background: transparent; border: 1px solid currentColor; color: inherit;
-  border-radius: var(--r-full); padding: 3px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: background 0.14s ease;
-}
-.ov2-notice-retry:hover { background: rgba(154, 106, 22, 0.1); }
-
 /* Card shell — flexes to fill the remaining viewport height */
 .ov2-card {
   background: var(--c-surface); border: 1px solid var(--c-border);
@@ -52,18 +37,20 @@
 .ov2-lens:hover { color: var(--c-text-2); }
 .ov2-lens.is-active { background: var(--c-surface); color: var(--c-primary-dark); box-shadow: var(--sh-xs); }
 
-/* Status pills */
-.ov2-pills { display: inline-flex; gap: 8px; }
-.ov2-pill {
-  border: 1px solid var(--c-border); background: var(--c-surface); padding: 7px 16px; border-radius: var(--r-full);
-  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--c-text-3); cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+/* Toolbar right cluster — view toggle + status pills */
+.ov2-toolbar-right { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* Board / Table view toggle. Only appears on a band that has a field, because
+   it is the way out of the field's legibility limit — see bubbleBudget. */
+.ov2-views { display: inline-flex; gap: 3px; padding: 3px; background: var(--c-bg-subtle); border-radius: var(--r-md); }
+.ov2-view {
+  border: none; background: transparent; padding: 6px 13px; border-radius: var(--r-sm);
+  font-family: var(--font); font-size: 12.5px; font-weight: 600; color: var(--c-text-3); cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
-.ov2-pill:hover { border-color: var(--c-text-4); }
-.ov2-pill:active { transform: scale(0.96); }
-.ov2-pill-below.is-active { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error); }
-.ov2-pill-at.is-active    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info); }
-.ov2-pill-above.is-active { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success); }
+.ov2-view:hover { color: var(--c-text-2); }
+.ov2-view.is-active { background: var(--c-surface); color: var(--c-primary-dark); box-shadow: var(--sh-xs); }
+.ov2-view:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
 
 /* Body: bubble field + detail panel — fills the card height */
 /* Both columns stretch to the row, and the row is capped at the card height by
@@ -77,6 +64,73 @@
   align-items: stretch;
   flex: 1; min-height: 0;
 }
+
+/* Table body — the browse surface for the bands with no field. One column, no
+   panel, no resizer, no dot grid: the grid reads as "a field is drawn here", and
+   a table under it looks like a chart that failed rather than a surface that was
+   never a chart. */
+.ov2-body.is-table { display: block; overflow-y: auto; background: none; }
+
+.ov2-table-wrap { padding: 22px 24px 28px; }
+.ov2-table-head { margin-bottom: 20px; }
+.ov2-table-eyebrowrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ov2-table-conf {
+  font-size: 11px; font-weight: 600; color: var(--c-text-3);
+  border: 1px solid var(--c-border); border-radius: var(--r-full); padding: 3px 10px;
+}
+.ov2-table-title { margin-top: 6px; max-width: 76ch; font-size: 19px; font-weight: 700; letter-spacing: -0.015em; color: var(--c-text); line-height: 1.35; }
+
+/* The read's signals, three across. The panel stacks them because it's 340px
+   wide; the table has the whole card, so they run as columns and the head stays
+   three lines tall instead of six. */
+.ov2-table-signals {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px 28px;
+  margin-top: 16px; padding: 14px 0; border-top: 1px solid var(--c-border-light); border-bottom: 1px solid var(--c-border-light);
+}
+.ov2-table-signal dt { font-size: 10.5px; font-weight: 600; color: var(--c-text-4); letter-spacing: 0.06em; text-transform: uppercase; }
+.ov2-table-signal dd { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--c-text-2); }
+
+.ov2-table-hint { margin-top: 12px; font-size: 12.5px; line-height: 1.55; color: var(--c-text-3); }
+.ov2-table-count { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; color: var(--c-text-4); letter-spacing: 0.02em; }
+
+.ov2-table { width: 100%; border-collapse: collapse; }
+.ov2-table th {
+  text-align: left; padding: 0 0 9px; border-bottom: 1px solid var(--c-border);
+  font-size: 11px; font-weight: 600; color: var(--c-text-4); letter-spacing: 0.04em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.ov2-table th.is-num, .ov2-table td.is-num { text-align: right; }
+.ov2-table-th-plain { padding-left: 0; }
+.ov2-table th.is-num .ov2-table-sort { margin-left: auto; }
+
+/* Header cells are buttons — the whole point of a table here is re-sorting it. */
+.ov2-table-sort {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px; margin: 0 -6px;
+  background: transparent; border: none; border-radius: var(--r-xs); cursor: pointer;
+  font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+.ov2-table-sort:hover { color: var(--c-text-2); background: var(--c-bg-subtle); }
+.ov2-table-sort.is-active { color: var(--c-text-2); }
+.ov2-table-sort:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); }
+/* The idle glyph holds the column's width so nothing shifts when sort moves. */
+.ov2-table-caret { font-size: 10px; opacity: 0.45; }
+.ov2-table-sort.is-active .ov2-table-caret { opacity: 1; color: var(--c-primary); }
+
+.ov2-table-row {
+  border-bottom: 1px solid var(--c-border-light); cursor: pointer;
+  transition: background 0.14s ease;
+  animation: ov2-fade 0.3s ease both;
+}
+.ov2-table-row:hover { background: var(--c-bg-subtle); }
+.ov2-table-row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--c-primary); }
+.ov2-table td { padding: 12px 0; font-size: 13.5px; color: var(--c-text-2); vertical-align: middle; }
+.ov2-table td.is-num { padding-left: 16px; }
+.ov2-table-id { display: inline-block; min-width: 78px; margin-right: 10px; font-size: 11px; font-weight: 600; color: var(--c-text-4); }
+.ov2-table-name { font-weight: 500; }
+.ov2-table-muted { color: var(--c-text-3); }
+.ov2-table-margin { font-weight: 700; color: var(--c-text-2); }
+.ov2-table-margin.is-under { color: var(--c-error-text); }
 
 /* Draggable split handle. Lives in a zero-width grid column on the field/panel
    boundary; the grip overflows into a comfortable hit target. Drag to resize,
@@ -119,6 +173,15 @@
 }
 .ov2-legend-count { font-weight: 600; color: var(--c-text-3); }
 .ov2-legend-item { display: inline-flex; align-items: center; gap: 8px; }
+/* The escape hatch when the field drops measures. Reads as a link rather than a
+   button: it is a way through to the same data, not a separate action. */
+.ov2-legend-all {
+  margin-left: 8px; padding: 0; border: none; background: transparent;
+  font-family: var(--font); font-size: 11px; font-weight: 700; color: var(--c-primary);
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.ov2-legend-all:hover { color: var(--c-primary-dark); }
+.ov2-legend-all:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); border-radius: var(--r-xs); }
 .ov2-legend-range { font-style: normal; color: var(--c-text-3); }
 
 /* Three discs stepping up in area — the size channel, in miniature. */
@@ -137,8 +200,107 @@
 .ov2-legend-dots-below, .ov2-legend-ramp-below { --tone-base: var(--c-error);   --tone-deep: #8f2a23; }
 .ov2-legend-dots-at,    .ov2-legend-ramp-at    { --tone-base: var(--c-info);    --tone-deep: #24488a; }
 .ov2-legend-dots-above, .ov2-legend-ramp-above { --tone-base: var(--c-success); --tone-deep: #0f6344; }
-/* At Goal spans a ±2pt band, so its ramp is genuinely flat. */
+/* Kept flat, not a gradient: the at-goal band is 3pts wide, so there is no ramp
+   to draw. Only reachable if a future lens tones its legend `at`. */
 .ov2-legend-ramp-at { background: var(--c-info); }
+
+/* ── Opportunity matrix ──────────────────────────────────────
+   The Measures board. Position on two axes instead of area and hue on a disc:
+   the eye ranks position accurately and area only roughly, and hue not at all.
+   Absolutely positioned inside .ov2-field, which the ResizeObserver measures. */
+.ov2-mx { position: absolute; inset: 0; }
+
+/* Only the push-now quadrant is tinted. Tinting all four would be decoration;
+   this one is the argument. */
+.ov2-mx-quad { position: absolute; pointer-events: none; border-radius: var(--r-sm); }
+.ov2-mx-quad.is-push { background: var(--c-primary-light); opacity: 0.5; }
+/* The at-goal band, drawn as the strip of axis it is: three points wide. This
+   is the argument against it ever having been a tab, made in pixels. */
+.ov2-mx-edge {
+  position: absolute; pointer-events: none; background: var(--c-info-bg); opacity: 0.6;
+  border-left: 1px dashed var(--c-info-border); border-right: 1px dashed var(--c-info-border);
+}
+
+/* The goal line. Heavier than the median splits on purpose — it's the only line
+   on this chart that means anything outside this particular board. */
+.ov2-mx-goal { position: absolute; width: 2px; background: var(--c-text-3); pointer-events: none; border-radius: 1px; }
+.ov2-mx-goal-lbl {
+  position: absolute; transform: translateX(-50%); pointer-events: none;
+  font-family: var(--font-mono, var(--font)); font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-3);
+}
+
+.ov2-mx-split { position: absolute; background: var(--c-border); pointer-events: none; }
+.ov2-mx-split.is-v { width: 1px; }
+.ov2-mx-split.is-h { height: 1px; }
+
+.ov2-mx-qlbl {
+  position: absolute; pointer-events: none;
+  font-family: var(--font-mono, var(--font)); font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap;
+}
+.ov2-mx-qlbl.is-push { color: var(--c-primary-dark); }
+
+/* Dots. The hit area is padded well past the ink — a 14px disc is a poor click
+   target, and a 28px one costs nothing on a scatter this sparse. */
+.ov2-mx-dot {
+  position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0;
+  border-radius: var(--r-full); border: 1.5px solid var(--c-surface); cursor: pointer;
+  background: color-mix(in srgb, var(--tone-deep) calc(var(--i, 0.5) * 100%), var(--tone-base));
+  transition: transform 0.14s cubic-bezier(.34,1.4,.64,1), opacity 0.2s ease, box-shadow 0.16s ease;
+  animation: ov2-pop 0.4s cubic-bezier(.34,1.56,.64,1) backwards;
+}
+/* Band sets the hue, distance-from-goal sets the depth. Same ramp tokens the
+   bubbles and the legend use, so a colour means one thing across the board. */
+.ov2-mx-below { --tone-base: var(--c-error);   --tone-deep: #8f2a23; }
+.ov2-mx-at    { --tone-base: var(--c-info);    --tone-deep: #24488a; }
+.ov2-mx-above { --tone-base: var(--c-success); --tone-deep: #0f6344; }
+
+.ov2-mx-dot .ov2-mx-hit { position: absolute; inset: -8px; border-radius: var(--r-full); }
+.ov2-mx-dot:hover { transform: scale(1.5); z-index: 4; }
+.ov2-mx-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-primary-ring); z-index: 4; }
+/* Barely a dim. At 0.28 an unselected dot read as disabled — greyed out, not
+   clickable — when it is still fully live, and the whole point of a scatter is
+   seeing where the selected measure sits against the others. Emphasis is
+   additive here: the ring and the scale-up do the work, so the rest only has to
+   step back a little. Matches the bubble field's own restraint below. */
+.ov2-mx-dot.is-dim { opacity: 0.82; }
+.ov2-mx-dot.is-sel {
+  transform: scale(1.6); z-index: 5;
+  box-shadow: 0 0 0 3px var(--c-surface), 0 0 0 5px var(--c-primary);
+}
+
+.ov2-mx-lbl {
+  position: absolute; transform: translateY(-50%); pointer-events: none;
+  font-size: 10.5px; font-weight: 600; color: var(--c-text-3); white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+.ov2-mx-lbl.is-dim { opacity: 0.7; } /* still readable — it's context, not chrome */
+.ov2-mx-lbl.is-sel { color: var(--c-text); font-weight: 700; }
+
+/* Axis furniture */
+.ov2-mx-ax {
+  position: absolute; pointer-events: none;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--c-text-4);
+}
+.ov2-mx-ax.is-x { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ov2-mx-ax.is-x em { font-style: normal; }
+.ov2-mx-ax.is-x i { font-style: normal; color: var(--c-text-3); letter-spacing: 0.08em; }
+.ov2-mx-ax.is-y {
+  left: 0; width: 0; display: flex; align-items: center; justify-content: center;
+  writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;
+}
+.ov2-mx-tick {
+  position: absolute; pointer-events: none; font-family: var(--font-mono, var(--font));
+  font-size: 10px; font-weight: 600; color: var(--c-text-4);
+}
+.ov2-mx-tick.is-y { left: 22px; transform: translateY(-50%); }
+
+.ov2-mx-legend .ov2-mx-push-n { color: var(--c-primary-dark); }
+.ov2-mx-key {
+  display: inline-block; width: 10px; height: 10px; flex-shrink: 0; border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--c-error), #8f2a23);
+}
 
 /* Bubbles */
 .ov2-bubble {
@@ -407,6 +569,13 @@
 .ov2-goalbar-above { background: var(--c-success); }
 .ov2-goalbar-marker { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--c-text-2); border-radius: 1px; }
 
+/* Inline variant — one per table row. Same component as the selected panel's,
+   so "where is this measure against its line" is drawn the same way wherever it
+   is asked. Fixed width so the ticks form a column the eye can run down; a
+   percentage width would put every measure's goal at a different x. */
+.ov2-goalbar.is-inline { display: block; width: 150px; height: 6px; margin: 0; }
+.ov2-goalbar.is-inline .ov2-goalbar-marker { top: -3px; height: 12px; }
+
 .ov2-stats {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
   margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--c-border-light);
@@ -489,15 +658,13 @@
   .ov2-lenses { overflow-x: auto; scrollbar-width: none; }
   .ov2-lenses::-webkit-scrollbar { display: none; }
   .ov2-lens { flex: 1 0 auto; padding: 7px 14px; }
-  .ov2-pills { flex-wrap: wrap; gap: 6px; }
-  .ov2-pill { flex: 1 1 auto; padding: 7px 10px; font-size: 12px; }
+  .ov2-table-wrap { padding: 16px 14px 22px; }
+  .ov2-table-id { display: block; min-width: 0; margin: 0 0 2px; }
 
   .ov2-field-wrap { padding: 12px; height: clamp(300px, 44vh, 400px); }
   .ov2-panel { padding: 18px 16px 0; }
   .ov2-bench-num { font-size: 34px; }
 
-  .ov2-notice { flex-wrap: wrap; gap: 8px; font-size: 12px; }
-  .ov2-notice-retry { margin-left: 0; }
 }
 
 /* Phone: the three-up stat grids are the last thing to give. */
@@ -509,7 +676,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ov2-bubble, .ov2-card, .ov2-notice, .ov2-panel-anim, .ov2-list-row { animation: none; }
+  .ov2-bubble, .ov2-mx-dot, .ov2-card, .ov2-panel-anim, .ov2-list-row, .ov2-table-row { animation: none; }
   .ov2-bubble { transition: box-shadow 0.2s ease; }
   .ov2-trend-line, .ov2-trend2-line { animation: none; stroke-dashoffset: 0; }
 }

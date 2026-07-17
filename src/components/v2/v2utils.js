@@ -10,6 +10,26 @@ export const STATUS_TONE = {
 export const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 export const shortId = (id) => (id || '').replace(/_/g, ' ');
 
+// "1 pts" reads as a typo, and these strings carry the board read — the one card
+// on the page whose whole job is to sound like it checked its own arithmetic.
+// Takes the magnitude; callers own the sign and the direction word.
+export const pts = (n) => `${n} ${Math.abs(n) === 1 ? 'pt' : 'pts'}`;
+
+// How many members must convert for a measure to cross its goal. The effort
+// number: "open gaps" is the pool you could work, this is how much of it you
+// actually have to close. 0 when the measure is already at or above goal.
+export const neededToGoal = (measure) => {
+  const goal = num(measure && measure.goal_50th);
+  const denom = num(measure && measure.denominator);
+  if (goal <= 0 || denom <= 0) return 0;
+  return Math.max(0, Math.ceil((goal / 100) * denom) - num(measure.numerator));
+};
+
+// The workable pool — members with an open gap. Distinct from neededToGoal:
+// a measure can have 1.8k open and need only 140 of them to cross.
+export const openGaps = (measure) =>
+  Math.max(0, num(measure && measure.denominator) - num(measure && measure.numerator));
+
 // Compact badge for a long CRSP name, e.g. "Riverside Behavioral Health" → "RBH".
 export const acronym = (name) => ((name || '').split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 3).toUpperCase() || '—');
 
@@ -146,9 +166,9 @@ export const behaviorRead = (measure, trend, crsps = []) => {
   // Where it sits versus its own goal.
   let stance = 'steady';
   if (goal > 0) {
-    if (gap <= -0.5) { signals.push({ k: 'Gap', v: `${Math.abs(gap)} pts below the ${goal}% goal.` }); stance = `${Math.abs(gap)} pts below goal`; }
+    if (gap <= -0.5) { signals.push({ k: 'Gap', v: `${pts(Math.abs(gap))} below the ${goal}% goal.` }); stance = `${pts(Math.abs(gap))} below goal`; }
     else if (gap < 2) { signals.push({ k: 'Gap', v: `Holding right at the ${goal}% goal.` }); stance = 'at goal'; }
-    else { signals.push({ k: 'Gap', v: `${gap} pts above the ${goal}% goal.` }); stance = `${gap} pts above goal`; }
+    else { signals.push({ k: 'Gap', v: `${pts(gap)} above the ${goal}% goal.` }); stance = `${pts(gap)} above goal`; }
   }
 
   // Direction of travel, first vs. last point of the trend series.
@@ -158,8 +178,8 @@ export const behaviorRead = (measure, trend, crsps = []) => {
     const last = num(trend[trend.length - 1].rate);
     const delta = Math.round((last - first) * 10) / 10;
     const months = trend.length;
-    if (delta <= -1) { signals.push({ k: 'Trend', v: `Down ${Math.abs(delta)} pts over the last ${months} months — still sliding.` }); motion = 'and still sliding'; }
-    else if (delta >= 1) { signals.push({ k: 'Trend', v: `Up ${delta} pts over the last ${months} months — recovering.` }); motion = 'but recovering'; }
+    if (delta <= -1) { signals.push({ k: 'Trend', v: `Down ${pts(Math.abs(delta))} over the last ${months} months — still sliding.` }); motion = 'and still sliding'; }
+    else if (delta >= 1) { signals.push({ k: 'Trend', v: `Up ${pts(delta)} over the last ${months} months — recovering.` }); motion = 'but recovering'; }
     else { signals.push({ k: 'Trend', v: `Flat over the last ${months} months — no real movement.` }); motion = 'and flat'; }
   }
 
@@ -226,7 +246,7 @@ export const rankByPriority = (measures) => {
 // The human-readable "why this rank" breakdown for one scored measure.
 export const priorityFactors = (s) => [
   { k: 'Recoverable', v: `${s.open.toLocaleString()} members still open` },
-  { k: 'Gap', v: `${s.gap} pts below goal` },
+  { k: 'Gap', v: `${pts(s.gap)} below goal` },
   { k: 'Weight', v: `×${s.weight}${s.weight > 1 ? ' · program-weighted' : ''}` },
   ...(s.urgency > 1 ? [{ k: 'Urgency', v: s.urgency >= 1.5 ? '×1.5 · critical gap' : '×1.2 · wide gap' }] : []),
 ];
@@ -259,7 +279,7 @@ export const portfolioRead = (measures, statusFilter, totalCount) => {
   if (lead && num(lead.goal_50th) > 0) {
     signals.push({
       k: above ? 'Leader' : 'Widest gap',
-      v: `${shortId(lead.measure_id)} — ${Math.abs(leadGap)} pts ${above ? 'ahead of' : 'under'} its ${num(lead.goal_50th)}% target.`,
+      v: `${shortId(lead.measure_id)} — ${pts(Math.abs(leadGap))} ${above ? 'ahead of' : 'under'} its ${num(lead.goal_50th)}% target.`,
     });
   }
   if (totalOpen > 0) {
@@ -272,7 +292,10 @@ export const portfolioRead = (measures, statusFilter, totalCount) => {
   let synthesis;
   if (below) synthesis = `${n} of ${total} measures sit below goal${critical ? ` — ${critical} critically` : ''}.`;
   else if (above) synthesis = `${n} of ${total} measures are beating goal.`;
-  else synthesis = `${n} of ${total} measures are holding at goal.`;
+  // Not "holding at goal": the band runs a point under to two over, so some of
+  // these are already under it. They're on the line, which is the reason the tab
+  // is a watch list rather than a result.
+  else synthesis = `${n} of ${total} measures sit on the edge of goal — inside the noise, either way.`;
 
   const level = totalDenom >= 5000 ? 'High' : totalDenom >= 1000 ? 'Moderate' : 'Low';
   return { synthesis, signals, confidence: { level, why: `${totalDenom.toLocaleString()} eligible across ${n} measures` } };
@@ -304,14 +327,14 @@ export const stratumRead = (pick, siblings, measure) => {
 
   const signals = [];
   if (goal > 0) {
-    if (gap <= -0.5) signals.push({ k: 'Gap', v: `${Math.abs(gap)} pts below the ${goal}% goal.` });
+    if (gap <= -0.5) signals.push({ k: 'Gap', v: `${pts(Math.abs(gap))} below the ${goal}% goal.` });
     else if (gap < 2) signals.push({ k: 'Gap', v: `Holding right at the ${goal}% goal.` });
-    else signals.push({ k: 'Gap', v: `${gap} pts above the ${goal}% goal.` });
+    else signals.push({ k: 'Gap', v: `${pts(gap)} above the ${goal}% goal.` });
   }
   if (n >= 2 && rank) {
     const place = rank === 1 ? 'the furthest behind' : rank === n ? 'the strongest' : 'mid-pack';
     signals.push({ k: 'Standing', v: `${ordinal(rank)} of ${n} ${dim} groups — ${place}.` });
-    signals.push({ k: 'Spread', v: `${spread} pts between ${worst.group} (${num(worst.rate)}%) and ${best.group} (${num(best.rate)}%).` });
+    signals.push({ k: 'Spread', v: `${pts(spread)} between ${worst.group} (${num(worst.rate)}%) and ${best.group} (${num(best.rate)}%).` });
   }
 
   const disparity = rank === 1 && n >= 2 && gap < 0;
@@ -319,7 +342,7 @@ export const stratumRead = (pick, siblings, measure) => {
   // whose title is already the group. "6 - 17 is 16 pts below goal" under a "6 - 17"
   // heading just says it twice.
   const synthesis = goal > 0
-    ? `${Math.abs(gap)} pts ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal${disparity ? ' — the widest disparity in this group' : ''}.`
+    ? `${pts(Math.abs(gap))} ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal${disparity ? ' — the widest disparity in this group' : ''}.`
     : `${rate}% — no goal set for this group.`;
 
   const denom = num(measure?.denominator);
@@ -352,9 +375,9 @@ export const worklistRead = (measure, provider, equity, stats) => {
 
   const signals = [];
   if (goal > 0) {
-    if (gap <= -0.5) signals.push({ k: 'Gap', v: `${Math.abs(gap)} pts below the ${goal}% goal.` });
+    if (gap <= -0.5) signals.push({ k: 'Gap', v: `${pts(Math.abs(gap))} below the ${goal}% goal.` });
     else if (gap < 2) signals.push({ k: 'Gap', v: `Holding right at the ${goal}% goal.` });
-    else signals.push({ k: 'Gap', v: `${gap} pts above the ${goal}% goal.` });
+    else signals.push({ k: 'Gap', v: `${pts(gap)} above the ${goal}% goal.` });
   }
 
   // What the list in front of the reader actually holds.
@@ -367,9 +390,8 @@ export const worklistRead = (measure, provider, equity, stats) => {
 
   // Members that must convert for this population to reach goal — the number
   // that decides whether the list below is even big enough to close the gap.
-  const denom = num(measure.denominator);
-  if (goal > 0 && gap < 0 && denom > 0) {
-    const need = Math.max(0, Math.ceil((goal / 100) * denom) - num(measure.numerator));
+  if (goal > 0 && gap < 0) {
+    const need = neededToGoal(measure);
     if (need > 0) signals.push({ k: 'To goal', v: `~${fmtCompact(need)} members must close to reach ${goal}%.` });
   }
 
@@ -384,12 +406,12 @@ export const worklistRead = (measure, provider, equity, stats) => {
     const wGap = Math.round((num(worst.rate) - num(worst.goal ?? goal)) * 10) / 10;
     signals.push({
       k: 'Widest gap',
-      v: `${worst.group} at ${num(worst.rate)}%${wGap < 0 ? ` — ${Math.abs(wGap)} pts under goal` : ''} · network-wide ${DIM_LABEL[worst.type]} cut.`,
+      v: `${worst.group} at ${num(worst.rate)}%${wGap < 0 ? ` — ${pts(Math.abs(wGap))} under goal` : ''} · network-wide ${DIM_LABEL[worst.type]} cut.`,
     });
   }
 
   const stance = goal > 0
-    ? `${Math.abs(gap)} pts ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal ${who}`
+    ? `${pts(Math.abs(gap))} ${gap < -0.5 ? 'below' : gap >= 2 ? 'above' : 'at'} goal ${who}`
     : `${rate}% ${who}`;
   const synthesis = open > 0
     ? `${stance} — ${open.toLocaleString()} ${open === 1 ? 'member' : 'members'} still open on this list.`
@@ -557,7 +579,7 @@ export const providerCardRead = (profile, summary, peer) => {
         : `${peer.rate}% here — behind ${peer.ahead} of ${peer.total} providers on this measure.`)
     : '';
   const gapWord = summary.avgGap < 0 ? 'under' : 'over';
-  const breadth = `${summary.below} of ${summary.total} measures below goal · avg ${Math.abs(summary.avgGap)} pts ${gapWord}.`;
+  const breadth = `${summary.below} of ${summary.total} measures below goal · avg ${pts(Math.abs(summary.avgGap))} ${gapWord}.`;
   const synthesis = peerLine ? `${peerLine} ${breadth}` : breadth;
 
   const signals = [];

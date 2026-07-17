@@ -9,7 +9,6 @@ import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import {
   fetchAllMeasuresGrid,
   fetchDashboardKPI,
-  fetchLowestPerformingMeasures,
   fetchCRSPsNeedingAttention,
   fetchEquityAlerts,
   fetchMiniChartData,
@@ -19,10 +18,11 @@ import {
   fetchMeasureStratificationEthnicity,
 } from '../../services/workflowService';
 import {
-  STATUS_TONE, num, shortId, acronym, behaviorRead, portfolioRead,
+  STATUS_TONE, num, pts, shortId, acronym, behaviorRead, portfolioRead,
+  neededToGoal, openGaps,
   rankByPriority, priorityFactors, recommendAction, learningState, recordApplied,
   categoryOf, categoriesOf,
-  SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
+  SAMPLE_MEASURES, sampleKpis, sampleCrsps, sampleEquityAlerts, sampleTrend,
   sampleProviders, sampleEquity,
 } from './v2utils';
 import CategoryTabs from './CategoryTabs';
@@ -30,29 +30,67 @@ import CategoryTabs from './CategoryTabs';
 // The bubble field encodes two independent variables, so a measure's urgency and
 // its workload can be read at once:
 //   • SIZE (area)  = members with an open gap — "how much work sits here".
-//     Always positive, so it means the same thing in all three status tabs, and
-//     it is normalized against every measure (not just the filtered ones) so
-//     switching tabs never rescales the field.
+//     Always positive, and normalized against every measure (not just the
+//     filtered ones) so switching tabs never rescales the field.
 //   • SHADE        = how far the rate sits from THAT measure's own goal. Goals
 //     differ per measure (a 52% target and a 70% target are not comparable), so
 //     a raw rate can't carry severity — attainment (rate ÷ goal) can.
-// Size alone can't do both jobs: sizing by distance-from-goal would collapse the
-// "At Goal" tab, whose members are all within ~2 points of target by definition.
-const FILTERS = [
-  { status: 'Below Goal', tone: 'below', label: 'Below Goal' },
-  { status: 'At Goal', tone: 'at', label: 'At Goal' },
-  { status: 'Above Goal', tone: 'above', label: 'Above Goal' },
-];
+// There are no status tabs. The board shows every measure at once.
+//
+// It had three (below / at / above) and they were a mistake twice over. The two
+// non-below bands couldn't fill a bubble field — At Goal spans three points, so
+// shade had no range, and past the target open-gap volume stops tracking urgency
+// and just tracks population, so the tab drew four identical circles. And any
+// band you aren't looking at is a band you can't see: the tabs made 11 of 26
+// measures reachable only by remembering to click.
+//
+// The matrix dissolves the problem rather than solving it. `statusFor` isn't
+// sorting measures into three kinds of thing — it is two thresholds on one
+// number (rate − goal): under −1 is Below, −1 to +2 is At, over +2 is Above.
+// Three regions of an axis. So the axis shows them, the goal is the origin, and
+// the bands are where a dot sits rather than which page you're on.
+//
+// The band a measure is in still colours its dot (STATUS_TONE), and the panel
+// still reads the below-goal set, because that's where the work is.
+const BOARD_BAND = 'Below Goal';
+
 // 'Providers' and 'Equity' are hidden for now; their lens logic below is intact,
 // so re-adding them here is all that's needed to bring the tabs back.
 const LENSES = ['Measures'];
 
-// The summary panel adapts to the active status filter — heading, pill tone and
-// the ranked measure list all follow whichever group is selected.
+// The summary panel's chrome. Only the field statuses need an entry — the table
+// carries its own heading, and the panel doesn't render beside it.
 const STATUS_PANELS = {
   'Below Goal': { eyebrow: 'BELOW BENCHMARK', tag: 'Need attention', tone: 'below', listLabel: 'LOWEST PERFORMING MEASURES', dir: 'asc' },
-  'At Goal':    { eyebrow: 'AT BENCHMARK',    tag: 'On track',        tone: 'at',    listLabel: 'MEASURES AT GOAL',          dir: 'asc' },
-  'Above Goal': { eyebrow: 'ABOVE BENCHMARK', tag: 'Exceeding goal',  tone: 'above', listLabel: 'TOP PERFORMING MEASURES',   dir: 'desc' },
+};
+
+// The table's framing. The board's read supplies the heading sentence, so this
+// only has to say what the sort is FOR — a ranked list that doesn't explain its
+// rank is just an order you have to take on faith.
+const TABLE_COPY = {
+  eyebrow: 'ALL MEASURES',
+  hint: 'Sorted worst-first by distance from each measure’s own goal. Every measure, every band — the same set the board plots.',
+};
+const TABLE_SORT = { key: 'margin', dir: 'asc' };
+
+// Table columns. `num` right-aligns and uses tabular figures so a column can be
+// run down with the eye. Progress carries no sort of its own — it's a picture of
+// rate against goal, and both already have their own column.
+const TABLE_COLS = [
+  { key: 'name', label: 'Measure' },
+  { key: 'progress', label: 'Progress', sortable: false },
+  { key: 'rate', label: 'Rate', num: true },
+  { key: 'goal', label: 'Goal', num: true },
+  { key: 'margin', label: 'Margin', num: true },
+  { key: 'open', label: 'Open gaps', num: true },
+];
+
+const TABLE_CMP = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  rate: (a, b) => a.rate - b.rate,
+  goal: (a, b) => a.goal - b.goal,
+  margin: (a, b) => a.margin - b.margin,
+  open: (a, b) => a.open - b.open,
 };
 
 // Providers & Equity lenses reuse the same panel chrome but with their own
@@ -83,20 +121,55 @@ const SHADE_BY_TEXT = { measures: 'gap relative to each goal' };
 const SEVERITY_SPAN = 0.3;
 const severityFor = (rate, goal) => (goal > 0 ? Math.min(1, Math.abs(rate / goal - 1) / SEVERITY_SPAN) : 0.5);
 
-// Ends of the shade ramp, per status. "At Goal" is a ±2pt band by definition, so
-// its ramp is flat — say that rather than implying a gradient that isn't there.
+// Ends of the shade ramp. `below` is the board; `above` is kept for the
+// Providers/Equity lenses, which reuse the legend. No `at` entry — that band is
+// too narrow to drive a ramp, which is most of why it isn't drawn as a field.
 const SHADE_ENDS = {
   below: ['at goal', 'furthest below'],
   above: ['at goal', 'furthest above'],
-  at: null,
 };
 
 const fmtCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(n)));
 
+// Attainment — a rate against its OWN goal, which is the only comparable form of
+// severity here. 38% against a 52% target is a worse miss than 53% against a
+// 64% one; ranking on raw rate puts them the other way round. Every ranked list
+// on this board sorts by it, ascending = worst first.
+const attainment = (m) => (num(m.goal_50th) > 0 ? num(m.rate) / num(m.goal_50th) : num(m.rate) / 100);
+const byAttainment = (a, b) => attainment(a) - attainment(b);
+
+// Rank a band worst-first and return its measure ids, de-duplicated.
+const rankedIds = (measures) => {
+  const seen = new Set();
+  return [...measures].sort(byAttainment)
+    .filter((m) => m.measure_id && !seen.has(m.measure_id) && seen.add(m.measure_id))
+    .map((m) => m.measure_id);
+};
+
 // The field's key. Swatches are drawn from the same tone tokens as the bubbles,
 // so the legend and the chart are visibly the same scale rather than a caption
 // that asserts a relationship the reader has to take on faith.
-const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens }) => {
+// The field can only draw so many bubbles before the smallest stops being
+// readable (see bubbleBudget). When it drops any, the caption has to say so —
+// and say WHAT it kept, since "20 of 52" alone reads as arbitrary when the rule
+// is actually "the 20 carrying the most open work". `onShowAll` is the way out
+// to the table, which has no such limit; without it the dropped measures would
+// simply be unreachable.
+const FieldCount = ({ shown, total, onShowAll }) => {
+  if (shown >= total) return <span className="ov2-legend-count">Showing all {shown}</span>;
+  return (
+    <span className="ov2-legend-count">
+      Showing the {shown} largest of {total}
+      {onShowAll && (
+        <button type="button" className="ov2-legend-all" onClick={onShowAll}>
+          See all {total} as a table →
+        </button>
+      )}
+    </span>
+  );
+};
+
+const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens, onShowAll }) => {
   const range = Number.isFinite(min) && Number.isFinite(max) && min !== max
     ? (sizeBy === 'gap' ? `${fmtCount(min)}–${fmtCount(max)} members` : `${Math.round(min)}–${Math.round(max)} pts`)
     : null;
@@ -107,14 +180,14 @@ const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens }) => {
   if (lens !== 'Measures') {
     return (
       <div className="ov2-legend">
-        <span className="ov2-legend-count">Showing {shown} of {total}</span>
+        <FieldCount shown={shown} total={total} />
         <span className="ov2-legend-item">{dots}{ramp}<span>size &amp; shade = {SIZE_BY_TEXT.lag}</span></span>
       </div>
     );
   }
   return (
     <div className="ov2-legend">
-      <span className="ov2-legend-count">Showing {shown} of {total}</span>
+      <FieldCount shown={shown} total={total} onShowAll={onShowAll} />
       <span className="ov2-legend-item">
         {dots}
         <span>size = {SIZE_BY_TEXT[sizeBy] || 'urgency'}{range && <em className="ov2-legend-range num"> · {range}</em>}</span>
@@ -123,17 +196,292 @@ const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens }) => {
         {ramp}
         <span>
           shade = {SHADE_BY_TEXT.measures}
-          {ends
-            ? <em className="ov2-legend-range"> · {ends[0]} → {ends[1]}</em>
-            : <em className="ov2-legend-range"> · all within 2 pts of goal</em>}
+          {ends && <em className="ov2-legend-range"> · {ends[0]} → {ends[1]}</em>}
         </span>
       </span>
     </div>
   );
 };
 
-const MAX_BUBBLES = 20;
+// The browse surface for the bands that don't get a field. It spans the whole
+// card — the panel doesn't render beside it — because a table is a document, and
+// a document reads as finished at four rows where a chart of four identical
+// circles never does.
+//
+// Every row opens the measure in the Explorer directly. There's no inspector
+// column to select into here, and the Explorer shows the same intelligence read
+// the panel would have.
+const MeasureTable = ({ rows, total, copy, read, sort, onSort, onOpen }) => (
+  <div className="ov2-table-wrap">
+    <div className="ov2-table-head">
+      <div className="ov2-table-eyebrowrow">
+        <span className="eyebrow">{copy.eyebrow}</span>
+        {read && <span className="ov2-table-conf mono">Confidence · {read.confidence.level}</span>}
+      </div>
+      {/* The band's read IS the heading. A title saying "on the edge of goal"
+          above a sentence saying "4 of 26 sit on the edge of goal" is the same
+          line twice, and the sentence is the one carrying the number. */}
+      <h3 className="ov2-table-title">{read ? read.synthesis : copy.eyebrow}</h3>
+      {read && (
+        <dl className="ov2-table-signals">
+          {read.signals.map((s) => (
+            <div key={s.k} className="ov2-table-signal">
+              <dt>{s.k}</dt>
+              <dd>{s.v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <p className="ov2-table-hint">
+        {copy.hint}
+        <span className="ov2-table-count mono">
+          {rows.length} of {total} measures{read ? ` · ${read.confidence.why}` : ''}
+        </span>
+      </p>
+    </div>
+    <table className="ov2-table">
+      <thead>
+        <tr>
+          {TABLE_COLS.map((c) => {
+            const active = sort.key === c.key;
+            if (c.sortable === false) {
+              return <th key={c.key} className="ov2-table-th-plain">{c.label}</th>;
+            }
+            return (
+              <th key={c.key} className={c.num ? 'is-num' : ''}
+                aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                <button type="button" className={`ov2-table-sort ${active ? 'is-active' : ''}`}
+                  onClick={() => onSort(c.key)}>
+                  {c.label}
+                  <span className="ov2-table-caret" aria-hidden="true">
+                    {active ? (sort.dir === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </button>
+              </th>
+            );
+          })}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={r.key} className="ov2-table-row" style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
+            tabIndex={0} role="button"
+            onClick={() => onOpen(r.measure)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.measure); } }}>
+            <td>
+              <span className="ov2-table-id mono">{r.id}</span>
+              <span className="ov2-table-name">{r.name}</span>
+            </td>
+            {/* Fill = the rate, tick = THIS measure's goal. The same picture in
+                every band: below goal the tick sits right of the fill, on the
+                edge they're on top of each other, above goal the fill overshoots.
+                One encoding, no re-teaching per tab. */}
+            <td>
+              <span className="ov2-goalbar is-inline" title={`${r.rate}% against a ${r.goal}% goal`}>
+                <span className={`ov2-goalbar-fill ov2-goalbar-${r.tone}`}
+                  style={{ width: `${Math.min(100, Math.max(0, r.rate))}%` }} />
+                {r.goal > 0 && <span className="ov2-goalbar-marker" style={{ left: `${Math.min(100, r.goal)}%` }} />}
+              </span>
+            </td>
+            <td className="is-num"><span className={`ov2-list-rate ov2-list-rate-${r.tone} num`}>{r.rate}%</span></td>
+            <td className="is-num num ov2-table-muted">{r.goal}%</td>
+            {/* Deliberately not green for a positive margin: on the edge a +1 is
+                the same coin-flip as a −1, and painting it as a win argues
+                against the band. Only a measure already under its goal is red. */}
+            <td className={`is-num num ov2-table-margin ${r.margin < 0 ? 'is-under' : ''}`}>{r.marginLabel}</td>
+            <td className="is-num num ov2-table-muted">{fmtCount(r.open)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+// ── Opportunity matrix ───────────────────────────────────────
+// The board's field. One dot per measure, plotted on two axes it can actually
+// be read from, rather than encoded as the area and hue of a disc.
+//
+//   X — GAP TO GOAL, near on the left. Not the rate: rates aren't comparable
+//       across measures whose goals differ, and "how far from MY line" is.
+//   Y — MEMBERS WITH AN OPEN GAP, most at the top. The size of the prize —
+//       the pool you have to work with.
+//
+// The quadrant the whole thing exists for is top-left: a big pool sitting a
+// short distance from its line, where converting a few hundred members flips
+// the measure. The bubble field could not say that — it drew volume as area and
+// distance as hue, so "big and close" and "small and far" were two shades of the
+// same-ish circle, and the eye compares neither well.
+//
+// Note it disagrees with priorityScore, which multiplies gap by volume and so
+// ranks the top-RIGHT highest. Both are defensible; they optimise different
+// things. See the caption.
+// Quadrants only exist to the RIGHT of the goal line — they're a way of sorting
+// work, and there is no work to the left. A measure already past its target
+// isn't "near goal", it's done; putting it in a quadrant called "push now"
+// because it sits far left would be the axis lying about its own origin.
+const QUADRANTS = [
+  { key: 'push', label: 'Push now', hint: 'Big population, just short of goal — a few conversions flip the measure.' },
+  { key: 'long', label: 'Long haul', hint: 'Big population, far behind — needs a sustained programme.' },
+  { key: 'cheap', label: 'Cheap but small', hint: 'Close to goal, small population — quick, moves little.' },
+  { key: 'low', label: 'Low return', hint: 'Far behind, small population — least return on the effort.' },
+];
+const quadOf = (r, xMid, yMid) => {
+  if (r.gap <= 0) return 'clear'; // at or above its goal — no quadrant, no work
+  return r.pop >= yMid ? (r.gap < xMid ? 'push' : 'long') : (r.gap < xMid ? 'cheap' : 'low');
+};
+
+// The at-goal band, in gap terms. statusFor works on margin (rate − goal) and
+// calls −1..+2 "At Goal"; gap is the negation, so the band is −2 < gap ≤ 1.
+// Drawn as the strip of axis it is, rather than asserted in a legend.
+const EDGE_LO = -2, EDGE_HI = 1;
+
+const DOT_R = 7;      // dot radius
+const LBL_H = 13;     // label line box, for collision
+const LBL_GAP = 9;    // dot → label
+
+const OpportunityMatrix = ({ rows, size, xMin, xMax, yMin, yMax, xMid, yMid, selectedId, onSelect }) => {
+  const padL = 54, padR = 22, padT = 26, padB = 34;
+  const W = Math.max(size.w, 320), H = Math.max(size.h, 260);
+  const iw = Math.max(40, W - padL - padR), ih = Math.max(40, H - padT - padB);
+  const px = (gap) => padL + (xMax > xMin ? (gap - xMin) / (xMax - xMin) : 0.5) * iw;
+  const py = (v) => padT + (1 - (yMax > yMin ? (v - yMin) / (yMax - yMin) : 0.5)) * ih;
+
+  // Label placement. Every dot is drawn; labels are greedy — highest-opportunity
+  // first (top-left is the read this chart exists for), and any label that would
+  // collide with one already placed is dropped rather than allowed to overlap.
+  // The dot stays either way, and hover/click still names it.
+  const labelled = useMemo(() => {
+    const boxes = [];
+    const order = [...rows].sort((a, b) => (b.pop - a.pop) || (a.gap - b.gap));
+    const keep = new Set();
+    for (const r of order) {
+      const x = px(r.gap) + DOT_R + LBL_GAP, y = py(r.pop);
+      const w = r.id.length * 6.2 + 4;
+      const box = { x1: x, y1: y - LBL_H / 2, x2: x + w, y2: y + LBL_H / 2 };
+      if (box.x2 > W - 4) continue;
+      const hit = boxes.some((b) => !(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2));
+      if (hit) continue;
+      boxes.push(box); keep.add(r.key);
+    }
+    return keep;
+  }, [rows, W, H, xMax, yMin, yMax]);
+
+  const x0 = px(0), xm = px(xMid), ym = py(yMid);
+  const eL = px(EDGE_LO), eR = px(EDGE_HI);
+  return (
+    <div className="ov2-mx">
+      {/* The at-goal band, as the strip of axis it actually is. This is the whole
+          argument against it having been a tab: it's three points wide. */}
+      <div className="ov2-mx-edge" style={{ left: eL, top: padT, width: Math.max(2, eR - eL), height: ih }} />
+      {/* Push-now is the only tinted quadrant — it's the one the chart argues
+          for. It starts at the goal line, not at the left edge: everything left
+          of zero is already past its target. */}
+      <div className="ov2-mx-quad is-push" style={{ left: x0, top: padT, width: Math.max(0, xm - x0), height: ym - padT }} />
+      {/* The goal line. Heavier than the median splits — it's the only line here
+          that means something outside this particular board. */}
+      <div className="ov2-mx-goal" style={{ left: x0, top: padT, height: ih }} />
+      <div className="ov2-mx-split is-v" style={{ left: xm, top: padT, height: ih }} />
+      <div className="ov2-mx-split is-h" style={{ left: x0, top: ym, width: Math.max(0, padL + iw - x0) }} />
+      <span className="ov2-mx-goal-lbl" style={{ left: x0, top: padT - 14 }}>goal</span>
+
+      {QUADRANTS.map((q) => {
+        // Anchored to the goal line, not the plot edge, so a label never floats
+        // over a region it doesn't describe.
+        const pos = {
+          push: { left: x0 + 8, top: padT + 6 },
+          long: { right: padR + 8, top: padT + 6 },
+          cheap: { left: x0 + 8, bottom: padB + 6 },
+          low: { right: padR + 8, bottom: padB + 6 },
+        }[q.key];
+        return (
+          <div key={q.key} className={`ov2-mx-qlbl is-${q.key}`} style={pos} title={q.hint}>
+            {q.label}
+          </div>
+        );
+      })}
+      {x0 - padL > 60 && (
+        <div className="ov2-mx-qlbl is-clear" style={{ left: padL + 6, top: padT + 6 }}
+          title="At or above goal — nothing to work against the 50th-percentile target.">
+          At or above goal
+        </div>
+      )}
+
+      {rows.map((r) => {
+        const x = px(r.gap), y = py(r.pop);
+        const isSel = r.key === selectedId;
+        return (
+          <button key={r.key} type="button"
+            className={`ov2-mx-dot ov2-mx-${r.tone} ${isSel ? 'is-sel' : ''} ${selectedId && !isSel ? 'is-dim' : ''}`}
+            style={{ left: x, top: y, '--i': r.intensity }}
+            onClick={(e) => { e.stopPropagation(); onSelect(r.key); }}
+            title={`${r.name} — ${r.rate}% vs ${r.goal}% goal · ${r.standing} · ${fmtCount(r.pop)} eligible${r.need > 0 ? ` · ~${fmtCount(r.need)} must convert to reach goal` : ''}`}
+            aria-label={`${r.name}, ${r.standing}, ${fmtCount(r.pop)} eligible members`}>
+            <span className="ov2-mx-hit" aria-hidden="true" />
+          </button>
+        );
+      })}
+      {rows.map((r) => (
+        (labelled.has(r.key) || r.key === selectedId) && (
+          <span key={`l-${r.key}`} aria-hidden="true"
+            className={`ov2-mx-lbl mono ${r.key === selectedId ? 'is-sel' : ''} ${selectedId && r.key !== selectedId ? 'is-dim' : ''}`}
+            style={{ left: px(r.gap) + DOT_R + LBL_GAP, top: py(r.pop) }}>{r.id}</span>
+        )
+      ))}
+
+      <span className="ov2-mx-ax is-y" style={{ top: padT, height: ih }}>Eligible members</span>
+      {/* Both ends labelled — the axis is clipped to the data, and a clipped
+          axis that hides its floor is the oldest chart lie there is. */}
+      <span className="ov2-mx-tick is-y is-hi" style={{ top: padT }}>{fmtCount(yMax)}</span>
+      <span className="ov2-mx-tick is-y is-lo" style={{ top: padT + ih }}>{fmtCount(yMin)}</span>
+      <span className="ov2-mx-ax is-x" style={{ left: padL, width: iw, top: padT + ih + 16 }}>
+        <em>{xMin < -1 ? `${pts(Math.round(-xMin))} ahead` : 'Ahead'}</em>
+        <i>Distance from goal</i>
+        <em>{pts(Math.round(xMax))} behind</em>
+      </span>
+    </div>
+  );
+};
+
+// The matrix's caption. Says what a dot is, what the split is, and — the part
+// that matters — names the count in the quadrant the chart exists to surface,
+// so the reader gets the headline without having to interpret the picture first.
+const MatrixLegend = ({ n, push, xMid, yMid }) => (
+  <div className="ov2-legend ov2-mx-legend">
+    <span className="ov2-legend-count">
+      {n} measures · <b className="ov2-mx-push-n">{push}</b> in <b>push now</b>
+    </span>
+    <span className="ov2-legend-item">
+      <span className="ov2-mx-key" aria-hidden="true" />
+      <span>
+        each dot is a measure
+        <em className="ov2-legend-range"> · deeper = further from its own goal</em>
+      </span>
+    </span>
+    {/* Say the split out loud. A quadrant chart whose lines are medians is making
+        a relative claim, and the caption is the only place that can admit it. */}
+    <span className="ov2-legend-item">
+      <span>
+        quadrants split at this board’s medians
+        <em className="ov2-legend-range num"> · {pts(Math.round(xMid * 10) / 10)} · {fmtCount(yMid)} eligible</em>
+      </span>
+    </span>
+  </div>
+);
+
+// Absolute ceiling, and a perf backstop rather than a design choice: packCircles
+// scans a grid per bubble against every bubble already placed, so it grows ~n²·
+// cells. The derived budget below lands well under this on any real field; this
+// only stops a pathological set from freezing the board.
+const MAX_BUBBLES = 48;
+const MIN_BUBBLES = 4;
 const PACK_DENSITY = 0.46; // total bubble area as a fraction of the field area
+
+// The smallest bubble the field may draw. Under ~48px the id stops fitting and
+// a measure becomes an unlabelled dot — present, but not readable and not
+// confidently clickable. Measured, not guessed: with the cap lifted and 96
+// measures loaded, an uncapped field put 40 of 52 below this line on a 1280px
+// laptop (24px at the low end). The field can hold them; you can't read them.
+const MIN_BUBBLE_D = 48;
 
 // Bubble radii are derived from the field, not fixed: a 92px radius that reads
 // well on a 1200px desktop field swallows a 320px phone field whole. The
@@ -149,14 +497,32 @@ function radiusScale(W, H) {
 // the radius directly would render a value at 10% of max as ~29% of max area.
 const radiusFor = (weight, rMin, rMax) => Math.sqrt(rMin * rMin + weight * (rMax * rMax - rMin * rMin));
 
-// Fewer, larger bubbles on a small field beats many unreadable ones. Thresholds
-// are the field area at which a full set stops being legible, measured against
-// the packer's density — not round numbers.
-function bubbleBudget(W, H) {
-  const area = W * H;
-  if (area < 110000) return 8;   // phone (~330×330)
-  if (area < 210000) return 12;  // narrow stacked field
-  return MAX_BUBBLES;
+// How many bubbles the field can draw with the smallest of them still legible.
+//
+// Derived from the actual weights, not a round number, because a count can't see
+// what fills the field: fitScale shrinks the whole set to PACK_DENSITY, so a few
+// large bubbles eat the area budget and drag every small one under the legible
+// floor with them. Twenty measures of similar size fit where twenty lopsided
+// ones don't.
+//
+// Weights arrive sorted descending, so each step adds the next-smallest bubble
+// and asks whether it — the smallest so far — still clears MIN_BUBBLE_D once the
+// set is scaled to fit. The first one that doesn't ends the budget.
+function bubbleBudget(W, H, weights) {
+  if (!weights || !weights.length || W <= 0 || H <= 0) return 0;
+  const { rMin, rMax } = radiusScale(W, H);
+  const floorR = MIN_BUBBLE_D / 2;
+  const cap = PACK_DENSITY * W * H;
+  let sum = 0, n = 0;
+  for (const w of weights) {
+    if (n >= MAX_BUBBLES) break;
+    const r = radiusFor(w, rMin, rMax);
+    const next = sum + Math.PI * r * r;
+    const scale = next > cap ? Math.sqrt(cap / next) : 1;
+    if (r * scale < floorR && n >= MIN_BUBBLES) break;
+    sum = next; n++;
+  }
+  return n;
 }
 
 // Shrink-to-fit factor for a set of natural radii. Computed from the DENSEST
@@ -270,67 +636,86 @@ export const MiniTrend = ({ data }) => {
   );
 };
 
-const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, availableMonths, statusFilter = 'Below Goal', onStatusFilter, category = null, onCategory }) => {
+const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, availableMonths, category = null, onCategory }) => {
   const [lens, setLens] = useState('Measures');
-  const setStatusFilter = onStatusFilter || (() => {});
   const setCategory = onCategory || (() => {});
   const [selectedId, setSelectedId] = useState(null);
   const [assignScope, setAssignScope] = useState(null); // {measure, level, intervention}
   const toast = useToast();
 
+  // Providers/Equity keep the field — they carry their own size metric and every
+  // row is lagging, so both channels stay live. On Measures only Below Goal
+  // earns it; the other two bands render a table instead.
+  //
+  // `view` only means anything on a field band — it's how Below Goal reaches the
+  // table. The field can't draw more than ~20 measures legibly (bubbleBudget),
+  // and at 96 measures that leaves ~30 below-goal measures with open work that
+  // the board simply cannot show. The table has no such limit, so it's the way
+  // to them. Resets to the board when the band changes: the table is where you
+  // go when the field runs out, not a preference to carry around.
+  const [view, setView] = useState('board');
+  useEffect(() => { setView('board'); }, [lens]);
+  const statusFilter = BOARD_BAND; // what the PANEL reads — the board shows all bands
+  const showsField = lens !== 'Measures' || view === 'board';
+  const canToggleView = lens === 'Measures';
+
+  // Table sort. Null = the band's default (TABLE_SORT); clicking a header takes
+  // over. Reset when the band changes, since the default is per-band.
+  const [sort, setSort] = useState(null);
+  const tableSort = sort || TABLE_SORT;
+  const onSort = (key) => setSort((s) => {
+    const cur = s || TABLE_SORT;
+    // Re-clicking the active column flips it; a new column starts ascending,
+    // except the text one, where A→Z is the ascending everyone means.
+    return cur.key === key ? { key, dir: cur.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' };
+  });
+
   const { data, loading, error, refetch } = useAsync(async () => {
     try {
-      const [grid, kpis, lowest, crsps, equity] = await Promise.all([
+      const [grid, kpis, crsps, equity] = await Promise.all([
         fetchAllMeasuresGrid(token),
         fetchDashboardKPI(token),
-        fetchLowestPerformingMeasures(token),
         fetchCRSPsNeedingAttention(token),
         fetchEquityAlerts(token),
       ]);
       if (!grid || grid.length === 0) throw new Error('empty');
-      return { grid, kpis, lowest, crsps, equity, sample: false };
+      return { grid, kpis, crsps, equity, sample: false };
     } catch (e) {
-      return { grid: SAMPLE_MEASURES, kpis: sampleKpis(), lowest: sampleLowest(), crsps: sampleCrsps(), equity: sampleEquityAlerts(), sample: true };
+      return { grid: SAMPLE_MEASURES, kpis: sampleKpis(), crsps: sampleCrsps(), equity: sampleEquityAlerts(), sample: true };
     }
   }, [token, selectedMonth], { enabled: !!token });
 
   const grid = data?.grid || [];
-  const usingSample = data?.sample;
-  const crspList = data?.crsps || [];
-  const equityList = data?.equity || [];
 
   // Category ("sub-category") tabs come from whatever domains the data carries.
   const categories = useMemo(() => categoriesOf(grid), [grid]);
-  // The active category scopes every measure derivation below; null = All. Bubble
-  // sizing (maxV) is normalized within the category so switching status tabs
-  // inside a category never rescales the field.
+  // The active category scopes every measure derivation below; null = All.
   const catGrid = useMemo(
     () => (category ? grid.filter((m) => categoryOf(m) === category) : grid),
     [grid, category]
   );
 
-  // Derive every size/shade input once, over the WHOLE measure set. `maxV` is
-  // global on purpose: normalizing inside the active status filter would make a
-  // "big" Above Goal bubble and a "big" Below Goal bubble encode different
-  // absolute values, so nothing could be compared across tabs.
-  const measureStats = useMemo(() => {
-    const rows = catGrid.map((m) => {
-      const rate = num(m.rate);
-      const goal = num(m.goal_50th);
-      return {
-        ...m,
-        _rate: rate,
-        _goal: goal,
-        _nonComp: Math.max(0, num(m.denominator) - num(m.numerator)),
-        _dist: Math.abs(rate - goal),
-        _att: goal > 0 ? rate / goal : 1, // attainment against its own goal
-      };
-    });
-    // Without denominators there are no member counts to size by; fall back to
-    // points-from-goal and say so in the caption.
-    const sizeKey = rows.some((m) => m._nonComp > 0) ? '_nonComp' : '_dist';
-    return { rows, sizeKey, maxV: Math.max(1, ...rows.map((m) => m[sizeKey])) };
-  }, [catGrid]);
+  // Category is a board-wide filter, so it has to reach the panel's lists too —
+  // a board narrowed to EOC beside a "lowest performing" card still listing ECDS
+  // measures is the panel contradicting the chart it sits next to.
+  //
+  // The lists arrive from their own endpoints carrying only a measure_id, so the
+  // grid is the lookup: it has the API's own category. Deriving it from
+  // CATEGORY_MAP instead would file anything unmapped under EOC and quietly show
+  // it beneath the wrong tab.
+  const catOf = useMemo(() => {
+    const m = new Map();
+    grid.forEach((r) => { if (r.measure_id) m.set(r.measure_id, categoryOf(r)); });
+    return m;
+  }, [grid]);
+  const scopeToCategory = useMemo(() => {
+    if (!category) return (rows) => rows;
+    return (rows) => rows.filter((r) => catOf.get(r.measure_id) === category);
+  }, [category, catOf]);
+
+  const crspList = useMemo(() => scopeToCategory(data?.crsps || []), [data, scopeToCategory]);
+  const equityList = useMemo(() => scopeToCategory(data?.equity || []), [data, scopeToCategory]);
+
 
   // Bubbles are normalized to { key, label, title, rate, tone, sizeBy, radius,
   // measureId? } so the field renders the same way for every lens. Only the
@@ -350,26 +735,8 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
         (a, i) => `eq-${i}`, (a) => shortId(a.measure_id),
         (a) => `${a.display_name || shortId(a.measure_id)} · ${a.race_strat}`);
     }
-    const { rows, sizeKey, maxV } = measureStats;
-    return rows
-      .filter((m) => m.kpi_status === statusFilter)
-      .sort((a, b) => b[sizeKey] - a[sizeKey])
-      .slice(0, MAX_BUBBLES)
-      .map((m) => ({
-        key: m.measure_id,
-        label: shortId(m.measure_id),
-        title: m.display_name,
-        rate: m._rate,
-        goal: m._goal,
-        tone: STATUS_TONE[m.kpi_status] || 'below',
-        sizeBy: sizeKey === '_nonComp' ? 'gap' : 'dist',
-        measureId: m.measure_id,
-        att: m._att, // what the shade encodes; surfaced in the tooltip
-        value: m[sizeKey], // raw metric, so the legend can label its own scale
-        weight: m[sizeKey] / maxV, // area fraction, against the global max
-        intensity: severityFor(m._rate, m._goal),
-      }));
-  }, [lens, measureStats, statusFilter, crspList, equityList]);
+    return []; // Measures draws the opportunity matrix, not bubbles
+  }, [lens, crspList, equityList]);
 
   const fieldRef = useRef(null);
   const [fieldSize, setFieldSize] = useState({ w: 720, h: 520 });
@@ -440,36 +807,25 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     const ro = new ResizeObserver(() => { if (t) clearTimeout(t); t = setTimeout(apply, 110); });
     ro.observe(el);
     return () => { if (t) clearTimeout(t); ro.disconnect(); };
-  }, [lens, loading, error]);
+  }, [lens, loading, error, showsField]);
 
-  // Every status group's weights, so the fit-to-field scale can be derived from
-  // the densest one and shared. Providers/Equity are their own universe (a
-  // different size metric), so they just fit themselves.
-  const scaleGroups = useMemo(() => {
-    if (lens !== 'Measures') return null;
-    const { rows, sizeKey, maxV } = measureStats;
-    return Object.keys(STATUS_PANELS).map((status) =>
-      rows.filter((m) => m.kpi_status === status)
-        .map((m) => m[sizeKey] / maxV)
-        .sort((a, b) => b - a));
-  }, [lens, measureStats]);
 
   // Radii resolve against the measured field, so the same data packs sensibly
   // into a 1200px desktop field and a 320px phone one.
   const packed = useMemo(() => {
+    if (!showsField) return []; // table bands never pack
     const { w, h } = fieldSize;
     const { rMin, rMax } = radiusScale(w, h);
-    const budget = bubbleBudget(w, h);
-    const groups = (scaleGroups || [bubbleData.map((b) => b.weight).sort((a, b) => b - a)])
-      .map((g) => g.slice(0, budget));
+    const budget = bubbleBudget(w, h, bubbleData.map((b) => b.weight));
+    const groups = [bubbleData.map((b) => b.weight).sort((a, b) => b - a).slice(0, budget)];
     const scale = fitScale(groups, w, h, rMin, rMax);
     const items = bubbleData
       .slice(0, budget)
       .map((b) => ({ ...b, radius: radiusFor(b.weight, rMin, rMax) }));
     return packCircles(items, w, h, rMin, scale);
-  }, [bubbleData, fieldSize, scaleGroups]);
+  }, [bubbleData, fieldSize, showsField]);
 
-  useEffect(() => { setSelectedId(null); }, [statusFilter, lens, category]);
+  useEffect(() => { setSelectedId(null); }, [lens, category]);
 
   // The legend labels the scale of what is actually drawn, not of the whole set.
   const legend = useMemo(() => {
@@ -477,42 +833,161 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     const vals = packed.map((b) => b.value).filter((v) => Number.isFinite(v));
     return {
       sizeBy: packed[0].sizeBy,
-      tone: lens === 'Measures' ? (STATUS_TONE[statusFilter] || 'below') : 'below',
+      tone: 'below', // Providers/Equity rows are all lagging by construction
       min: vals.length ? Math.min(...vals) : NaN,
       max: vals.length ? Math.max(...vals) : NaN,
     };
-  }, [packed, lens, statusFilter]);
+  }, [packed]);
 
   const selected = useMemo(() => grid.find((m) => m.measure_id === selectedId) || null, [grid, selectedId]);
-  // The summary panel mirrors the active status filter (below / at / above goal),
-  // scoped to the active category.
+
+  // A measure is ranked against its OWN band. MeasureIntel falls back to
+  // `ranked[0]` when it can't find the measure among its peers, so handing it a
+  // set the measure isn't in would quietly print another measure's rank and
+  // priority score as this one's — reachable whenever a focus card selects a
+  // measure from outside the active band.
+  const selectedPeers = useMemo(
+    () => (selected ? catGrid.filter((m) => m.kpi_status === selected.kpi_status) : []),
+    [catGrid, selected]
+  );
+
+  // The board's own set, scoped to the active category.
   const statusMeasures = useMemo(() => catGrid.filter((m) => m.kpi_status === statusFilter), [catGrid, statusFilter]);
   const matchCount = statusMeasures.length;
+
+  // The matrix's points.
+  //
+  //   X — gap to that measure's OWN goal. Rates aren't comparable across
+  //       measures with different targets; distance from your own line is.
+  //   Y — eligible members. The size of the prize: fix this measure and this
+  //       many people are covered by it.
+  //
+  // Y is the population, not the open-gap pool, and that's a deliberate call.
+  // A quadrant chart needs its two axes independent or every dot lands on a
+  // diagonal and the quadrants are theatre. Open gaps are `denominator × (1 −
+  // rate/100)` — baked out of the rate, which is what X is made of — so plotting
+  // them against the gap plots rate against itself. Population size genuinely
+  // doesn't know how far off its measure is.
+  //
+  // `need` and `open` aren't plotted; they're the effort numbers, and they ride
+  // the tooltip and the drill-down instead. A chart with four positional
+  // variables has none.
+  const matrix = useMemo(() => {
+    const seen = new Set();
+    const rows = catGrid
+      .filter((m) => m.measure_id && !seen.has(m.measure_id) && seen.add(m.measure_id))
+      .map((m) => {
+        const rate = num(m.rate), goal = num(m.goal_50th);
+        // SIGNED, not clamped at zero. The sign is the whole point: it puts the
+        // goal at the origin and the three bands either side of it, which is
+        // what lets one chart carry all 26 instead of three tabs carrying a
+        // third each.
+        const gap = Math.round((goal - rate) * 10) / 10;
+        const mag = Math.abs(gap);
+        return {
+          key: m.measure_id, id: shortId(m.measure_id), name: m.display_name,
+          rate: Math.round(rate), goal, gap,
+          standing: gap > 0 ? `${pts(mag)} behind` : gap < 0 ? `${pts(mag)} ahead` : 'level with goal',
+          tone: STATUS_TONE[m.kpi_status] || 'below',
+          pop: num(m.denominator), open: openGaps(m), need: neededToGoal(m),
+          intensity: severityFor(rate, goal), measure: m,
+        };
+      });
+    if (!rows.length) return { rows: [], xMin: -1, xMax: 1, yMin: 0, yMax: 1, xMid: 0, yMid: 0 };
+    const pops = rows.map((r) => r.pop);
+    const gaps = rows.map((r) => r.gap);
+    // X spans both sides of the goal and is NOT clipped — 0 has to stay on the
+    // chart and stay meaningful, because it's the line every measure is judged
+    // against. Padded so the extremes aren't welded to the edges.
+    const xLo = Math.min(-1, Math.min(...gaps)), xHi = Math.max(1, Math.max(...gaps));
+    const xPad = Math.max(1, (xHi - xLo) * 0.06);
+    // Y doesn't anchor at 0: no measure has an eligible population near zero, so
+    // anchoring there would spend most of the axis on empty space and squash the
+    // board into a stripe. These are dots, not bars — position carries the
+    // meaning and no length lies about a ratio — so clipping to where the data
+    // lives is honest as long as both ends are labelled, which they are.
+    const yLo = Math.min(...pops), yHi = Math.max(...pops);
+    const yPad = Math.max(1, (yHi - yLo) * 0.12);
+    const med = (xs) => {
+      if (!xs.length) return 0;
+      const s = [...xs].sort((a, b) => a - b), i = Math.floor(s.length / 2);
+      return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2;
+    };
+    // The medians split WORK, so they're taken from the measures that have any —
+    // the below-goal set. Taking them across all 26 would drag both splits left
+    // and down by the 11 measures that are already done, and put half the
+    // finished board in a quadrant called "push now".
+    const work = rows.filter((r) => r.gap > 0);
+    const xMid = med(work.map((r) => r.gap));
+    const yMid = med(work.map((r) => r.pop));
+    return {
+      rows: rows.map((r) => ({ ...r, quad: quadOf(r, xMid, yMid) })),
+      xMin: xLo - xPad, xMax: xHi + xPad,
+      yMin: Math.max(0, yLo - yPad), yMax: yHi + yPad, xMid, yMid,
+    };
+  }, [catGrid]);
+
+  const pushCount = matrix.rows.filter((r) => r.quad === 'push').length;
   const panelCfg = STATUS_PANELS[statusFilter] || STATUS_PANELS['Below Goal'];
 
   // "Critical" only applies to below-goal measures (≥20 pts under target).
   const criticalCount = useMemo(
-    () => (statusFilter === 'Below Goal'
-      ? statusMeasures.filter((m) => num(m.goal_50th) - num(m.rate) >= 20).length
-      : 0),
-    [statusMeasures, statusFilter]
+    () => statusMeasures.filter((m) => num(m.goal_50th) - num(m.rate) >= 20).length,
+    [statusMeasures]
   );
 
-  // Ranked, de-duplicated list for the panel — worst-first below goal,
-  // best-first above goal. Ranked by attainment (rate ÷ its own goal), not raw
-  // rate: 38% against a 52% target is a worse miss than 53% against a 64% one,
-  // and sorting by rate alone would put them the other way round.
+  // Ranked, de-duplicated list for the panel — worst-first.
   const panelList = useMemo(() => {
     const seen = new Set();
-    const att = (m) => (num(m.goal_50th) > 0 ? num(m.rate) / num(m.goal_50th) : num(m.rate) / 100);
-    return [...statusMeasures]
-      .sort((a, b) => (panelCfg.dir === 'desc' ? att(b) - att(a) : att(a) - att(b)))
+    return [...statusMeasures].sort(byAttainment)
       .filter((m) => {
         if (!m.measure_id || seen.has(m.measure_id)) return false;
         seen.add(m.measure_id);
         return true;
       });
-  }, [statusMeasures, panelCfg.dir]);
+  }, [statusMeasures]);
+
+  // The table's rows: the whole band, de-duplicated, no cap. This is the browse
+  // surface — truncating it silently would defeat the one thing it is for.
+  //
+  // Margin is a first-class column rather than something to infer from rate vs
+  // goal: it's signed, and each measure's goal differs, so the eye can't do that
+  // subtraction down a column.
+  const tableRows = useMemo(() => {
+    const seen = new Set();
+    const rows = catGrid
+      .filter((m) => m.measure_id)
+      .filter((m) => !seen.has(m.measure_id) && seen.add(m.measure_id))
+      .map((m) => {
+        const rate = num(m.rate), goal = num(m.goal_50th);
+        const margin = Math.round((rate - goal) * 10) / 10;
+        const mag = Math.abs(margin);
+        return {
+          key: m.measure_id, id: shortId(m.measure_id), name: m.display_name,
+          rate: Math.round(rate), goal, margin, open: Math.max(0, num(m.denominator) - num(m.numerator)),
+          tone: STATUS_TONE[m.kpi_status] || 'below',
+          marginLabel: goal > 0 ? `${margin > 0 ? '+' : margin < 0 ? '−' : ''}${pts(mag)}` : '—',
+          measure: m,
+        };
+      });
+    const cmp = TABLE_CMP[tableSort.key] || TABLE_CMP.margin;
+    rows.sort((a, b) => (tableSort.dir === 'desc' ? -cmp(a, b) : cmp(a, b)));
+    return rows;
+  }, [catGrid, tableSort]);
+
+  // The same read the board gets, above the table. portfolioRead already speaks
+  // all three bands, so the two surfaces say the same kind of thing in the same
+  // voice without a second code path — the band changes the sentence, not the
+  // shape. Skipped on the field statuses, where the panel already carries it.
+  // The table's heading is the same read the panel gives the board: the
+  // below-goal set is the story whichever way you're looking at it.
+  const tableRead = useMemo(
+    () => (showsField || !statusMeasures.length
+      ? null
+      : portfolioRead(statusMeasures, BOARD_BAND, catGrid.length)),
+    [showsField, statusMeasures, catGrid.length]
+  );
+
 
   // The right-hand summary panel adapts to the active lens. On Measures it
   // mirrors the status filter; on Providers/Equity it becomes the matching
@@ -536,7 +1011,12 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     }
     return {
       ...panelCfg, count: matchCount, total: catGrid.length,
-      sub: panelCfg.tone === 'below' && matchCount > 0 ? `↘ ${criticalCount} critical · ${matchCount} below target` : null,
+      // Only speaks when it has something to add. The "N below target" half just
+      // restated the big number beside it, and the critical half was reporting a
+      // zero as if it were news — "0 critical" in alarm red is a line that costs
+      // a read and returns nothing. It earns its place only when a measure is
+      // actually ≥20 pts under, which the count above can't tell you.
+      sub: criticalCount > 0 ? `↘ ${criticalCount} of ${matchCount} critically below` : null,
       read: portfolioRead(statusMeasures, statusFilter, catGrid.length),
       rows: panelList.slice(0, 6).map((m) => ({
         key: m.measure_id, label: m.display_name, meta: null, rate: num(m.rate),
@@ -545,17 +1025,18 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     };
   }, [lens, crspList, equityList, panelCfg, matchCount, catGrid.length, criticalCount, panelList, statusMeasures, statusFilter]);
 
-  const fieldTotal = lens === 'Providers' ? crspList.length : lens === 'Equity' ? equityList.length : matchCount;
+  const fieldTotal = lens === 'Providers' ? crspList.length : equityList.length;
 
   // The focus cards live inside the panel now, so picking one selects the measure
   // right where the reader already is — no scroll back up to a board a viewport away.
   const pickFromFocus = (id) => { if (id) setSelectedId(id); };
 
-  // Stepping through measures with the panel's arrows follows the SAME ranked
-  // order the panel's own list uses (worst-first below goal, best-first above),
-  // not the bubble field's packing order — the field is a spatial layout with no
-  // meaningful "next". Arrows are the keyboard-free way to walk the ranking.
-  const panelIds = useMemo(() => panelList.map((m) => m.measure_id), [panelList]);
+  // The arrows walk the selected measure's OWN band, worst-first — not the bubble
+  // field's packing order, which is a spatial layout with no meaningful "next".
+  // Keyed off the measure's band rather than the board's so a focus-card pick
+  // from another band steps through that band, instead of landing with no
+  // stepper at all or stepping into a list it isn't part of.
+  const panelIds = useMemo(() => rankedIds(selectedPeers), [selectedPeers]);
   const selIdx = selectedId ? panelIds.indexOf(selectedId) : -1;
   const stepMeasure = (dir) => {
     if (selIdx < 0 || !panelIds.length) return;
@@ -563,11 +1044,25 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
     setSelectedId(panelIds[next]);
   };
 
-  // The three "where to focus" lists, one card at a time in the panel. They read
-  // the worst performers, the flagged CRSPs and the equity gaps regardless of the
-  // board's active pill — so they stay the highest-signal lists on the page while
-  // costing the panel's width instead of a whole band along the bottom.
-  const lowestList = data?.lowest || [];
+  // The three "where to focus" lists, one card at a time in the panel: the worst
+  // performers, the flagged CRSPs and the equity gaps. They cost the panel's
+  // width instead of a whole band along the bottom, and picking a row selects the
+  // measure in the board beside it.
+  //
+  // Ranked from the grid rather than the lowest-performing endpoint, because a
+  // pre-computed global top-8 can't be scoped by filtering it: narrow to AAC and
+  // every row drops out, since neither AAC measure was in the worst 8 overall.
+  // Filtering a ranking gives you the wrong answer; you have to re-rank. The
+  // endpoint returns [measure_id, display_name, rate] — nothing the grid doesn't
+  // already carry — so ranking it here is the same list, correctly scoped, and
+  // always agreeing with the board beside it.
+  const lowestList = useMemo(() => {
+    const seen = new Set();
+    return [...catGrid]
+      .filter((m) => m.measure_id && !seen.has(m.measure_id) && seen.add(m.measure_id))
+      .sort((a, b) => num(a.rate) - num(b.rate))
+      .slice(0, 5);
+  }, [catGrid]);
   const focusCards = useMemo(() => [
     {
       key: 'measures', title: 'Lowest Performing Measures',
@@ -602,13 +1097,6 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
         <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
       </header>
 
-      {usingSample && !loading && (
-        <div className="ov2-notice" role="status">
-          <span>Live data unavailable — showing sample data.</span>
-          <button type="button" className="ov2-notice-retry" onClick={refetch}>↻ Retry</button>
-        </div>
-      )}
-
       <div className="ov2-card">
         <div className="ov2-toolbar">
           <div className="ov2-toolbar-left">
@@ -630,16 +1118,43 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
             )}
           </div>
           {lens === 'Measures' && (
-            <div className="ov2-pills" role="group" aria-label="Filter by status">
-              {FILTERS.map((f) => (
-                <button key={f.status}
-                  className={`ov2-pill ov2-pill-${f.tone} ${statusFilter === f.status ? 'is-active' : ''}`}
-                  aria-pressed={statusFilter === f.status} onClick={() => setStatusFilter(f.status)}>{f.label}</button>
-              ))}
+            <div className="ov2-toolbar-right">
+              {/* Only where there's a field to switch away from. The other two
+                  bands are a table already; a toggle there would offer a view
+                  that doesn't exist. */}
+              {canToggleView && (
+                <div className="ov2-views" role="group" aria-label="View">
+                  {[['board', 'Board'], ['table', 'Table']].map(([k, label]) => (
+                    <button key={k} type="button"
+                      className={`ov2-view ${view === k ? 'is-active' : ''}`}
+                      aria-pressed={view === k} onClick={() => setView(k)}>{label}</button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
+        {/* The table owns the whole body — no field column, no panel, no
+            resizer. That's the point: it's a document, not a chart with an
+            inspector, and giving it the full width is what stops four rows from
+            reading as a half-rendered board. */}
+        {!showsField ? (
+          <div className="ov2-body is-table">
+            {error ? (
+              <ErrorState message="Couldn't load measures." onRetry={refetch} />
+            ) : loading ? (
+              <div className="ov2-table-wrap"><SkeletonText lines={8} /></div>
+            ) : tableRows.length === 0 ? (
+              <EmptyState icon="🔍" title="No measures"
+                hint="Nothing to show for the selected month and category." />
+            ) : (
+              <MeasureTable rows={tableRows} total={catGrid.length} copy={TABLE_COPY}
+                read={tableRead} sort={tableSort} onSort={onSort}
+                onOpen={(m) => onInvestigate && onInvestigate(m)} />
+            )}
+          </div>
+        ) : (
         <div className="ov2-body" ref={bodyRef}
           style={panelW ? { '--ov2-panel-w': `${panelW}px` } : undefined}>
           <div className="ov2-field-wrap" onClick={() => selectedId && setSelectedId(null)}>
@@ -651,18 +1166,28 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                   <div className="ov2-field-loading">
                     {[104, 78, 60, 46].map((s, i) => <Skeleton key={i} width={s} height={s} radius={9999} />)}
                   </div>
+                ) : lens === 'Measures' ? (
+                  /* The Measures board is the opportunity matrix. Providers and
+                     Equity keep the bubble field below: their rows carry neither
+                     a goal nor a denominator, so neither of the matrix's axes
+                     exists for them — there is no "gap to goal" on a CRSP row. */
+                  matrix.rows.length === 0 ? (
+                    <EmptyState icon="✅" title="No measures below goal"
+                      hint="Nothing needs attention this month." />
+                  ) : (
+                    <OpportunityMatrix rows={matrix.rows} size={fieldSize}
+                      xMin={matrix.xMin} xMax={matrix.xMax} yMin={matrix.yMin} yMax={matrix.yMax}
+                      xMid={matrix.xMid} yMid={matrix.yMid}
+                      selectedId={selectedId} onSelect={setSelectedId} />
+                  )
                 ) : packed.length === 0 ? (
                   lens === 'Providers' ? (
                     <EmptyState icon="✅" title="No CRSPs flagged" hint="No providers need attention this month." />
-                  ) : lens === 'Equity' ? (
-                    <EmptyState icon="✅" title="No equity alerts" hint="No equity disparities detected this month." />
                   ) : (
-                    <EmptyState icon={statusFilter === 'Below Goal' ? '✅' : '🔍'}
-                      title={`No measures ${statusFilter.toLowerCase()}`}
-                      hint={statusFilter === 'Below Goal' ? 'Nothing needs attention this month.' : 'Try another status.'} />
+                    <EmptyState icon="✅" title="No equity alerts" hint="No equity disparities detected this month." />
                   )
                 ) : (
-                  <div className="ov2-bubbles" key={`${lens}-${statusFilter}`}>
+                  <div className="ov2-bubbles" key={lens}>
                     {packed.map((b, i) => {
                       const isSel = b.measureId && b.measureId === selectedId;
                       const d = 2 * b.radius;
@@ -699,9 +1224,13 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
               </div>
             )}
             {/* Sibling of the field, not an overlay: the field's measured height
-                then excludes the caption, so bubbles can never sit on it however
-                many lines the legend wraps to. */}
-            {!error && !loading && legend && (
+                then excludes the caption, so the plot can never sit on it however
+                many lines the caption wraps to. */}
+            {!error && !loading && lens === 'Measures' && matrix.rows.length > 0 && (
+              <MatrixLegend n={matrix.rows.length} push={pushCount}
+                xMid={matrix.xMid} yMid={matrix.yMid} />
+            )}
+            {!error && !loading && lens !== 'Measures' && legend && (
               <FieldLegend shown={packed.length} total={fieldTotal} lens={lens} {...legend} />
             )}
           </div>
@@ -716,7 +1245,7 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
             <div className="ov2-panel-anim" key={selected ? selected.measure_id : `default-${lens}`}>
               {selected ? (
                 <SelectedPanel measure={selected} crsps={data?.crsps || []} token={token}
-                  peers={statusMeasures} selectedMonth={selectedMonth}
+                  peers={selectedPeers} selectedMonth={selectedMonth}
                   pos={selIdx >= 0 ? selIdx + 1 : null} total={panelIds.length}
                   onStep={stepMeasure}
                   onClear={() => setSelectedId(null)}
@@ -728,6 +1257,7 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
             </div>
           </aside>
         </div>
+        )}
       </div>
 
       {/* Assign flow, portaled so its fixed scrim escapes the board's stacking
@@ -956,7 +1486,7 @@ export const ProviderIntel = ({ intel, compact = false, onAssign }) => {
 
       {!compact && top && (
         <Stage label="Where to focus"
-          summary={`Work ${shortId(top.measure.measure_id)} first — ${top.open.toLocaleString()} members open · ${top.gap} pts under goal.`}
+          summary={`Work ${shortId(top.measure.measure_id)} first — ${top.open.toLocaleString()} members open · ${pts(top.gap)} under goal.`}
           tag={`Score ${top.score}`}>
           <div className="ov2-prio">
             <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, top.score)}%` }} /></span>
@@ -1121,7 +1651,7 @@ const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, pos, total
       <div className="ov2-measure-rate">
         <span className="num">{rate}%</span>
         <span className={`ov2-gap ov2-gap-${gap >= 0 ? 'pos' : 'neg'} num`}>
-          {gap === 0 ? 'at goal' : `${gap > 0 ? '↗' : '↘'} ${Math.abs(gap)} pts ${gap > 0 ? 'above' : 'below'} goal`}
+          {gap === 0 ? 'at goal' : `${gap > 0 ? '↗' : '↘'} ${pts(Math.abs(gap))} ${gap > 0 ? 'above' : 'below'} goal`}
         </span>
       </div>
 

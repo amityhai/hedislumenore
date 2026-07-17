@@ -137,13 +137,6 @@ const ProviderDirectory = ({ token, selectedMonth, onSidebar }) => {
         </label>
       </header>
 
-      {data?.sample && !loading && (
-        <div className="pdir-notice" role="status">
-          <span>Live data unavailable — showing sample data.</span>
-          <button type="button" className="pdir-notice-retry" onClick={refetch}>↻ Retry</button>
-        </div>
-      )}
-
       <div className="pdir-card-wrap">
         {error ? (
           <ErrorState message="Couldn't load providers." onRetry={refetch} />

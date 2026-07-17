@@ -29,33 +29,6 @@
   margin-top: 7px;
 }
 
-/* ── Fallback notice ─────────────────────────────────────────── */
-.dash-notice {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  margin-bottom: 20px;
-  background: var(--c-warn-bg);
-  border: 1px solid #FDE68A;
-  border-radius: var(--r-md);
-  font-size: 13px;
-  color: var(--c-warn-text);
-}
-
-.dash-notice-retry {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  color: var(--c-warn-text);
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--r-sm);
-}
-.dash-notice-retry:hover { background: rgba(180, 83, 9, 0.1); }
-
 /* ── KPI tabs ────────────────────────────────────────────────── */
 .kpi2-grid {
   display: grid;

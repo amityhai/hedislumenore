@@ -10,21 +10,6 @@
 .cac-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 2px; }
 .cac-sub { font-size: 14px; color: var(--c-text-3); margin-top: 4px; }
 
-/* Sample-data notice — same look as the v2 Overview's. */
-.cac-notice {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; margin-bottom: 16px;
-  background: var(--c-warn-bg); color: var(--c-warn-text);
-  border: 1px solid var(--c-warn-border); border-radius: var(--r-md);
-  font-size: 13px; font-weight: 500;
-}
-.cac-notice-retry {
-  margin-left: auto; background: transparent; border: 1px solid currentColor; color: inherit;
-  border-radius: var(--r-full); padding: 3px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: background 0.14s ease;
-}
-.cac-notice-retry:hover { background: rgba(154, 106, 22, 0.1); }
-
 /* ── KPIs ────────────────────────────────────────────────────── */
 .cac-kpis {
   display: grid;

@@ -30,18 +30,6 @@
 }
 .pdir-search input::placeholder { color: var(--c-text-4); }
 
-/* Sample-data notice — same amber announce the rest of v2 uses */
-.pdir-notice {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--c-warn-bg); border: 1px solid var(--c-warn-border);
-  border-radius: var(--r-md); padding: 10px 14px; font-size: 12.5px; color: var(--c-warn-text);
-}
-.pdir-notice-retry {
-  border: none; background: transparent; color: var(--c-warn-text);
-  font-family: var(--font); font-size: 12.5px; font-weight: 600; cursor: pointer;
-}
-.pdir-notice-retry:hover { text-decoration: underline; }
-
 /* The card holder is a plain region, not a second card — the provider cards are
    the surfaces here, and nesting them in another one boxes a box. */
 .pdir-card-wrap { display: flex; flex-direction: column; }

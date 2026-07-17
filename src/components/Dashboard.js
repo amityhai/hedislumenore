@@ -41,7 +41,6 @@ const Dashboard = ({ onNavigate, token, selectedMonth, onMonthChange, availableM
   const [equityAlerts, setEquityAlerts] = useState([]);
   const [currentMatrixPage, setCurrentMatrixPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [usingFallback, setUsingFallback] = useState(false);
   const [statusFilter, setStatusFilter] = useState('Below Goal');
   const matrixRef = useRef(null);
 
@@ -63,7 +62,6 @@ const Dashboard = ({ onNavigate, token, selectedMonth, onMonthChange, availableM
       setLowestPerformingMeasures(lowest);
       setCRSPNeedingAttention(crsp);
       setEquityAlerts(equity);
-      setUsingFallback(false);
     } catch (err) {
       // Keep the page demonstrable, but be honest that it isn't live data.
       setKpis([
@@ -82,7 +80,6 @@ const Dashboard = ({ onNavigate, token, selectedMonth, onMonthChange, availableM
       setLowestPerformingMeasures(sampleLowest());
       setCRSPNeedingAttention(sampleCrsps());
       setEquityAlerts(sampleEquityAlerts());
-      setUsingFallback(true);
     } finally {
       setLoading(false);
     }
@@ -136,13 +133,6 @@ const Dashboard = ({ onNavigate, token, selectedMonth, onMonthChange, availableM
         </div>
         <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
       </header>
-
-      {usingFallback && !loading && (
-        <div className="dash-notice" role="status">
-          <span>Live data unavailable — showing sample data.</span>
-          <button type="button" className="dash-notice-retry" onClick={fetchDashboardData}>↻ Retry</button>
-        </div>
-      )}
 
       {/* KPI tabs */}
       <div className="kpi2-grid" role="tablist" aria-label="Filter measures by status">

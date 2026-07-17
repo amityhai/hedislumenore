@@ -16,8 +16,6 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
   // button returns to the LAST page (not just a breadcrumb ancestor). Breadcrumb
   // jumps push onto it too, so Back consistently undoes the previous move.
   const [history, setHistory] = useState([]);
-  // Status filter drives the Overview bubble field only (bubbles need one lens).
-  const [statusFilter, setStatusFilter] = useState('Below Goal');
   // Category ("sub-category") filter — chosen on the Overview, carried into the
   // Explorer. null = All categories, so nothing is hidden by default.
   const [category, setCategory] = useState(null);
@@ -125,8 +123,6 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           selectedMonth={selectedMonth}
           onMonthChange={onMonthChange}
           availableMonths={availableMonths}
-          statusFilter={statusFilter}
-          onStatusFilter={setStatusFilter}
           category={category}
           onCategory={setCategory}
           onInvestigate={goExplore}

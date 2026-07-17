@@ -60,7 +60,6 @@ const CareActionCenter = ({ token }) => {
 
   const [kpiData, setKpiData] = useState({ nonCompliant: 0, unassigned: 0, actionable: 0 });
   const [loadingKpi, setLoadingKpi] = useState(true);
-  const [kpiSample, setKpiSample] = useState(false); // live counts unavailable → demo numbers
 
   // ── Derived: client-side filtering ──────────────────────────
   const isUnassigned = (row) => !row[4] || row[4] === 'Unassigned';
@@ -129,11 +128,9 @@ const CareActionCenter = ({ token }) => {
           fetchCACActionableCount(token),
         ]);
         setKpiData({ nonCompliant: nonCompliant || 0, unassigned: unassigned || 0, actionable: actionable || 0 });
-        setKpiSample(false);
       } catch {
         // Keep the page demonstrable, but say the numbers aren't live.
         setKpiData({ nonCompliant: 21292, unassigned: 2392, actionable: 5842 });
-        setKpiSample(true);
       } finally { setLoadingKpi(false); }
     })();
     // gridReloadKey lets the sample-data notice's Retry refresh the KPIs too.
@@ -234,13 +231,6 @@ const CareActionCenter = ({ token }) => {
         <h1 className="cac-title">Care Action Center</h1>
         <p className="cac-sub">Prioritize open care gaps and assign them to your team.</p>
       </header>
-
-      {(kpiSample || gridSample) && !loadingKpi && !loadingGrid && (
-        <div className="cac-notice" role="status">
-          <span>Live data unavailable — showing sample data.</span>
-          <button type="button" className="cac-notice-retry" onClick={() => setGridReloadKey((k) => k + 1)}>↻ Retry</button>
-        </div>
-      )}
 
       {/* KPIs — "Unassigned" doubles as a filter on the list below */}
       <div className="cac-kpis">
