@@ -14,7 +14,7 @@ import {
 } from '../../services/workflowService';
 import {
   num, shortId, statusFor, STATUS_TONE, categoryOf, categoriesOf,
-  SAMPLE_MEASURES, sampleProviders, sampleEquity,
+  SAMPLE_MEASURES, sampleProviders, sampleEquity, withCustomGoals,
 } from './v2utils';
 import { MeasureIntel } from './OverviewExplore';
 import CategoryTabs from './CategoryTabs';
@@ -141,8 +141,8 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
     try {
       const grid = await fetchAllMeasuresGrid(token);
       if (!grid || grid.length === 0) throw new Error('empty');
-      return { rows: grid, sample: false };
-    } catch (e) { return { rows: SAMPLE_MEASURES, sample: true }; }
+      return { rows: withCustomGoals(grid), sample: false };
+    } catch (e) { return { rows: withCustomGoals(SAMPLE_MEASURES), sample: true }; }
   }, [token, selectedMonth], { enabled: !!token });
 
   const measures = measuresAsync.data?.rows || [];

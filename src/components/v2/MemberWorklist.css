@@ -61,7 +61,15 @@
   display: flex; flex-direction: column; gap: 14px;
 }
 .mwl-segment.is-filtering { border-color: var(--c-primary-subtle); box-shadow: 0 0 0 1px var(--c-primary-subtle), var(--sh-xs); }
+/* Collapsed by default: only the header row shows until opened. */
+.mwl-segment:not(.is-open) { padding-bottom: 16px; }
 .mwl-segment-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.mwl-segment-toggle {
+  display: inline-flex; align-items: center; gap: 8px; padding: 0; margin: 0;
+  background: none; border: none; cursor: pointer; font-family: var(--font);
+}
+.mwl-segment-chev { font-size: 13px; line-height: 1; color: var(--c-text-3); transition: transform 0.18s ease; }
+.mwl-segment-chev.is-open { transform: rotate(180deg); }
 .mwl-segment-title { font-size: 14px; font-weight: 700; color: var(--c-text); }
 .mwl-segment-sub { font-size: 12px; color: var(--c-text-3); }
 .mwl-segment-sub strong { color: var(--c-primary-dark); font-weight: 700; }
@@ -149,7 +157,23 @@
 .mwl-row-data:last-child { border-bottom: none; }
 .mwl-row-data:hover { background: var(--c-bg-subtle); }
 .mwl-row-data.is-gap { box-shadow: inset 3px 0 0 var(--c-error); }
+.mwl-row-data.is-picked { background: var(--c-assign-light); }
+.mwl-row-data.is-picked:hover { background: var(--c-assign-light); }
 .ta-r { text-align: right; justify-self: end; }
+
+/* Select column lives inside the first (Member ID) cell so the row grid and its
+   responsive column-hiding stay untouched. */
+.mwl-idcell { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+.mwl-check { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; accent-color: var(--c-assign); }
+
+/* Bulk-selection bar (scenario 3) */
+.mwl-bulkbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 10px; padding: 9px 14px; border-radius: var(--r-md);
+  background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
+}
+.mwl-bulk-count { font-size: 13px; color: var(--c-text); }
+.mwl-bulk-actions { display: inline-flex; align-items: center; gap: 8px; }
 
 .mwl-id { font-size: 12.5px; color: var(--c-primary-dark); font-weight: 500; }
 .mwl-name { font-size: 13px; font-weight: 600; color: var(--c-text); }
@@ -192,6 +216,13 @@
   padding: 10px 12px; background: var(--c-bg-subtle); border-radius: var(--r-md); margin-bottom: 16px;
 }
 .mwl-modal-prov { font-size: 12px; color: var(--c-text-3); }
+
+/* Multi-member preview inside the assign modal */
+.mwl-modal-set { padding: 10px 12px; background: var(--c-bg-subtle); border-radius: var(--r-md); margin-bottom: 16px; }
+.mwl-modal-set-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--c-text); margin-bottom: 8px; }
+.mwl-modal-set-list { display: flex; flex-direction: column; gap: 4px; max-height: 148px; overflow-y: auto; }
+.mwl-modal-set-list li { font-size: 12px; color: var(--c-text-2); }
+.mwl-modal-set-more { color: var(--c-text-4); }
 
 .mwl-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .mwl-field > span { font-size: 12.5px; font-weight: 600; color: var(--c-text-2); }

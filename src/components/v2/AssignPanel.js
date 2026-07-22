@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import './AssignPanel.css';
-import { num, statusFor, STAFF, INTERVENTIONS } from './v2utils';
+import { num, statusFor, STAFF, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure } from './v2utils';
 
 export const UNASSIGNED = 'Unassigned pool';
 
@@ -68,16 +68,6 @@ const equityOutliers = (equity, baseRate) => {
   return { rows: out.sort((a, b) => a.delta - b.delta), hidden, unrecorded };
 };
 
-// There is no assignments API yet (workflowService.saveCareAction is a stub), so
-// the already-assigned figure is derived from the scope key instead of fetched.
-// It stays stable for a given scope so the preview doesn't flicker.
-const estimateAssigned = (key, pool) => {
-  if (!pool) return 0;
-  let h = 0;
-  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return Math.min(pool, Math.round(pool * (0.04 + (h % 70) / 1000)));
-};
-
 const defaultDue = () => {
   const d = new Date();
   d.setDate(d.getDate() + 30);
@@ -87,7 +77,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const sameRow = (a, b) => a.dim === b.dim && a.group === b.group;
 
-const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], ethnicity: [] }, scope, assignedCount = null, onClose, onAssign }) => {
+const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], ethnicity: [] }, scope, onClose, onAssign }) => {
   // Providers and strata narrow the scope independently and compose: picking a
   // stratum shouldn't wipe a provider selection, or vice versa.
   const [provPick, setProvPick] = useState(null); // null | provider rows
@@ -175,13 +165,31 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     return { members, providers: providerCount, approx: why.length > 0, why: why.join('; ') };
   }, [strataReach, provPick, atMeasure, providerRows, baseNonCompliant, measureNonCompliant]);
 
-  const scopeKey = [
-    measure?.measure_id, scope.level, scope.provider?.crsp || '', provPick?.length || 0,
-    strata.map((r) => `${r.dim}:${r.group}`).sort().join(','),
-  ].join('|');
-  const estimated = assignedCount == null;
-  const skipped = estimated ? estimateAssigned(scopeKey, inScope.members) : Math.min(inScope.members, assignedCount);
+  // The target this assign describes: a predicate (a stratum band, or the whole
+  // eligible population) that keeps matching members as they enter the pool. An
+  // explicit hand-picked member set comes from the worklist, not this panel.
+  const target = useMemo(
+    () => (strata.length
+      ? { kind: 'stratum', strata: strata.map((r) => ({ type: r.dim, group: r.group })) }
+      : { kind: 'population' }),
+    [strata]
+  );
+  const crspForScope = atMeasure ? (provPick && provPick.length === 1 ? provPick[0].crsp : null) : scope.provider?.crsp || null;
+  const currentScopeKey = assignmentScopeKey({ measureId: measure?.measure_id, crsp: crspForScope, target });
+
+  // Real dedup, replacing the old hashed guess: members already covered by an
+  // active play on the SAME scope are skipped, and only the delta becomes new
+  // tasks. Reopening a scope that was already assigned is exactly scenario 2 —
+  // the prior coverage is skipped and any growth in the pool shows as newly
+  // eligible. Read once at open; the panel closes on submit.
+  const priorForScope = useMemo(
+    () => activeAssignmentsForMeasure(measure?.measure_id).filter((a) => a.scopeKey === currentScopeKey),
+    [measure?.measure_id, currentScopeKey]
+  );
+  const priorCovered = priorForScope.reduce((s, a) => s + (a.coverEstimate || 0), 0);
+  const skipped = Math.min(inScope.members, priorCovered);
   const created = Math.max(0, inScope.members - skipped);
+  const hasPrior = priorForScope.length > 0;
 
   // "If every gap closes" is a useless projection — it's always 100%. What the
   // assigner needs is the inverse: how much of this scope has to convert to hit
@@ -212,18 +220,34 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   const toggleStratum = (r) => setStrata((cur) =>
     cur.some((x) => sameRow(x, r)) ? cur.filter((x) => !sameRow(x, r)) : [...cur, r]);
 
-  const submit = () => onAssign({
-    scope: {
+  const submit = () => {
+    // Persist the assignment locally so it survives reload — the tracking board
+    // and the "action taken" chips read from the same store. `coverEstimate` is
+    // the tasks this play newly creates, so reopening the scope later skips it.
+    const record = addAssignment({
       measureId: measure?.measure_id,
+      measureName: measure?.display_name,
       level: scope.level,
-      crsp: atMeasure ? null : scope.provider.crsp,
+      crsp: crspForScope,
       providers: provPick ? provPick.map((r) => r.crsp) : null,
-      strata: strata.length ? strata.map((r) => ({ type: r.dim, group: r.group })) : null,
-      nonCompliantOnly: true,
-    },
-    intervention, assignedTo: staff, due, why,
-    preview: { members: inScope.members, created, skipped },
-  });
+      target,
+      intervention, assignedTo: staff, due, why,
+      coverEstimate: created,
+    });
+    onAssign({
+      scope: {
+        measureId: measure?.measure_id,
+        level: scope.level,
+        crsp: crspForScope,
+        providers: record.providers,
+        strata: target.strata || null,
+        nonCompliantOnly: true,
+      },
+      intervention, assignedTo: staff, due, why,
+      preview: { members: inScope.members, created, skipped },
+      assignmentId: record.id,
+    });
+  };
 
   return (
     <div className="apx-scrim" onClick={onClose}>
@@ -288,11 +312,14 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
             {hasCounts ? (
               <ul className="apx-stack">
                 <li><span className="num">{inScope.members.toLocaleString()}</span> non-compliant in scope{inScope.approx && <em> (estimated — {inScope.why})</em>}</li>
-                <li className="is-muted">
-                  <span className="num">{skipped.toLocaleString()}</span> already assigned — will be skipped
-                  {estimated && <em> (estimated — no assignment records yet)</em>}
+                {hasPrior && (
+                  <li className="is-muted">
+                    <span className="num">{skipped.toLocaleString()}</span> already covered by an active play — will be skipped
+                  </li>
+                )}
+                <li className="is-strong">
+                  → <span className="num">{created.toLocaleString()}</span> {hasPrior ? 'newly-eligible tasks' : 'new tasks'}
                 </li>
-                <li className="is-strong">→ <span className="num">{created.toLocaleString()}</span> new tasks</li>
               </ul>
             ) : (
               <p className="apx-line is-muted">Member counts aren't available for this provider.</p>

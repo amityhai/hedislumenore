@@ -486,6 +486,154 @@ export const recordApplied = (measureId, action) => {
   return { count: entries.length, last: entries[entries.length - 1] };
 };
 
+// ── Intervention assignments (local mock) ────────────────────
+// There is no assignments API yet (saveCareAction is a stub), so assignments are
+// persisted to localStorage. Each record is self-describing so this can be
+// swapped for a server store without touching the UI. The Intervention Tracking
+// screen and the "action taken" chips both read from here.
+//
+// `target` is EITHER a predicate over the population OR an explicit member set:
+//   { kind: 'population' }                        — every non-compliant member in scope
+//   { kind: 'stratum', strata: [{type, group}] }  — an age/race/ethnicity band (a predicate)
+//   { kind: 'members', memberIds: [], label }     — a hand-picked subset
+// The distinction is what makes the assignment scenarios work: a predicate keeps
+// matching members who enter the population later (so a new arrival shows up as
+// "newly eligible" under an existing play), while an explicit set never grows.
+const ASSIGN_KEY = 'qp_v2_assignments';
+export const ASSIGNMENTS_EVENT = 'qp-assignments-changed';
+export const ASSIGN_STATUSES = ['assigned', 'in_progress', 'action_taken', 'closed'];
+export const ASSIGN_STATUS_LABEL = {
+  assigned: 'Assigned', in_progress: 'In progress', action_taken: 'Action taken', closed: 'Closed',
+};
+
+const readAssignments = () => { try { return JSON.parse(localStorage.getItem(ASSIGN_KEY) || '[]'); } catch { return []; } };
+// Broadcast on write so any mounted chip / tracking view re-reads without prop
+// plumbing across the tree. The `storage` event only fires cross-tab, so this
+// synthetic one covers same-tab changes.
+const writeAssignments = (list) => {
+  try {
+    localStorage.setItem(ASSIGN_KEY, JSON.stringify(list));
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ASSIGNMENTS_EVENT));
+  } catch { /* storage off */ }
+};
+let assignSeq = 0;
+const newAssignId = () => `a_${Date.now().toString(36)}_${(assignSeq += 1)}`;
+
+// A stable identity for a scope so an assign button can find "its" record on a
+// later visit. Strata/ids are sorted so order never changes the key.
+export const assignmentScopeKey = ({ measureId, crsp = null, target = null }) => {
+  const t = target || {};
+  const strata = (t.strata || []).map((x) => `${x.type}:${x.group}`).sort().join('+');
+  const ids = t.memberIds ? `#${[...t.memberIds].sort().join(',')}` : '';
+  return `${measureId}|${crsp || '*'}|${t.kind || 'population'}|${strata}|${ids}`;
+};
+
+// Newest first, so the tracking board and chips read the latest play first.
+export const listAssignments = () => readAssignments().sort((a, b) => b.createdAt - a.createdAt);
+
+export const addAssignment = (rec) => {
+  const list = readAssignments();
+  const full = {
+    id: newAssignId(),
+    status: 'assigned',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    scopeKey: assignmentScopeKey(rec),
+    ...rec,
+  };
+  list.push(full);
+  writeAssignments(list);
+  return full;
+};
+
+export const updateAssignment = (id, patch) => {
+  const list = readAssignments();
+  const i = list.findIndex((a) => a.id === id);
+  if (i < 0) return null;
+  list[i] = { ...list[i], ...patch, updatedAt: Date.now() };
+  writeAssignments(list);
+  return list[i];
+};
+
+export const removeAssignment = (id) => {
+  writeAssignments(readAssignments().filter((a) => a.id !== id));
+};
+
+// Active (not closed) assignments for a measure — the basis for the "action
+// taken" chip and the dedup/newly-eligible read on the assign panel.
+export const activeAssignmentsForMeasure = (measureId) =>
+  listAssignments().filter((a) => a.measureId === measureId && a.status !== 'closed');
+
+// ── Custom goals (local mock) ────────────────────────────────
+// A user-defined goal per measure. When set, it REPLACES the 50th-percentile
+// benchmark as the working target everywhere — `withCustomGoals` rewrites the
+// grid's goal_50th and recomputes kpi_status against it, so every downstream
+// read (status band, tone, gap, bars, KPIs) follows one number. The Goal
+// definition screen edits this store; the benchmark is kept separately there so
+// it can still be shown alongside. Stored as { measureId: goalNumber }.
+const GOALS_KEY = 'qp_v2_goals';
+export const GOALS_EVENT = 'qp-goals-changed';
+export const readGoals = () => { try { return JSON.parse(localStorage.getItem(GOALS_KEY) || '{}'); } catch { return {}; } };
+const writeGoals = (map) => {
+  try {
+    localStorage.setItem(GOALS_KEY, JSON.stringify(map));
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(GOALS_EVENT));
+  } catch { /* storage off */ }
+};
+
+export const getMeasureGoal = (measureId) => {
+  const v = readGoals()[measureId];
+  return typeof v === 'number' ? v : null;
+};
+
+// Passing null (or a non-finite value) clears the custom goal, reverting the
+// measure to its benchmark.
+export const setMeasureGoal = (measureId, value) => {
+  const map = readGoals();
+  const n = Number(value);
+  if (value == null || value === '' || !Number.isFinite(n)) delete map[measureId];
+  else map[measureId] = Math.min(100, Math.max(0, Math.round(n * 10) / 10));
+  writeGoals(map);
+  return map[measureId] ?? null;
+};
+
+export const clearAllGoals = () => writeGoals({});
+export const customGoalCount = () => Object.keys(readGoals()).length;
+
+// Rewrite a measures grid so custom goals win. Recomputes kpi_status against the
+// effective goal (the band has to move with the target) and flags the row so the
+// UI can mark measures judged against a custom goal rather than the benchmark.
+// Preserves the untouched benchmark on `_benchmarkGoal` for any surface that
+// wants to show both. A no-op (same array) when no goals are set.
+export const withCustomGoals = (grid) => {
+  const goals = readGoals();
+  if (!grid || !grid.length || !Object.keys(goals).length) return grid;
+  return grid.map((m) => {
+    const g = goals[m.measure_id];
+    if (typeof g !== 'number') return m;
+    return {
+      ...m,
+      _benchmarkGoal: num(m.goal_50th),
+      goal_50th: g,
+      kpi_status: statusFor(num(m.rate), g),
+      _customGoal: true,
+    };
+  });
+};
+
+// Best-available "previous year" rate. There is no real prior-year feed (only a
+// month-over-month trend), so this derives a stable, plausible MY-2025 value per
+// measure — a small deterministic offset from the current rate. Every surface
+// that shows it labels it as indicative. Swap for a real endpoint when one lands.
+export const priorYearRate = (measureId, currentRate) => {
+  const base = num(currentRate);
+  const key = String(measureId || '');
+  let h = 0;
+  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  const delta = (h % 13) - 6; // −6..+6 pts, stable per measure
+  return Math.min(100, Math.max(0, Math.round((base - delta) * 10) / 10));
+};
+
 // A short monthly trend ending at the measure's current rate — used as a
 // fallback so the detail panel always shows a trend line (mirrors the classic
 // Measure Detail header) when live mini-chart data isn't available.

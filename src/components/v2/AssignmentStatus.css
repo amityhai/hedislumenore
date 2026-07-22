@@ -1,0 +1,23 @@
+/* Assignment status — the assign button, or the "action taken" chip that
+   replaces it once a measure carries an active play. */
+.asx { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; }
+.asx-assign { display: inline-flex; align-items: center; gap: 6px; }
+
+.asx-taken { justify-content: space-between; }
+.asx-chip {
+  display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+  padding: 7px 12px; border-radius: var(--r-md);
+  background: var(--c-info-bg); border: 1px solid var(--c-info-border);
+}
+.asx-chip.is-done { background: var(--c-success-bg); border-color: var(--c-success-border); }
+.asx-chip-mark { color: var(--c-info-text); font-size: 12px; line-height: 1; }
+.asx-chip.is-done .asx-chip-mark { color: var(--c-success-text); }
+.asx-chip-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.asx-chip-lead { font-size: 12.5px; font-weight: 600; color: var(--c-text); line-height: 1.25; }
+.asx-chip-meta { font-size: 11px; color: var(--c-text-3); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asx-manage { flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .asx-taken { flex-direction: column; align-items: stretch; }
+  .asx-chip-meta { white-space: normal; }
+}

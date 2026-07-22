@@ -44,7 +44,10 @@
   /* Status — Below goal (red) */
   --c-error:          #d9544d;
   --c-error-bg:       #fbeae8;
-  --c-error-text:     #c4453d;
+  /* Text token darkened from #c4453d: on the pink --c-error-bg the old red only
+     reached ~3.9:1 (under WCAG AA) and read lighter than the At/Above text. This
+     matches their visual weight and clears AA on both the tint and white. */
+  --c-error-text:     #b23a30;
   --c-error-border:   #f0c4c0;
 
   /* Caution / attention (amber) */

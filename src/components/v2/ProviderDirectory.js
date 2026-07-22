@@ -8,7 +8,7 @@ import {
   fetchCRSPLevelData,
 } from '../../services/workflowService';
 import {
-  num, acronym, SAMPLE_MEASURES, sampleProviderNames, providerProfile, providerSummary,
+  num, acronym, SAMPLE_MEASURES, sampleProviderNames, providerProfile, providerSummary, withCustomGoals,
 } from './v2utils';
 
 const PAGE_SIZE = 12;
@@ -54,6 +54,7 @@ const ProviderDirectory = ({ token, selectedMonth, onSidebar }) => {
       grid = SAMPLE_MEASURES;
       gridSample = true;
     }
+    grid = withCustomGoals(grid);
     const { names, sample: rosterSample } = await rosterFor(grid, token);
     // Every provider's standing across the whole measure set, derived the same
     // way the Provider Analysis page derives it — so a row here and the page it

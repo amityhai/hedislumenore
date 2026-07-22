@@ -224,12 +224,12 @@
 
 /* Goal-status row tints — every provider + stratum is shown, so standing is
    carried by the row background instead of a filter. */
-.mex-prow-below { background: var(--c-error-bg); border-color: var(--c-error-border); }
-.mex-prow-at    { background: var(--c-info-bg);  border-color: var(--c-info-border); }
-.mex-prow-above { background: var(--c-success-bg); border-color: var(--c-success-border); }
-.mex-eq-row-below { background: var(--c-error-bg); border-color: var(--c-error-border); }
-.mex-eq-row-at    { background: var(--c-info-bg);  border-color: var(--c-info-border); }
-.mex-eq-row-above { background: var(--c-success-bg); border-color: var(--c-success-border); }
+.mex-prow-below { background: var(--c-surface); border-color: var(--c-error-bg); }
+.mex-prow-at    { background: var(--c-surface); border-color: var(--c-info-bg); }
+.mex-prow-above { background: var(--c-surface); border-color: var(--c-success-bg); }
+.mex-eq-row-below { background: var(--c-surface); border-color: var(--c-error-bg); }
+.mex-eq-row-at    { background: var(--c-surface); border-color: var(--c-info-bg); }
+.mex-eq-row-above { background: var(--c-surface); border-color: var(--c-success-bg); }
 
 /* Provider row action cluster — Assign · open worklist (primary) · Analyze */
 .mex-prow-open { flex-shrink: 0; }
@@ -239,6 +239,11 @@
 .mex-rate-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }
 .mex-rate-at    { background: var(--c-info-bg);  color: var(--c-info-text);  border-color: var(--c-info-border); }
 .mex-rate-above { background: var(--c-success-bg); color: var(--c-success-text); border-color: var(--c-success-border); }
+
+/* The active measure card's assign action runs the full card width — it's the one
+   next move at the foot of the drill, not a chip tucked beside the read. */
+.mex-card-detail .ov2-intel-assign:not(.asx-taken) { display: block; }
+.mex-card-detail .ov2-intel-assign .asx-assign { width: 100%; justify-content: center; }
 
 .mex-sample { margin-top: 12px; font-size: 12px; color: var(--c-text-3); text-align: center; }
 
