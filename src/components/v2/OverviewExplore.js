@@ -70,27 +70,12 @@ const SIZE_BY_TEXT = {
   dist: 'points from goal (member counts unavailable)',
   lag: 'how far below target',
 };
-// On Measures the two channels are independent (volume vs severity). CRSP/equity
-// rows carry neither goals nor denominators, so both channels ride the same
-// variable — say so once rather than printing it twice.
-// Deliberately says "relative to". Two measures can both be 14 points short and
-// carry different shades — 14 off a 52% target is a bigger miss than 14 off a
-// 55% one — and the legend has to make that legible rather than look like a bug.
-const SHADE_BY_TEXT = { measures: 'gap relative to each goal' };
-
 // Saturation anchor: a rate 30% away from its goal (in relative terms) paints
-// the deepest shade. Absolute, not per-tab — so a deep bubble means the same
-// thing on every tab and in every month.
+// the deepest shade — still drives `--i` on the goal-less Providers/Equity
+// bubbles. Absolute, not per-tab, so a deep bubble means the same thing
+// everywhere.
 const SEVERITY_SPAN = 0.3;
 const severityFor = (rate, goal) => (goal > 0 ? Math.min(1, Math.abs(rate / goal - 1) / SEVERITY_SPAN) : 0.5);
-
-// Ends of the shade ramp, per status. "At Goal" is a ±2pt band by definition, so
-// its ramp is flat — say that rather than implying a gradient that isn't there.
-const SHADE_ENDS = {
-  below: ['at goal', 'furthest below'],
-  above: ['at goal', 'furthest above'],
-  at: null,
-};
 
 const fmtCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(n)));
 
@@ -101,9 +86,19 @@ const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens }) => {
   const range = Number.isFinite(min) && Number.isFinite(max) && min !== max
     ? (sizeBy === 'gap' ? `${fmtCount(min)}–${fmtCount(max)} members` : `${Math.round(min)}–${Math.round(max)} pts`)
     : null;
-  const ends = SHADE_ENDS[tone];
   const dots = <span className={`ov2-legend-dots ov2-legend-dots-${tone}`} aria-hidden="true"><i /><i /><i /></span>;
   const ramp = <span className={`ov2-legend-ramp ov2-legend-ramp-${tone}`} aria-hidden="true" />;
+  // Ring swatch — a ~68%-filled arc, mirroring a below-goal bubble. Encodes the
+  // same thing the bubbles now do: the arc fills toward goal, the empty span is
+  // the gap left to close.
+  const RC = 2 * Math.PI * 6.5;
+  const ringSwatch = (
+    <svg className={`ov2-legend-ring ov2-legend-ring-${tone}`} width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <circle className="ov2-legend-ring-track" cx="9" cy="9" r="6.5" fill="none" strokeWidth="2.6" />
+      <circle className="ov2-legend-ring-arc" cx="9" cy="9" r="6.5" fill="none" strokeWidth="2.6" strokeLinecap="round"
+        strokeDasharray={`${0.68 * RC} ${RC}`} transform="rotate(-90 9 9)" />
+    </svg>
+  );
 
   if (lens !== 'Measures') {
     return (
@@ -121,12 +116,10 @@ const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens }) => {
         <span>size = {SIZE_BY_TEXT[sizeBy] || 'urgency'}{range && <em className="ov2-legend-range num"> · {range}</em>}</span>
       </span>
       <span className="ov2-legend-item">
-        {ramp}
+        {ringSwatch}
         <span>
-          shade = {SHADE_BY_TEXT.measures}
-          {ends
-            ? <em className="ov2-legend-range"> · {ends[0]} → {ends[1]}</em>
-            : <em className="ov2-legend-range"> · all within 2 pts of goal</em>}
+          ring = progress to goal
+          <em className="ov2-legend-range"> · full ring → at goal</em>
         </span>
       </span>
     </div>
@@ -678,6 +671,15 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                     {packed.map((b, i) => {
                       const isSel = b.measureId && b.measureId === selectedId;
                       const d = 2 * b.radius;
+                      // Light fill + progress-arc ring. The arc fills from the top
+                      // to (rate / goal); the empty span is the gap left to close.
+                      // att is that fraction, capped 0..1. Bubbles without a goal
+                      // (Providers/Equity lens) keep the flat tone.
+                      const proto = b.goal > 0;
+                      const sw = Math.max(3, d * 0.055);          // ring thickness (constant)
+                      const rr = b.radius - sw / 2 - 1;           // inset so the stroke sits inside the disc
+                      const circ = 2 * Math.PI * rr;
+                      const frac = Math.max(0, Math.min(1, b.att != null ? b.att : b.rate / b.goal));
                       // Legibility tiers: the id always fits, the rate needs a
                       // second line, the goal a third, the gap a fourth.
                       const compact = d < 64;
@@ -689,12 +691,20 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                       const showGoal = d >= 104 && b.goal > 0;
                       return (
                         <button key={b.key}
-                          className={`ov2-bubble ov2-bubble-${b.tone} ${compact ? 'is-compact' : ''} ${small ? 'is-sm' : ''} ${isSel ? 'is-selected' : ''} ${selectedId && !isSel ? 'is-dim' : ''} ${b.measureId ? '' : 'is-static'}`}
+                          className={`ov2-bubble ov2-bubble-${b.tone} ${proto ? 'is-proto' : ''} ${compact ? 'is-compact' : ''} ${small ? 'is-sm' : ''} ${isSel ? 'is-selected' : ''} ${selectedId && !isSel ? 'is-dim' : ''} ${b.measureId ? '' : 'is-static'}`}
                           style={{ left: b.x - b.radius, top: b.y - b.radius, width: d, height: d, '--i': b.intensity, animationDelay: `${Math.min(i * 35, 600)}ms` }}
                           onClick={(e) => { e.stopPropagation(); if (b.measureId) setSelectedId(b.measureId); }}
                           title={b.goal > 0
                             ? `${b.title} · ${b.rate}% vs ${b.goal}% goal · ${Math.round(b.att * 100)}% of target · ${fmtCount(b.value)} members with an open gap`
                             : `${b.title} · ${b.rate}%`}>
+                          {proto && (
+                            <svg className="ov2-bubble-ring" width={d} height={d} viewBox={`0 0 ${d} ${d}`} aria-hidden="true">
+                              <circle className="ov2-ring-track" cx={b.radius} cy={b.radius} r={rr} fill="none" strokeWidth={sw} />
+                              <circle className="ov2-ring-arc" cx={b.radius} cy={b.radius} r={rr} fill="none" strokeWidth={sw}
+                                strokeLinecap="round" strokeDasharray={`${frac * circ} ${circ}`}
+                                transform={`rotate(-90 ${b.radius} ${b.radius})`} />
+                            </svg>
+                          )}
                           <span className="ov2-bubble-id">{b.label}</span>
                           {!compact && <span className="ov2-bubble-rate num">{b.rate}%</span>}
                           {showOpen && (

@@ -210,9 +210,15 @@
   border-radius: var(--r-full); border: 1px solid var(--c-border-light);
   background: linear-gradient(90deg, var(--tone-base), var(--tone-deep));
 }
-.ov2-legend-dots-below, .ov2-legend-ramp-below { --tone-base: var(--c-error);   --tone-deep: #8f2a23; }
-.ov2-legend-dots-at,    .ov2-legend-ramp-at    { --tone-base: var(--c-info);    --tone-deep: #24488a; }
-.ov2-legend-dots-above, .ov2-legend-ramp-above { --tone-base: var(--c-success); --tone-deep: #0f6344; }
+.ov2-legend-dots-below, .ov2-legend-ramp-below, .ov2-legend-ring-below { --tone-base: var(--c-error);   --tone-deep: #8f2a23; }
+.ov2-legend-dots-at,    .ov2-legend-ramp-at,    .ov2-legend-ring-at    { --tone-base: var(--c-info);    --tone-deep: #24488a; }
+.ov2-legend-dots-above, .ov2-legend-ramp-above, .ov2-legend-ring-above { --tone-base: var(--c-success); --tone-deep: #0f6344; }
+
+/* Progress-ring swatch — mirrors the bubbles: pale track, arc lightened the same
+   way (40% deep tone over base). */
+.ov2-legend-ring { flex-shrink: 0; }
+.ov2-legend-ring-track { stroke: color-mix(in srgb, var(--tone-base) 24%, #fff); }
+.ov2-legend-ring-arc { stroke: color-mix(in srgb, var(--tone-deep) 40%, var(--tone-base)); }
 /* Kept flat, not a gradient: the at-goal band is 3pts wide, so there is no ramp
    to draw. Only reachable if a future lens tones its legend `at`. */
 .ov2-legend-ramp-at { background: var(--c-info); }
@@ -375,6 +381,30 @@
 /* Labels are always white on the fill. The bubble's own `color` stays the status
    tone because `is-selected` draws its ring from currentColor. */
 .ov2-bubble > span { color: #fff; }
+
+/* ── PROTOTYPE B — light fill + progress-arc ring ──────────────────────────
+   Flips the visual weight: the disc interior goes to a pale tint, the "how far
+   from goal" signal moves onto a coloured outline that fills like a progress
+   ring (top → rate/goal). Two classes, so it overrides the flat tone and the
+   @supports shade above regardless of source order. Size still = open-gap
+   members; the arc's *empty* span is the gap left to close. */
+.ov2-bubble.is-proto {
+  background: color-mix(in srgb, var(--tone-base) 14%, #fff);
+  box-shadow: var(--sh-sm);
+}
+.ov2-bubble.is-proto:hover { box-shadow: var(--sh-md); }
+/* Dark label on the pale fill — more legible and accessible than white-on-red. */
+.ov2-bubble.is-proto > span { color: var(--tone-deep); }
+.ov2-bubble.is-proto .ov2-bubble-rate,
+.ov2-bubble.is-proto .ov2-bubble-open,
+.ov2-bubble.is-proto .ov2-bubble-goal { color: color-mix(in srgb, var(--tone-deep) 78%, transparent); }
+/* The ring sits under the labels (it's first in the DOM, spans paint over it). */
+.ov2-bubble-ring { position: absolute; inset: 0; pointer-events: none; }
+.ov2-ring-track { stroke: color-mix(in srgb, var(--tone-base) 24%, #fff); }
+.ov2-ring-arc {
+  stroke: color-mix(in srgb, var(--tone-deep) 40%, var(--tone-base));
+  transition: stroke-dasharray 0.5s cubic-bezier(.22,1,.36,1);
+}
 
 /* Detail panel — scrolls internally if its content exceeds the card height.
    The bottom inset lives on the inner column, not the panel, so the sticky CTA
