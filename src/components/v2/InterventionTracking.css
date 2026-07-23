@@ -1,8 +1,8 @@
 /* ── Intervention Tracking page ──────────────────────────────── */
 /* A top-level page owns its own page padding — .content sets none, matching
    .sc2 / .oa / .pdir. */
-.itk { display: flex; flex-direction: column; gap: 18px; min-height: 100vh; padding: 28px 32px 44px; animation: ov2-fade 0.35s ease both; }
-@media (max-width: 768px) { .itk { padding: 64px 16px 32px; } }
+.itk { display: flex; flex-direction: column; gap: 18px; min-height: 100vh; padding: var(--page-pad); animation: ov2-fade 0.35s ease both; }
+@media (max-width: 768px) { .itk { padding: var(--page-pad-mobile); } }
 
 .itk-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap;

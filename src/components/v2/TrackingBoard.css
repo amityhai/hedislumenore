@@ -2,8 +2,8 @@
    Risk stratification donuts + AI-ranked member worklist + profile drawer.
    Styled on the app's Direction A · Clarity tokens. */
 
-.tb { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 100vh; padding: 28px 32px 44px; animation: tb-fade 0.35s ease both; }
-@media (max-width: 768px) { .tb { padding: 64px 16px 32px; } }
+.tb { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 100vh; padding: var(--page-pad); animation: tb-fade 0.35s ease both; }
+@media (max-width: 768px) { .tb { padding: var(--page-pad-mobile); } }
 @keyframes tb-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* Header */

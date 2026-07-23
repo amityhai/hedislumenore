@@ -1,9 +1,9 @@
 /* ── v2 flow shell ───────────────────────────────────────────── */
-.sc2 { padding: 28px 32px 44px; min-height: 100vh; display: flex; flex-direction: column; gap: 18px; }
+.sc2 { padding: var(--page-pad); min-height: 100vh; display: flex; flex-direction: column; gap: 18px; }
 
 /* Phone: trim the gutters, and clear the fixed drawer button (App.css). */
 @media (max-width: 768px) {
-  .sc2 { padding: 64px 16px 32px; gap: 14px; }
+  .sc2 { padding: var(--page-pad-mobile); gap: 14px; }
 }
 
 /* Back + breadcrumb row */

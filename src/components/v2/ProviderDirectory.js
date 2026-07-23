@@ -208,22 +208,6 @@ const ProviderCard = ({ row, index, onOpen }) => {
         <span className="pdir-key"><i className="pdir-dot pdir-dot-at" /><b className="num">{summary.at}</b> at</span>
         <span className="pdir-key"><i className="pdir-dot pdir-dot-above" /><b className="num">{summary.above}</b> above</span>
       </span>
-
-      {/* Two stats, not three: a "Measures" column read 26 on every card (every
-          CRSP reports on every measure), and the key row above already sums to
-          it. A number that never varies is a column of noise. */}
-      <span className="pdir-stats">
-        <span className="pdir-stat">
-          <span className="pdir-stat-k">Avg gap</span>
-          <span className={`pdir-stat-v num ${summary.avgGap < 0 ? 'is-neg' : 'is-pos'}`}>
-            {summary.avgGap >= 0 ? '+' : ''}{summary.avgGap} pts
-          </span>
-        </span>
-        <span className="pdir-stat">
-          <span className="pdir-stat-k">Open gaps</span>
-          <span className="pdir-stat-v num">{summary.open.toLocaleString()}</span>
-        </span>
-      </span>
     </button>
   );
 };

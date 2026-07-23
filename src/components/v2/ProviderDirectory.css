@@ -5,8 +5,8 @@
 /* A top-level page owns its own page padding — .content sets none, and every
    routed page (.sc2, .oa) pays for its own gutters. ProviderAnalysis (.pva) has
    none because it renders INSIDE .sc2; this one is routed, so it needs them. */
-.pdir { display: flex; flex-direction: column; gap: 18px; min-height: 100vh; padding: 28px 32px 44px; animation: ov2-fade 0.35s ease both; }
-@media (max-width: 768px) { .pdir { padding: 64px 16px 32px; } }
+.pdir { display: flex; flex-direction: column; gap: 22px; min-height: 100vh; padding: var(--page-pad); animation: ov2-fade 0.35s ease both; }
+@media (max-width: 768px) { .pdir { padding: var(--page-pad-mobile); } }
 
 /* Header — same block as .pva-head so the two pages sit at the same altitude */
 .pdir-head {
@@ -33,15 +33,18 @@
 /* The card holder is a plain region, not a second card — the provider cards are
    the surfaces here, and nesting them in another one boxes a box. */
 .pdir-card-wrap { display: flex; flex-direction: column; }
-.pdir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
+/* Fixed 3-up on desktop — wider cards read less like a dense table and give the
+   distribution bar room. Falls to 2, then 1, as the viewport narrows. */
+.pdir-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1100px) { .pdir-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ── Provider card ──────────────────────────────────────────
    Reads top-down as one thought: who → how they stand → what it costs.
    The whole card is the button; there is one destination, so a separate
    affordance inside it would just be a second way to do the same thing. */
 .pdir-card {
-  display: flex; flex-direction: column; gap: 12px; text-align: left;
-  padding: 16px 16px 14px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 14px; text-align: left;
+  padding: 22px 24px 20px; cursor: pointer;
   background: var(--c-surface); border: 1px solid var(--c-border);
   border-radius: var(--r-xl); box-shadow: var(--sh-card);
   /* Worst standing rides the top edge — legible before a number is read. */
@@ -88,13 +91,6 @@
 .pdir-dot-at    { background: var(--c-info); }
 .pdir-dot-above { background: var(--c-success); }
 
-.pdir-stats { display: flex; align-items: stretch; gap: 0; padding-top: 12px; border-top: 1px solid var(--c-border-light); }
-.pdir-stat { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-left: 12px; border-left: 1px solid var(--c-border-light); }
-.pdir-stat:first-child { padding-left: 0; border-left: none; }
-.pdir-stat-k { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap; }
-.pdir-stat-v { font-size: 14px; font-weight: 700; color: var(--c-text); white-space: nowrap; }
-.pdir-stat-v.is-neg { color: var(--c-error-text); }
-.pdir-stat-v.is-pos { color: var(--c-success-text); }
 
 /* Pager */
 .pdir-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--c-border); }

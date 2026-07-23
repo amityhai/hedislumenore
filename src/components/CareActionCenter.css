@@ -1,8 +1,6 @@
 /* ── Care Action Center ──────────────────────────────────────── */
 .cac {
-  padding: 28px 36px 48px;
-  max-width: 1280px;
-  margin: 0 auto;
+  padding: var(--page-pad);
 }
 
 /* Header mirrors the v2 Overview: eyebrow → title → one-line subtitle. */
@@ -250,7 +248,7 @@
 }
 @media (max-width: 768px) {
   /* 64px top clears the fixed drawer button (App.css .mobile-menu-btn). */
-  .cac { padding: 64px 16px 40px; }
+  .cac { padding: var(--page-pad-mobile); }
   .cac-table-wrap { overflow-x: auto; }
   .cac-table { min-width: 640px; }
   .modal-meta { grid-template-columns: 1fr; }
