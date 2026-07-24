@@ -564,6 +564,42 @@ export const removeAssignment = (id) => {
 export const activeAssignmentsForMeasure = (measureId) =>
   listAssignments().filter((a) => a.measureId === measureId && a.status !== 'closed');
 
+// Does a member's age fall in a stratum band like "6 - 17" or "65+"?
+const ageInBand = (age, band) => {
+  const n = num(age);
+  if (!band) return false;
+  const plus = /(\d+)\s*\+/.exec(band);
+  if (plus) return n >= num(plus[1]);
+  const range = /(\d+)\s*-\s*(\d+)/.exec(band);
+  if (range) return n >= num(range[1]) && n <= num(range[2]);
+  return false;
+};
+
+// Which active plays already cover this member? This is the per-member resolution
+// of the same coverage the assign panel rolls up into its "will be skipped" count.
+//   • members target  — exact memberId match (a hand-picked or single-row assign)
+//   • population/stratum — a predicate: it covers any open-gap member in the play's
+//     scope (crsp; plus the age band when the stratum is an age band). Race/eth
+//     bands aren't carried on a member row, so those match on scope alone.
+// A compliant member has no open gap, so predicate plays never claim them; an
+// explicit member-set play still shows (someone deliberately queued them).
+// Returns the covering plays, newest first (listAssignments already sorts).
+export const activePlaysForMember = (member, measureId, scopeCrsp = null) => {
+  if (!member || !measureId) return [];
+  const crsp = member.crsp && member.crsp !== '—' ? member.crsp : (scopeCrsp || null);
+  return activeAssignmentsForMeasure(measureId).filter((a) => {
+    const t = a.target || {};
+    if (t.kind === 'members') return (t.memberIds || []).includes(member.memberId);
+    if (member.compliant) return false;
+    if (a.crsp && crsp && a.crsp !== crsp) return false;
+    if (t.kind === 'stratum') {
+      const ageBand = (t.strata || []).find((s) => s.type === 'age');
+      if (ageBand) return ageInBand(member.age, ageBand.group);
+    }
+    return true;
+  });
+};
+
 // ── Custom goals (local mock) ────────────────────────────────
 // A user-defined goal per measure. When set, it REPLACES the 50th-percentile
 // benchmark as the working target everywhere — `withCustomGoals` rewrites the

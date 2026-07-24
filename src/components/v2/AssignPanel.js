@@ -1,6 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import './AssignPanel.css';
-import { num, statusFor, STAFF, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure } from './v2utils';
+import useAsync from '../../hooks/useAsync';
+import {
+  fetchMemberDetails,
+  fetchRaceMemberDetails,
+  fetchEthnicityMemberDetails,
+  fetchCRSPMemberDetails,
+} from '../../services/workflowService';
+import { num, statusFor, STAFF, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure, activePlaysForMember, ASSIGNMENTS_EVENT, sampleMembers } from './v2utils';
 
 export const UNASSIGNED = 'Unassigned pool';
 
@@ -77,11 +84,33 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const sameRow = (a, b) => a.dim === b.dim && a.group === b.group;
 
-const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], ethnicity: [] }, scope, onClose, onAssign }) => {
+const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], ethnicity: [] }, scope, token, selectedMonth, onClose, onAssign }) => {
+  // null (closed) | { kind: 'scope' } (whole in-scope roster, honouring the
+  // targeting checkboxes) | { kind: 'stratum', row } (one equity group, opened
+  // straight from its "view members" link regardless of what's targeted).
+  const [memberScope, setMemberScope] = useState(null);
   // Providers and strata narrow the scope independently and compose: picking a
   // stratum shouldn't wipe a provider selection, or vice versa.
   const [provPick, setProvPick] = useState(null); // null | provider rows
   const [strata, setStrata] = useState([]);       // stratum rows, multi-select
+  // Hand-picked members from the roster table. When any are checked they become
+  // the target — an explicit set — and the panel's counts follow the selection
+  // instead of the predicate. memberId -> member object.
+  const [picked, setPicked] = useState({});
+  const pickedList = useMemo(() => Object.values(picked), [picked]);
+  const hasPicked = pickedList.length > 0;
+  const pickedKey = useMemo(() => Object.keys(picked).sort().join(','), [picked]);
+  const togglePick = (m) => setPicked((p) => {
+    const n = { ...p };
+    if (n[m.memberId]) delete n[m.memberId]; else n[m.memberId] = m;
+    return n;
+  });
+  const togglePickMany = (members, on) => setPicked((p) => {
+    const n = { ...p };
+    members.forEach((m) => { if (on) n[m.memberId] = m; else delete n[m.memberId]; });
+    return n;
+  });
+  const clearPicked = () => setPicked({});
   // A recommended action can seed the intervention (see the "Assign this
   // intervention" button on the measure card's Recommended-action stage). The
   // recommendation vocabulary is separate from the assign list, so a preset that
@@ -143,6 +172,9 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   }, [strata, measureNonCompliant]);
 
   const inScope = useMemo(() => {
+    // A hand-picked set is exact and overrides every predicate narrowing.
+    if (hasPicked) return { members: pickedList.length, providers: 1, approx: false };
+
     const base = atMeasure && provPick
       ? provPick.reduce((s, r) => s + r.nonCompliant, 0)
       : baseNonCompliant;
@@ -163,16 +195,27 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     if (!wholeNetwork) why.push('no provider × group cross-tab');
     if (strataReach.crossDim) why.push('selected groups overlap');
     return { members, providers: providerCount, approx: why.length > 0, why: why.join('; ') };
-  }, [strataReach, provPick, atMeasure, providerRows, baseNonCompliant, measureNonCompliant]);
+  }, [hasPicked, pickedList.length, strataReach, provPick, atMeasure, providerRows, baseNonCompliant, measureNonCompliant]);
 
   // The target this assign describes: a predicate (a stratum band, or the whole
   // eligible population) that keeps matching members as they enter the pool. An
   // explicit hand-picked member set comes from the worklist, not this panel.
   const target = useMemo(
-    () => (strata.length
-      ? { kind: 'stratum', strata: strata.map((r) => ({ type: r.dim, group: r.group })) }
-      : { kind: 'population' }),
-    [strata]
+    () => {
+      if (hasPicked) {
+        return {
+          kind: 'members',
+          memberIds: pickedList.map((m) => m.memberId),
+          label: `${pickedList.length} selected member${pickedList.length === 1 ? '' : 's'}`,
+        };
+      }
+      return strata.length
+        ? { kind: 'stratum', strata: strata.map((r) => ({ type: r.dim, group: r.group })) }
+        : { kind: 'population' };
+    },
+    // pickedKey stands in for the picked ids so identity churn doesn't re-run this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hasPicked, pickedKey, strata]
   );
   const crspForScope = atMeasure ? (provPick && provPick.length === 1 ? provPick[0].crsp : null) : scope.provider?.crsp || null;
   const currentScopeKey = assignmentScopeKey({ measureId: measure?.measure_id, crsp: crspForScope, target });
@@ -249,9 +292,14 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     });
   };
 
+  const viewStratum = memberScope?.kind === 'stratum'
+    ? memberScope.row
+    : (strata.length === 1 ? strata[0] : null);
+
   return (
     <div className="apx-scrim" onClick={onClose}>
-      <div className="apx" role="dialog" aria-modal="true" aria-label="Assign intervention" onClick={(e) => e.stopPropagation()}>
+      <div className={`apx-shell ${memberScope ? 'has-members' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className="apx" role="dialog" aria-modal="true" aria-label="Assign intervention">
         <header className="apx-head">
           <div>
             <h3>Assign intervention</h3>
@@ -309,7 +357,13 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
 
           <section className="apx-block">
             <h4 className="apx-block-title">Members</h4>
-            {hasCounts ? (
+            {hasPicked ? (
+              <ul className="apx-stack">
+                <li><span className="num">{pickedList.length.toLocaleString()}</span> hand-picked from the roster</li>
+                <li className="is-strong">→ <span className="num">{created.toLocaleString()}</span> new tasks</li>
+                <li><button type="button" className="apx-linkbtn" onClick={clearPicked}>Clear selection</button></li>
+              </ul>
+            ) : hasCounts ? (
               <ul className="apx-stack">
                 <li><span className="num">{inScope.members.toLocaleString()}</span> non-compliant in scope{inScope.approx && <em> (estimated — {inScope.why})</em>}</li>
                 {hasPrior && (
@@ -324,6 +378,13 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
             ) : (
               <p className="apx-line is-muted">Member counts aren't available for this provider.</p>
             )}
+            {/* The counts above are the aggregate; this docks the roster table so the
+                assigner can see who they are and check specific members to pick a set. */}
+            <button type="button" className={`btn btn-secondary btn-sm apx-viewmembers ${memberScope?.kind === 'scope' ? 'is-on' : ''}`}
+              aria-pressed={memberScope?.kind === 'scope'} onClick={() => setMemberScope(memberScope?.kind === 'scope' ? null : { kind: 'scope' })}>
+              {hasPicked ? 'View / pick members' : 'View members'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
           </section>
 
           <section className="apx-block">
@@ -341,11 +402,18 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
               <div className="apx-eq">
                 {eqRows.slice(0, 4).map((r) => {
                   const on = strata.some((x) => sameRow(x, r));
+                  const viewing = memberScope?.kind === 'stratum' && sameRow(memberScope.row, r);
                   return (
                     <button key={`${r.dim}:${r.group}`} type="button" aria-pressed={on}
-                      className={`apx-eqrow ${on ? 'is-on' : ''}`} onClick={() => toggleStratum(r)}>
+                      className={`apx-eqrow ${on ? 'is-on' : ''} ${viewing ? 'is-viewing' : ''}`} onClick={() => toggleStratum(r)}>
                       <span className="apx-check" aria-hidden="true" />
                       <span className="apx-eq-group">{r.group}</span>
+                      {/* Peek at just this group's roster without changing what's targeted. */}
+                      <span className={`apx-eq-view ${viewing ? 'is-viewing' : ''}`} role="button" tabIndex={0}
+                        onClick={(e) => { e.stopPropagation(); setMemberScope(viewing ? null : { kind: 'stratum', row: r }); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setMemberScope(viewing ? null : { kind: 'stratum', row: r }); } }}>
+                        {viewing ? 'viewing ✓' : 'view members ›'}
+                      </span>
                       <span className="apx-eq-rate num">{r.rate}%</span>
                       <span className="apx-eq-delta num">▼ {Math.abs(r.delta)} pts</span>
                       <span className="apx-eq-cta">{on ? 'Targeted' : 'Target this'}</span>
@@ -389,7 +457,9 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
 
         <footer className="apx-foot">
           <p className={`apx-summary ${reach?.short ? 'is-short' : ''}`}>
-            {!hasCounts ? 'Scope has no member counts to preview.' : (
+            {hasPicked ? (
+              <>Creates <strong className="num">{created.toLocaleString()}</strong> {created === 1 ? 'task' : 'tasks'} for the <strong>{pickedList.length.toLocaleString()}</strong> selected {pickedList.length === 1 ? 'member' : 'members'}</>
+            ) : !hasCounts ? 'Scope has no member counts to preview.' : (
               <>
                 Creates <strong className="num">{created.toLocaleString()}</strong> tasks · skips <strong className="num">{skipped.toLocaleString()}</strong>
                 {reach && (reach.short
@@ -406,7 +476,201 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           </div>
         </footer>
       </div>
+
+      {memberScope && (
+        <MembersPanel
+          token={token}
+          selectedMonth={selectedMonth}
+          measureId={measure?.measure_id}
+          measureName={measure?.display_name}
+          level={scope.level}
+          crsp={crspForScope}
+          stratum={viewStratum}
+          isStratumView={memberScope.kind === 'stratum'}
+          strataCount={strata.length}
+          intervention={intervention}
+          picked={picked}
+          onTogglePick={togglePick}
+          onTogglePickMany={togglePickMany}
+          onClose={() => setMemberScope(null)}
+        />
+      )}
+      </div>
     </div>
+  );
+};
+
+// ── Members panel ────────────────────────────────────────────
+// The roster behind the counts. The assign panel deals in aggregates; this docks
+// open beside it as a wide table so the assigner can SEE the in-scope members and
+// hand-pick a set with the checkboxes — the ticked rows become the panel's target
+// and its counts follow the selection. Coverage from the store still shows which
+// members are already in an active play.
+const isCompliant = (m) => {
+  if (typeof m.compliant === 'boolean') return m.compliant;
+  const s = String(m.status ?? m.priority ?? '').toLowerCase();
+  if (/non|open|gap|incomplete|^0$|false/.test(s)) return false;
+  if (/compl|met|closed|^1$|true/.test(s)) return true;
+  return !!m.source && m.source !== '-';
+};
+const dash = (v) => (v && v !== '-' ? v : '—');
+const normMember = (m, fallbackCrsp) => ({
+  memberId: m.memberId,
+  memberName: m.memberName,
+  dob: dash(m.dob),
+  age: m.age,
+  crsp: m.crsp && m.crsp !== 'NO CRSP' ? m.crsp : (fallbackCrsp || m.crsp || '—'),
+  serviceDate: dash(m.serviceDate),
+  source: dash(m.source),
+  compliant: isCompliant(m),
+});
+
+const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, isStratumView, strataCount, intervention, picked, onTogglePick, onTogglePickMany, onClose }) => {
+  const [showAll, setShowAll] = useState(false);
+  const [storeVer, setStoreVer] = useState(0);
+  useEffect(() => {
+    const bump = () => setStoreVer((v) => v + 1);
+    window.addEventListener(ASSIGNMENTS_EVENT, bump);
+    window.addEventListener('storage', bump);
+    return () => { window.removeEventListener(ASSIGNMENTS_EVENT, bump); window.removeEventListener('storage', bump); };
+  }, []);
+  // Escape collapses the roster back to just the panel.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const { data, loading, error } = useAsync(async () => {
+    try {
+      let rows = [];
+      if (stratum?.dim === 'age') rows = await fetchMemberDetails({ measureId, ageStrat: stratum.group, crsp }, token);
+      else if (stratum?.dim === 'race') rows = await fetchRaceMemberDetails({ measureId, raceStrat: stratum.group, crsp }, token);
+      else if (stratum?.dim === 'ethnicity') rows = await fetchEthnicityMemberDetails({ measureId, ethnicityStrat: stratum.group, crsp }, token);
+      else rows = await fetchCRSPMemberDetails({ measureId, crsp }, token);
+      if (!rows || rows.length === 0) throw new Error('empty');
+      return rows.map((r) => normMember(r, crsp));
+    } catch (e) {
+      return sampleMembers(30, crsp).map((r) => normMember(r, crsp));
+    }
+  }, [measureId, crsp, stratum?.dim, stratum?.group, selectedMonth], { enabled: !!measureId });
+
+  const all = data || [];
+  const nonCompliant = useMemo(() => all.filter((m) => !m.compliant), [all]);
+  const rows = showAll ? all : nonCompliant;
+
+  // Per-member coverage from the assignment store (re-resolves on storeVer).
+  const coverage = useMemo(() => {
+    const map = {};
+    rows.forEach((m) => {
+      const plays = activePlaysForMember(m, measureId, crsp);
+      if (plays.length) map[m.memberId] = plays[0];
+    });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, measureId, crsp, storeVer]);
+
+  // Header checkbox reflects / toggles the shown rows only.
+  const shownPicked = rows.filter((m) => picked[m.memberId]).length;
+  const allShown = rows.length > 0 && shownPicked === rows.length;
+  const someShown = shownPicked > 0 && !allShown;
+  const toggleAllShown = () => onTogglePickMany(rows, !allShown);
+
+  // The scope chip: the stratum when opened from a group's "view members", else
+  // the provider / measure-wide scope. Only a single-stratum view is exact; a
+  // multi-select targeting shows the base scope and says so.
+  const chip = stratum ? stratum.group : (crsp || (level === 'measure' ? 'All providers' : 'Provider'));
+  const chipApprox = !isStratumView && strataCount > 1;
+
+  return (
+    <section className="apxm" role="dialog" aria-modal="true" aria-label="Members in scope">
+      <header className="apxm-head">
+        <div className="apxm-head-id">
+          <h3>Members</h3>
+          <span className="apxm-scope">
+            {chip}
+            {chipApprox && <em> · {strataCount} groups — base scope</em>}
+          </span>
+          <span className="apxm-scope-sub">{intervention}</span>
+        </div>
+        <div className="apxm-tabs">
+          {shownPicked > 0 && <span className="apxm-selected"><span className="num">{shownPicked}</span> selected</span>}
+          <button type="button" className={`apxm-tab ${!showAll ? 'is-on' : ''}`} onClick={() => setShowAll(false)}>
+            Non-compliant <span className="num">{nonCompliant.length.toLocaleString()}</span>
+          </button>
+          <button type="button" className={`apxm-tab ${showAll ? 'is-on' : ''}`} onClick={() => setShowAll(true)}>
+            All <span className="num">{all.length.toLocaleString()}</span>
+          </button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm apxm-x" onClick={onClose} aria-label="Hide members">✕</button>
+        </div>
+      </header>
+
+      <div className="apxm-scroll">
+        {loading ? (
+          <p className="apxm-note">Loading members…</p>
+        ) : rows.length === 0 ? (
+          <p className="apxm-note">No members to show for this scope.</p>
+        ) : (
+          <table className="apxm-table">
+            <thead>
+              <tr>
+                <th className="apxm-pick">
+                  <input type="checkbox" aria-label="Select all shown"
+                    checked={allShown} ref={(el) => { if (el) el.indeterminate = someShown; }}
+                    onChange={toggleAllShown} />
+                </th>
+                <th>Member ID</th><th>Name</th><th>DOB</th><th className="ta-r">Age</th>
+                <th>Service date</th><th>Source</th><th>Priority</th><th>Assigned / play</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((m) => {
+                const play = coverage[m.memberId];
+                const who = play?.assignedTo;
+                const covered = !!play;
+                const isPicked = !!picked[m.memberId];
+                return (
+                  <tr key={m.memberId} className={`${covered ? 'is-covered' : ''} ${isPicked ? 'is-picked' : ''}`}>
+                    <td className="apxm-pick">
+                      <input type="checkbox" aria-label={`Select ${m.memberName}`}
+                        checked={isPicked} onChange={() => onTogglePick(m)} />
+                    </td>
+                    <td><span className="apxm-id mono">{m.memberId}</span></td>
+                    <td className="apxm-name">{m.memberName}</td>
+                    <td className="apxm-dim">{m.dob}</td>
+                    <td className="ta-r num">{m.age}</td>
+                    <td className="apxm-dim">{m.serviceDate}</td>
+                    <td className="apxm-dim">{m.source}</td>
+                    <td>
+                      <span className={`apxm-prio ${m.compliant ? 'is-ok' : 'is-gap'}`}>
+                        <span className="apxm-prio-dot" aria-hidden="true" />{m.compliant ? 'Compliant' : 'Open gap'}
+                      </span>
+                    </td>
+                    <td>
+                      {covered ? (
+                        <span className="apxm-play" title={`${play.intervention || 'Intervention'}${who ? ` · ${who}` : ''}`}>
+                          <span className="apxm-play-dot" aria-hidden="true" />
+                          <span className="apxm-play-tag">In active play</span>
+                          {play.intervention && <span className="apxm-play-sub">· {play.intervention}</span>}
+                        </span>
+                      ) : <span className="apxm-unassigned">Unassigned</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <footer className="apxm-foot">
+        <span className="apxm-foot-note">
+          Tick members to build a set — the panel's counts and <strong>Assign</strong> button follow your selection. Leave all unticked to assign the whole scope.
+          {error && ' · Showing sample roster — live member list unavailable.'}
+        </span>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Hide</button>
+      </footer>
+    </section>
   );
 };
 

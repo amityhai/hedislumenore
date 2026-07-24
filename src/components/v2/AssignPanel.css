@@ -10,15 +10,27 @@
 
 /* Confirmation toasts come from the app-wide ToastProvider (ui/Toast). */
 
-.apx {
-  width: 100%; max-width: 620px; max-height: calc(100vh - 40px);
-  display: flex; flex-direction: column;
-  background: var(--c-surface); border-radius: var(--r-xl); box-shadow: var(--sh-xl);
+/* Shell — holds the assign panel and, when opened, the docked member table to
+   its right. Centres as a unit; grows wider only while the roster is showing. */
+.apx-shell {
+  display: flex; align-items: stretch; justify-content: center;
+  width: 100%; max-width: 620px; max-height: calc(100vh - 40px); overflow: hidden;
+  box-shadow: var(--sh-xl); border-radius: var(--r-xl);
   animation: apx-pop 0.22s cubic-bezier(.22, 1, .36, 1) both;
+  transition: max-width 0.26s cubic-bezier(.22, 1, .36, 1);
 }
+.apx-shell.has-members { max-width: 1160px; }
+
+.apx {
+  flex: 0 0 auto; width: 100%; max-width: 620px;
+  display: flex; flex-direction: column;
+  background: var(--c-surface); border-radius: var(--r-xl);
+}
+.apx-shell.has-members .apx { flex: 0 0 420px; width: 420px; border-radius: var(--r-xl) 0 0 var(--r-xl); }
 @keyframes apx-pop { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 .apx-head {
+  flex: none;
   display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
   padding: 20px 22px 14px; border-bottom: 1px solid var(--c-border-light);
 }
@@ -29,7 +41,10 @@
    rather than being pushed a full button-width off the corner. */
 .apx-x { flex: none; margin: -3px -7px 0 0; }
 
-.apx-body { overflow-y: auto; padding: 18px 22px 4px; }
+/* min-height: 0 lets this flex child shrink below its content so it — not the
+   whole panel — is what scrolls; without it the panel overflows its max-height
+   and the centred scrim clips the pinned header off the top of the viewport. */
+.apx-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 18px 22px 4px; }
 
 /* Hero — rate, goal, and the members-to-goal number that gives scale meaning */
 .apx-hero {
@@ -73,6 +88,8 @@
 .apx-stack span { font-weight: 700; color: var(--c-text); }
 .apx-stack em { font-style: normal; color: var(--c-text-4); font-size: 12px; }
 .apx-stack .is-muted span { color: var(--c-text-3); }
+.apx-linkbtn { background: none; border: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--c-assign-dark); cursor: pointer; }
+.apx-linkbtn:hover { text-decoration: underline; }
 .apx-stack .is-strong { color: var(--c-primary-dark); font-weight: 600; }
 .apx-stack .is-strong span { color: var(--c-primary-dark); }
 
@@ -106,14 +123,24 @@
 
 .apx-eq { display: flex; flex-direction: column; gap: 6px; }
 .apx-eqrow {
-  display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 12px;
+  display: grid; grid-template-columns: auto 1fr auto auto auto auto; align-items: center; gap: 12px;
   padding: 9px 12px; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
   background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-sm);
   transition: border-color 0.14s ease, background 0.14s ease;
 }
 .apx-eqrow:hover { border-color: var(--c-primary); background: var(--c-primary-light); }
 .apx-eqrow.is-on { border-color: var(--c-primary); background: var(--c-primary-light); }
+/* Being previewed in the roster panel — an assign-hued selected state, distinct
+   from the teal "targeted" state, with a left rail so it reads at a glance. */
+.apx-eqrow.is-viewing { border-color: var(--c-assign-subtle); background: var(--c-assign-light); box-shadow: inset 3px 0 0 var(--c-assign); }
+.apx-eqrow.is-viewing:hover { border-color: var(--c-assign); background: var(--c-assign-light); }
 .apx-eq-group { color: var(--c-text); font-weight: 600; }
+/* Per-group roster peek — an assign-hued affordance so it reads as "look", not
+   "target" (the teal CTA on the right is the targeting action). */
+.apx-eq-view { font-size: 11.5px; font-weight: 600; color: var(--c-assign-dark); white-space: nowrap; cursor: pointer; }
+.apx-eq-view:hover { text-decoration: underline; }
+.apx-eq-view:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-assign-ring); border-radius: var(--r-xs); }
+.apx-eq-view.is-viewing { color: var(--c-assign-dark); font-weight: 700; }
 .apx-eq-rate { color: var(--c-text-2); font-weight: 700; }
 .apx-eq-delta { color: var(--c-error-text); font-size: 12px; font-weight: 600; }
 .apx-eq-cta { font-size: 11.5px; font-weight: 600; color: var(--c-primary-dark); min-width: 62px; text-align: right; }
@@ -144,6 +171,7 @@
 }
 
 .apx-foot {
+  flex: none;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   padding: 14px 22px 18px; margin-top: 12px;
   border-top: 1px solid var(--c-border-light); background: var(--c-bg-subtle);
@@ -162,11 +190,126 @@
 .mex-detail-assign { margin-top: 12px; }
 .mex-detail-assign .btn { width: 100%; }
 
+/* "View members" — docks the roster table beside the panel. A quiet secondary
+   under the counts; the aggregate is the headline, the roster is the drill. */
+.apx-viewmembers { margin-top: 10px; }
+.apx-viewmembers svg { margin-left: 2px; }
+.apx-viewmembers.is-on { background: var(--c-assign-light); color: var(--c-assign-dark); border-color: var(--c-assign-subtle); }
+
+/* ── Member table — the roster behind the counts ───────────────
+   Docks to the right of the assign panel inside the shell. Its own flex column:
+   pinned header + footer, the table body scrolls (both axes when narrow). */
+.apxm {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column;
+  background: var(--c-surface); border-left: 1px solid var(--c-border);
+  border-radius: 0 var(--r-xl) var(--r-xl) 0;
+  animation: apxm-reveal 0.26s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes apxm-reveal { from { opacity: 0; } to { opacity: 1; } }
+
+.apxm-head {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px 18px; border-bottom: 1px solid var(--c-border-light);
+}
+.apxm-head-id { display: flex; align-items: baseline; gap: 9px; min-width: 0; flex-wrap: wrap; }
+.apxm-head-id h3 { font-size: 15px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
+.apxm-scope {
+  font-size: 11.5px; font-weight: 600; color: var(--c-assign-dark);
+  background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
+  padding: 3px 10px; border-radius: var(--r-full);
+}
+.apxm-scope em { font-style: normal; color: var(--c-text-4); font-weight: 500; }
+.apxm-scope-sub { font-size: 12px; color: var(--c-text-3); }
+
+.apxm-tabs { display: flex; align-items: center; gap: 6px; }
+.apxm-tab {
+  font-size: 11.5px; font-weight: 600; color: var(--c-text-3);
+  background: var(--c-bg-subtle); border: 1px solid var(--c-border-light);
+  padding: 4px 11px; border-radius: var(--r-full); cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.apxm-tab .num { color: inherit; font-weight: 700; }
+.apxm-tab:hover { color: var(--c-text-2); }
+.apxm-tab.is-on { background: var(--c-assign-light); color: var(--c-assign-dark); border-color: var(--c-assign-subtle); }
+.apxm-x { margin-left: 2px; }
+
+.apxm-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.apxm-note { padding: 40px 18px; text-align: center; font-size: 12.5px; color: var(--c-text-3); }
+
+.apxm-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.apxm-table thead th {
+  position: sticky; top: 0; z-index: 1; text-align: left; background: var(--c-surface);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--c-text-4); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--c-border);
+  white-space: nowrap;
+}
+.apxm-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--c-border-light); color: var(--c-text-2); white-space: nowrap; }
+.apxm-table tbody tr:hover { background: var(--c-bg-subtle); }
+.apxm-table tbody tr.is-covered { background: var(--c-assign-light); }
+.apxm-table tbody tr.is-covered:hover { background: var(--c-assign-light); }
+/* A ticked row — the assign-hued selection that feeds the panel's count. Wins
+   over the covered tint so a picked row always reads as picked. */
+.apxm-table tbody tr.is-picked, .apxm-table tbody tr.is-picked:hover { background: var(--c-assign-light); box-shadow: inset 3px 0 0 var(--c-assign); }
+.apxm-table .ta-r { text-align: right; }
+
+/* Checkbox column pins to the left edge so the pick control (and the row it
+   belongs to) stays put while the wider columns scroll under it. Each sticky
+   cell carries its own row background and a hairline + soft shadow on the right. */
+.apxm-table .apxm-pick {
+  position: sticky; left: 0; z-index: 1; width: 40px; text-align: center; padding-left: 16px; padding-right: 8px;
+  background: var(--c-surface);
+  box-shadow: inset -1px 0 0 var(--c-border-light), 8px 0 10px -10px rgba(20, 33, 43, 0.28);
+}
+.apxm-table thead th.apxm-pick { z-index: 2; }
+.apxm-table tbody tr:hover td.apxm-pick { background: var(--c-bg-subtle); }
+.apxm-table tbody tr.is-covered td.apxm-pick,
+.apxm-table tbody tr.is-picked td.apxm-pick { background: var(--c-assign-light); }
+.apxm-table .apxm-pick input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--c-assign); vertical-align: middle; }
+
+.apxm-selected {
+  font-size: 11.5px; font-weight: 700; color: var(--c-assign-dark);
+  background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
+  padding: 4px 10px; border-radius: var(--r-full);
+}
+.apxm-selected .num { color: inherit; }
+.apxm-id { font-family: var(--font-mono); font-size: 11.5px; color: var(--c-primary-dark); }
+.apxm-name { color: var(--c-text); font-weight: 600; }
+.apxm-dim { color: var(--c-text-3); }
+
+.apxm-prio { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; }
+.apxm-prio-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.apxm-prio.is-ok { color: var(--c-success-text); }
+.apxm-prio.is-gap { color: var(--c-error-text); }
+
+.apxm-unassigned { font-size: 11.5px; font-weight: 600; color: var(--c-warn-text); }
+.apxm-play { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.apxm-play-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-assign); flex-shrink: 0; }
+.apxm-play-tag { font-size: 11.5px; font-weight: 700; color: var(--c-assign-dark); }
+.apxm-play-sub { font-size: 11.5px; color: var(--c-text-3); }
+
+.apxm-foot {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 18px; border-top: 1px solid var(--c-border-light); background: var(--c-bg-subtle);
+  border-radius: 0 0 var(--r-xl) 0;
+}
+.apxm-foot-note { font-size: 11px; color: var(--c-text-4); max-width: 62ch; line-height: 1.4; }
+
 @media (max-width: 620px) {
   .apx-form { grid-template-columns: 1fr; }
-  .apx-eqrow { grid-template-columns: auto 1fr auto; row-gap: 4px; }
+  .apx-eqrow { grid-template-columns: auto 1fr auto; row-gap: 4px 12px; }
+  .apx-eq-view { grid-column: 2; }
   .apx-eq-delta { grid-column: 2; }
   .apx-eq-cta { grid-column: 3; }
   .apx-foot { flex-direction: column; align-items: stretch; }
   .apx-actions { margin-left: 0; }
+}
+
+/* Below the side-by-side threshold the shell stacks: panel on top, roster below,
+   each taking the full width so the wide table still gets room to scroll. */
+@media (max-width: 940px) {
+  .apx-shell.has-members { flex-direction: column; max-width: 620px; }
+  .apx-shell.has-members .apx { flex: none; width: 100%; border-radius: var(--r-xl) var(--r-xl) 0 0; }
+  .apxm { border-left: none; border-top: 1px solid var(--c-border); border-radius: 0 0 var(--r-xl) var(--r-xl); }
+  .apxm-foot { border-radius: 0 0 var(--r-xl) var(--r-xl); }
 }

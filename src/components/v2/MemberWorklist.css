@@ -186,6 +186,22 @@
 .mwl-assigned { font-size: 12px; font-weight: 600; color: var(--c-text-2); background: var(--c-primary-light); border: 1px solid var(--c-primary-subtle); padding: 3px 9px; border-radius: var(--r-full); }
 .mwl-unassigned { font-size: 12px; font-weight: 600; color: var(--c-warn-text); background: var(--c-warn-bg); padding: 3px 9px; border-radius: var(--r-full); }
 
+/* Already covered by an active play — the row-level echo of the assign panel's
+   "will be skipped" count. Assign hue (indigo), so it reads as an intervention
+   state, distinct from the teal "assigned to" chip. The dot + two-line stack
+   keep the intervention name legible without a second column. */
+.mwl-play {
+  display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+  padding: 3px 10px 3px 8px; border-radius: var(--r-full);
+  background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
+}
+.mwl-play-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-assign); flex-shrink: 0; }
+.mwl-play-text { display: inline-flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.mwl-play-tag { font-size: 11.5px; font-weight: 700; color: var(--c-assign-dark); letter-spacing: -0.01em; }
+.mwl-play-sub { font-size: 10.5px; font-weight: 500; color: var(--c-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mwl-row-data.is-covered { box-shadow: inset 3px 0 0 var(--c-assign-subtle); }
+.mwl-row-data.is-covered.is-gap { box-shadow: inset 3px 0 0 var(--c-error); }
+
 /* Pager — nav arrows are `.btn .btn-secondary .btn-icon .btn-sm`; the chevron
    glyph needs more size than the 12px small-button type gives it. */
 .mwl-pager { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 14px; }
@@ -203,7 +219,8 @@
   animation: ov2-fade 0.18s ease both;
 }
 .mwl-modal {
-  width: 100%; max-width: 440px; background: var(--c-surface); border-radius: var(--r-xl);
+  width: 100%; max-width: 440px; max-height: calc(100vh - 40px); overflow-y: auto;
+  background: var(--c-surface); border-radius: var(--r-xl);
   box-shadow: var(--sh-xl); padding: 22px; animation: mwl-pop 0.22s cubic-bezier(.22,1,.36,1) both;
 }
 @keyframes mwl-pop { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }

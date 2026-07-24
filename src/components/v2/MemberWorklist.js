@@ -14,7 +14,7 @@ import {
   fetchMeasureStratificationRace,
   fetchMeasureStratificationEthnicity,
 } from '../../services/workflowService';
-import { num, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, worklistRead, addAssignment } from './v2utils';
+import { num, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, worklistRead, addAssignment, activePlaysForMember, ASSIGNMENTS_EVENT } from './v2utils';
 import { Signals } from './OverviewExplore';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
@@ -58,6 +58,16 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
   // the active chip; it composes with the `strat` prop (a stratum this worklist
   // was opened on already) — the prop wins, and the segment card is hidden then.
   const [pickedStrat, setPickedStrat] = useState(null);
+  // Bumped whenever the assignment store changes so the per-member coverage
+  // badges re-resolve without prop plumbing — the same broadcast the tracking
+  // board and action chips listen on.
+  const [storeVer, setStoreVer] = useState(0);
+  useEffect(() => {
+    const bump = () => setStoreVer((v) => v + 1);
+    window.addEventListener(ASSIGNMENTS_EVENT, bump);
+    window.addEventListener('storage', bump);
+    return () => { window.removeEventListener(ASSIGNMENTS_EVENT, bump); window.removeEventListener('storage', bump); };
+  }, []);
 
   const measureId = measure?.measure_id;
   const providerCrsp = provider && !provider.overall ? provider.crsp : undefined;
@@ -129,6 +139,22 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
   const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   const pageRows = useMemo(() => shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [shown, page]);
   const setFilter = (v) => { setNcOnly(v); setPage(1); };
+
+  // Per-member coverage from the assignment store: for each row on the page, the
+  // newest active play that already covers this member (if any). This is the
+  // row-level counterpart to the assign panel's "will be skipped" count — same
+  // source, resolved to member IDs instead of an estimate. Recomputes on paging,
+  // filtering, and any store change (storeVer).
+  const coverage = useMemo(() => {
+    const map = {};
+    pageRows.forEach((m) => {
+      const plays = activePlaysForMember(m, measureId, providerCrsp);
+      if (plays.length) map[m.memberId] = plays[0];
+    });
+    return map;
+    // storeVer forces a re-resolve when the assignment store broadcasts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageRows, measureId, providerCrsp, storeVer]);
 
   // Context header metrics — reflect the effective stratum so the header follows
   // an in-page equity filter, not just the stratum this worklist opened on.
@@ -306,9 +332,12 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                 <span>Provider (CRSP)</span><span>Status</span><span>Assigned to</span><span className="ta-r">Action</span>
               </div>
               {pageRows.map((m, i) => {
-                const who = assigned[m.memberId];
+                const play = coverage[m.memberId];
+                // Assignee: this session's pick wins for immediacy, else the play's.
+                const who = assigned[m.memberId] || play?.assignedTo;
+                const covered = !!play;
                 return (
-                  <div className={`mwl-row mwl-row-data ${!m.compliant ? 'is-gap' : ''} ${selectedIds.has(m.memberId) ? 'is-picked' : ''}`} role="row" key={`${m.memberId}-${i}`} style={{ animationDelay: `${i * 20}ms` }}>
+                  <div className={`mwl-row mwl-row-data ${!m.compliant ? 'is-gap' : ''} ${selectedIds.has(m.memberId) ? 'is-picked' : ''} ${covered ? 'is-covered' : ''}`} role="row" key={`${m.memberId}-${i}`} style={{ animationDelay: `${i * 20}ms` }}>
                     <span className="mwl-idcell">
                       <input type="checkbox" className="mwl-check" aria-label={`Select ${m.memberName}`}
                         checked={selectedIds.has(m.memberId)} onChange={() => toggleSelect(m.memberId)} />
@@ -321,11 +350,23 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                       <span aria-hidden="true">{m.compliant ? '✓' : '✕'}</span> {m.compliant ? 'Compliant' : 'Non-compliant'}
                     </span>
                     <span>
-                      {who ? <span className="mwl-assigned">{who}</span> : <span className="mwl-unassigned">Unassigned</span>}
+                      {covered ? (
+                        <span className="mwl-play" title={`${play.intervention || 'Intervention'}${who ? ` · ${who}` : ''}${play.label ? ` · ${play.label}` : ''}`}>
+                          <span className="mwl-play-dot" aria-hidden="true" />
+                          <span className="mwl-play-text">
+                            <span className="mwl-play-tag">In active play</span>
+                            {play.intervention && <span className="mwl-play-sub">{play.intervention}</span>}
+                          </span>
+                        </span>
+                      ) : who ? (
+                        <span className="mwl-assigned">{who}</span>
+                      ) : (
+                        <span className="mwl-unassigned">Unassigned</span>
+                      )}
                     </span>
                     <span className="ta-r">
                       <button type="button" className="btn btn-assign btn-sm" onClick={() => setModalMembers([m])}>
-                        {who ? 'Reassign' : 'Assign'}
+                        {covered || who ? 'Reassign' : 'Assign'}
                       </button>
                     </span>
                   </div>
@@ -365,6 +406,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
           measure-level set the segmentation card uses. */}
       {assignState && measure && createPortal(
         <AssignPanel measure={measure}
+          token={token} selectedMonth={selectedMonth}
           providers={provider ? (provider.overall ? [] : [provider]) : []}
           equity={equity}
           scope={{

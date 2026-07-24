@@ -551,6 +551,7 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
           whole population, not whatever the status pills are showing. */}
       {assignScope && createPortal(
         <AssignPanel measure={activeMeasure} providers={providers} equity={equity} scope={assignScope}
+          token={token} selectedMonth={selectedMonth}
           onClose={() => setAssignScope(null)} onAssign={runAssign} />,
         document.body
       )}

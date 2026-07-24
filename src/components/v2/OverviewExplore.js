@@ -805,7 +805,7 @@ const OverviewAssign = ({ scope, token, selectedMonth, onClose, onAssign }) => {
   return (
     <AssignPanel measure={measure} providers={provAsync.data || []}
       equity={eqAsync.data || { age: [], race: [], ethnicity: [] }}
-      scope={scope} onClose={onClose} onAssign={onAssign} />
+      scope={scope} token={token} selectedMonth={selectedMonth} onClose={onClose} onAssign={onAssign} />
   );
 };
 
