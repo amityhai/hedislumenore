@@ -846,21 +846,55 @@ const FIRST = ['Shareen', 'Crystal', 'Daisha', 'Daniel', 'Lisa', 'Marcus', 'Aish
 const LAST = ['Abdullah', 'Adams', 'Baker', 'Brown', 'Carter', 'Diallo', 'Evans', 'Farah', 'Garcia', 'Hughes', 'Ibrahim', 'Jackson', 'Khan', 'Lopez', 'Mensah'];
 const SOURCES = ['Claim', 'EHR', '-'];
 
+// Which age band an age falls in — keeps sample rows consistent with AGE_GROUPS
+// so a stratum filter over the sample matches the same bands the equity list shows.
+export const ageBandOf = (age) => {
+  if (age <= 17) return '6 - 17';
+  if (age <= 34) return '18 - 34';
+  if (age <= 49) return '35 - 49';
+  if (age <= 64) return '50 - 64';
+  return '65+';
+};
+
 export const sampleMembers = (count = 18, crsp) =>
   Array.from({ length: count }).map((_, i) => {
     const open = i % 3 === 0; // ~1/3 non-compliant (open care gap)
+    const age = 24 + ((i * 7) % 45);
     return {
       memberId: String(10000000 + i * 137911).padStart(10, '0').slice(0, 10),
       memberName: `${LAST[i % LAST.length]}, ${FIRST[i % FIRST.length]}`,
       dob: '01/30/1994',
-      age: 24 + ((i * 7) % 45),
+      age,
       crsp: crsp || CRSP_NAMES[i % CRSP_NAMES.length],
       serviceDate: open ? '-' : `0${1 + (i % 9)}/${10 + (i % 18)}/2026`,
       source: open ? '-' : SOURCES[i % 2],
       compliant: !open,
       priority: open ? 'Open gap' : 'Complaint',
+      // Deterministic demographics so a stratum filter returns a real subset,
+      // not the whole pool. Strides differ per dimension so groups don't line up.
+      race: RACE_GROUPS[i % RACE_GROUPS.length],
+      ethnicity: ETH_GROUPS[(i * 2) % ETH_GROUPS.length],
+      ageBand: ageBandOf(age),
     };
   });
+
+// Does a sample member fall in a given equity group (age / race / ethnicity)?
+export const memberInStratum = (m, st) => {
+  if (!st) return true;
+  if (st.dim === 'age') return (m.ageBand || ageBandOf(m.age)) === st.group;
+  if (st.dim === 'race') return m.race === st.group;
+  if (st.dim === 'ethnicity') return m.ethnicity === st.group;
+  return true;
+};
+
+// Sample roster narrowed to the selected strata. Multiple groups union — a member
+// counts if they match ANY selected group — matching how the assign panel estimates
+// cross-group reach. No strata → the whole scope roster.
+export const sampleMembersForStrata = (strata, crsp, count = 30) => {
+  const pool = sampleMembers(count, crsp);
+  if (!strata || strata.length === 0) return pool;
+  return pool.filter((m) => strata.some((st) => memberInStratum(m, st)));
+};
 
 // Sample care staff + intervention types for the assignment flow.
 export const STAFF = ['Maria Chen, RN', 'James Okafor', 'Priya Patel, CHW', 'David Kim', 'Aisha Rahman, RN'];

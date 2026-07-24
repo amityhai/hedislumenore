@@ -7,7 +7,7 @@ import {
   fetchEthnicityMemberDetails,
   fetchCRSPMemberDetails,
 } from '../../services/workflowService';
-import { num, statusFor, STAFF, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure, activePlaysForMember, ASSIGNMENTS_EVENT, sampleMembers } from './v2utils';
+import { num, statusFor, STAFF, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure, activePlaysForMember, ASSIGNMENTS_EVENT, sampleMembersForStrata } from './v2utils';
 
 export const UNASSIGNED = 'Unassigned pool';
 
@@ -295,6 +295,23 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   const viewStratum = memberScope?.kind === 'stratum'
     ? memberScope.row
     : (strata.length === 1 ? strata[0] : null);
+  // Is the roster's stratum currently targeted? If so its whole roster reads as
+  // selected — targeting the group and ticking every member are the same intent.
+  const stratumTargeted = !!viewStratum && strata.some((x) => sameRow(x, viewStratum));
+  const toggleViewStratum = () => { if (viewStratum) toggleStratum(viewStratum); };
+  // How many members are hand-picked per group (tagged at pick time), so a group
+  // with some — but not all — of its members picked shows a partial checkbox.
+  const pickedByStratum = useMemo(() => {
+    const map = {};
+    pickedList.forEach((m) => {
+      if (m._stratum) {
+        const k = `${m._stratum.dim}:${m._stratum.group}`;
+        map[k] = (map[k] || 0) + 1;
+      }
+    });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedKey]);
 
   return (
     <div className="apx-scrim" onClick={onClose}>
@@ -403,9 +420,11 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                 {eqRows.slice(0, 4).map((r) => {
                   const on = strata.some((x) => sameRow(x, r));
                   const viewing = memberScope?.kind === 'stratum' && sameRow(memberScope.row, r);
+                  // Some of this group's members hand-picked, but not the whole group.
+                  const partial = !on && (pickedByStratum[`${r.dim}:${r.group}`] || 0) > 0;
                   return (
                     <button key={`${r.dim}:${r.group}`} type="button" aria-pressed={on}
-                      className={`apx-eqrow ${on ? 'is-on' : ''} ${viewing ? 'is-viewing' : ''}`} onClick={() => toggleStratum(r)}>
+                      className={`apx-eqrow ${on ? 'is-on' : ''} ${partial ? 'is-partial' : ''} ${viewing ? 'is-viewing' : ''}`} onClick={() => toggleStratum(r)}>
                       <span className="apx-check" aria-hidden="true" />
                       <span className="apx-eq-group">{r.group}</span>
                       {/* Peek at just this group's roster without changing what's targeted. */}
@@ -486,10 +505,12 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           level={scope.level}
           crsp={crspForScope}
           stratum={viewStratum}
+          strata={strata}
           isStratumView={memberScope.kind === 'stratum'}
-          strataCount={strata.length}
           intervention={intervention}
           picked={picked}
+          stratumTargeted={stratumTargeted}
+          onToggleStratumTarget={toggleViewStratum}
           onTogglePick={togglePick}
           onTogglePickMany={togglePickMany}
           onClose={() => setMemberScope(null)}
@@ -525,7 +546,11 @@ const normMember = (m, fallbackCrsp) => ({
   compliant: isCompliant(m),
 });
 
-const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, isStratumView, strataCount, intervention, picked, onTogglePick, onTogglePickMany, onClose }) => {
+const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, strata = [], isStratumView, intervention, picked, stratumTargeted, onToggleStratumTarget, onTogglePick, onTogglePickMany, onClose }) => {
+  // The groups the roster must reflect. A "view members ›" peek pins one group;
+  // the scope view follows every targeted group (none = the whole scope roster).
+  const activeStrata = isStratumView ? (stratum ? [stratum] : []) : strata;
+  const strataKey = activeStrata.map((s) => `${s.dim}:${s.group}`).join('|');
   const [showAll, setShowAll] = useState(false);
   const [storeVer, setStoreVer] = useState(0);
   useEffect(() => {
@@ -542,18 +567,31 @@ const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, i
   }, [onClose]);
 
   const { data, loading, error } = useAsync(async () => {
+    // One stratum → one fetch; several → union their rosters (deduped by member),
+    // so a multi-group target shows exactly the members it will act on. No strata
+    // falls through to the whole-scope roster.
+    const fetchStratum = (st) => {
+      if (st?.dim === 'age') return fetchMemberDetails({ measureId, ageStrat: st.group, crsp }, token);
+      if (st?.dim === 'race') return fetchRaceMemberDetails({ measureId, raceStrat: st.group, crsp }, token);
+      if (st?.dim === 'ethnicity') return fetchEthnicityMemberDetails({ measureId, ethnicityStrat: st.group, crsp }, token);
+      return fetchCRSPMemberDetails({ measureId, crsp }, token);
+    };
     try {
-      let rows = [];
-      if (stratum?.dim === 'age') rows = await fetchMemberDetails({ measureId, ageStrat: stratum.group, crsp }, token);
-      else if (stratum?.dim === 'race') rows = await fetchRaceMemberDetails({ measureId, raceStrat: stratum.group, crsp }, token);
-      else if (stratum?.dim === 'ethnicity') rows = await fetchEthnicityMemberDetails({ measureId, ethnicityStrat: stratum.group, crsp }, token);
-      else rows = await fetchCRSPMemberDetails({ measureId, crsp }, token);
+      let rows;
+      if (activeStrata.length <= 1) {
+        rows = await fetchStratum(activeStrata[0]);
+      } else {
+        const lists = await Promise.all(activeStrata.map(fetchStratum));
+        const seen = new Map();
+        lists.flat().forEach((r) => { if (r?.memberId != null && !seen.has(r.memberId)) seen.set(r.memberId, r); });
+        rows = [...seen.values()];
+      }
       if (!rows || rows.length === 0) throw new Error('empty');
       return rows.map((r) => normMember(r, crsp));
     } catch (e) {
-      return sampleMembers(30, crsp).map((r) => normMember(r, crsp));
+      return sampleMembersForStrata(activeStrata, crsp).map((r) => normMember(r, crsp));
     }
-  }, [measureId, crsp, stratum?.dim, stratum?.group, selectedMonth], { enabled: !!measureId });
+  }, [measureId, crsp, strataKey, selectedMonth], { enabled: !!measureId });
 
   const all = data || [];
   const nonCompliant = useMemo(() => all.filter((m) => !m.compliant), [all]);
@@ -570,17 +608,53 @@ const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, measureId, crsp, storeVer]);
 
-  // Header checkbox reflects / toggles the shown rows only.
+  // A row is selected when its stratum is targeted (whole group) or it's been
+  // individually picked. Targeting the group and ticking every row are one intent.
+  const rowChecked = (m) => stratumTargeted || !!picked[m.memberId];
   const shownPicked = rows.filter((m) => picked[m.memberId]).length;
-  const allShown = rows.length > 0 && shownPicked === rows.length;
-  const someShown = shownPicked > 0 && !allShown;
-  const toggleAllShown = () => onTogglePickMany(rows, !allShown);
+  const allExplicit = rows.length > 0 && shownPicked === rows.length;
+  const allShown = stratumTargeted || allExplicit;
+  const someShown = !stratumTargeted && shownPicked > 0 && !allExplicit;
+  const selectedCount = stratumTargeted ? rows.length : shownPicked;
 
-  // The scope chip: the stratum when opened from a group's "view members", else
-  // the provider / measure-wide scope. Only a single-stratum view is exact; a
-  // multi-select targeting shows the base scope and says so.
-  const chip = stratum ? stratum.group : (crsp || (level === 'measure' ? 'All providers' : 'Provider'));
-  const chipApprox = !isStratumView && strataCount > 1;
+  // Tag each pick with the group it came from so the equity list can show a
+  // partial (indeterminate) checkbox when only some of a group's members are in.
+  const tag = stratum ? { dim: stratum.dim, group: stratum.group } : null;
+  const withTag = (m) => ({ ...m, _stratum: tag });
+
+  // Header select-all: when viewing a stratum it targets/untargets the whole
+  // group (so it stays a predicate); otherwise it toggles the shown rows' picks.
+  const toggleAllShown = () => {
+    if (stratum) {
+      if (!stratumTargeted) onTogglePickMany(rows.map(withTag), false); // explicit picks are subsumed by the group
+      onToggleStratumTarget();
+    } else {
+      onTogglePickMany(rows.map(withTag), !allExplicit);
+    }
+  };
+  // Ticking one row off a targeted group converts it to an explicit set (all
+  // shown except this one), the way select-all-then-deselect-one usually works.
+  const toggleRow = (m) => {
+    if (stratumTargeted) {
+      onToggleStratumTarget();
+      onTogglePickMany(rows.filter((r) => r.memberId !== m.memberId).map(withTag), true);
+    } else {
+      onTogglePick(withTag(m));
+    }
+  };
+
+  // The scope chip mirrors the roster: a single group when peeking or targeting
+  // one, the union of names when several are targeted, else the provider /
+  // measure-wide scope. Several groups union — flagged so the label reads as a set.
+  const scopeName = crsp || (level === 'measure' ? 'All providers' : 'Provider');
+  const chip = isStratumView
+    ? stratum.group
+    : activeStrata.length === 0
+      ? scopeName
+      : activeStrata.length <= 2
+        ? activeStrata.map((s) => s.group).join(' + ')
+        : `${activeStrata.length} groups`;
+  const chipUnion = !isStratumView && activeStrata.length > 1;
 
   return (
     <section className="apxm" role="dialog" aria-modal="true" aria-label="Members in scope">
@@ -589,12 +663,12 @@ const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, i
           <h3>Members</h3>
           <span className="apxm-scope">
             {chip}
-            {chipApprox && <em> · {strataCount} groups — base scope</em>}
+            {chipUnion && <em> · any of {activeStrata.length} groups</em>}
           </span>
           <span className="apxm-scope-sub">{intervention}</span>
         </div>
         <div className="apxm-tabs">
-          {shownPicked > 0 && <span className="apxm-selected"><span className="num">{shownPicked}</span> selected</span>}
+          {selectedCount > 0 && <span className="apxm-selected"><span className="num">{selectedCount}</span> selected</span>}
           <button type="button" className={`apxm-tab ${!showAll ? 'is-on' : ''}`} onClick={() => setShowAll(false)}>
             Non-compliant <span className="num">{nonCompliant.length.toLocaleString()}</span>
           </button>
@@ -628,12 +702,12 @@ const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, i
                 const play = coverage[m.memberId];
                 const who = play?.assignedTo;
                 const covered = !!play;
-                const isPicked = !!picked[m.memberId];
+                const isPicked = rowChecked(m);
                 return (
                   <tr key={m.memberId} className={`${covered ? 'is-covered' : ''} ${isPicked ? 'is-picked' : ''}`}>
                     <td className="apxm-pick">
                       <input type="checkbox" aria-label={`Select ${m.memberName}`}
-                        checked={isPicked} onChange={() => onTogglePick(m)} />
+                        checked={isPicked} onChange={() => toggleRow(m)} />
                     </td>
                     <td><span className="apxm-id mono">{m.memberId}</span></td>
                     <td className="apxm-name">{m.memberName}</td>

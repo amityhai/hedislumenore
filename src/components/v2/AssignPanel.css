@@ -120,6 +120,13 @@
   content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px;
   border: solid var(--c-surface); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
 }
+/* Some — not all — of the group's members picked: an assign-hued box with a dash,
+   the same indeterminate signal the roster's select-all wears. */
+.is-partial .apx-check { background: var(--c-assign); border-color: var(--c-assign); }
+.is-partial .apx-check::after {
+  content: ''; position: absolute; left: 3px; right: 3px; top: 50%; height: 1.5px;
+  background: var(--c-surface); transform: translateY(-50%);
+}
 
 .apx-eq { display: flex; flex-direction: column; gap: 6px; }
 .apx-eqrow {
@@ -130,6 +137,7 @@
 }
 .apx-eqrow:hover { border-color: var(--c-primary); background: var(--c-primary-light); }
 .apx-eqrow.is-on { border-color: var(--c-primary); background: var(--c-primary-light); }
+.apx-eqrow.is-partial { border-color: var(--c-assign-subtle); }
 /* Being previewed in the roster panel — an assign-hued selected state, distinct
    from the teal "targeted" state, with a left rail so it reads at a glance. */
 .apx-eqrow.is-viewing { border-color: var(--c-assign-subtle); background: var(--c-assign-light); box-shadow: inset 3px 0 0 var(--c-assign); }
