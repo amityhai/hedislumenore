@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect, useLayoutEffect, useCallback } fr
 import { createPortal } from 'react-dom';
 import './MeasureExplorer.css';
 import AssignPanel, { UNASSIGNED } from './AssignPanel';
+import MonthFilter from '../MonthFilter';
 import { Skeleton, ErrorState, EmptyState } from '../ui/Feedback';
 import { useToast } from '../ui/Toast';
 import useAsync from '../../hooks/useAsync';
@@ -127,7 +128,7 @@ const ActiveProviderCard = ({ provider, nodeRef, onAssign, onOpenWorklist }) => 
   );
 };
 
-const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCategory, onOpenWorklist, breadcrumb }) => {
+const MeasureExplorer = ({ token, selectedMonth, onMonthChange, availableMonths, measure, category = null, onCategory, onOpenWorklist, breadcrumb }) => {
   const setCategory = onCategory || (() => {});
   const [measureId, setMeasureId] = useState(measure?.measure_id || null);
   const [providerIdx, setProviderIdx] = useState(0); // 0 = Overall
@@ -198,6 +199,12 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
   // and equity always show in full — the status filter is gone; goal standing is
   // carried by each row's tinted background instead (see StatusDot / row tones).
   const categories = useMemo(() => categoriesOf(measures), [measures]);
+  // No "All" tab — seed the first category as soon as the data names one.
+  useEffect(() => {
+    if (!category && categories.length) setCategory(categories[0]);
+    // setCategory is a prop-or-noop; re-running on its identity would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, categories]);
   const measuresFiltered = useMemo(
     () => measures
       .filter((m) => !category || categoryOf(m) === category)
@@ -401,9 +408,14 @@ const MeasureExplorer = ({ token, selectedMonth, measure, category = null, onCat
     <div className="mex">
       <div className="mex-toolbar">
         <div className="mex-toolbar-left">{breadcrumb}</div>
-        {categories.length > 1 && (
-          <CategoryTabs categories={categories} value={category} onChange={setCategory} />
-        )}
+        <div className="mex-toolbar-right">
+          {categories.length > 1 && (
+            <CategoryTabs categories={categories} value={category} onChange={setCategory} />
+          )}
+          {onMonthChange && (
+            <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+          )}
+        </div>
       </div>
 
       <div className="mex-board" ref={boardRef}>

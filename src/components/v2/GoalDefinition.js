@@ -24,6 +24,10 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
   // instantly (the status pill recomputes as you type).
   const [goals, setGoals] = useState(() => readGoals());
   const [query, setQuery] = useState('');
+  // Typing is a DRAFT, not a decision. Committing on every keystroke meant a
+  // half-typed "1" of "12" briefly became the working goal for the whole app, and
+  // the standing column flipped as you typed. Edits stage here until Apply.
+  const [drafts, setDrafts] = useState({});
 
   // Raw grid — NOT run through withCustomGoals, because this screen needs the
   // untouched benchmark to show alongside the custom goal.
@@ -53,11 +57,28 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
     setGoals(readGoals());
     return saved;
   };
-  const resetOne = (id) => { commit(id, null); };
+  const dropDraft = (id) => setDrafts((d) => { const n = { ...d }; delete n[id]; return n; });
+  const resetOne = (id) => { commit(id, null); dropDraft(id); };
   const resetAll = () => {
     clearAllGoals();
     setGoals({});
+    setDrafts({});
     toast({ type: 'success', message: 'All goals reset to benchmark' });
+  };
+  // Apply is the only thing that writes a goal. An emptied field applies as
+  // "reset to benchmark", which is what clearing the box reads as.
+  const applyDraft = (m) => {
+    const raw = drafts[m.measure_id];
+    if (raw === undefined) return;
+    const trimmed = String(raw).trim();
+    const saved = commit(m.measure_id, trimmed === '' ? null : trimmed);
+    dropDraft(m.measure_id);
+    toast({
+      type: 'success',
+      message: trimmed === ''
+        ? `${shortId(m.measure_id)} reset to its ${num(m.goal_50th)}% benchmark`
+        : `${shortId(m.measure_id)} goal set to ${typeof saved === 'number' ? saved : trimmed}%`,
+    });
   };
 
   const effGoal = (m) => {
@@ -118,8 +139,15 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
               const eff = isCustom ? custom : benchmark;
               const tone = STATUS_TONE[statusFor(rate, eff)] || 'below';
               const prev = priorYearRate(m.measure_id, rate);
+              // The field shows the draft while one is open, else the saved goal.
+              // Everything else on the row (standing, tone) reads the SAVED goal,
+              // so a half-typed number never restates the measure's status.
+              const savedStr = isCustom ? String(custom) : '';
+              const draft = drafts[m.measure_id];
+              const editing = draft !== undefined;
+              const dirty = editing && String(draft).trim() !== savedStr;
               return (
-                <div key={m.measure_id} className={`gdf-row gdf-row-data ${isCustom ? 'is-custom' : ''}`} role="row">
+                <div key={m.measure_id} className={`gdf-row gdf-row-data ${isCustom ? 'is-custom' : ''} ${dirty ? 'is-dirty' : ''}`} role="row">
                   <span className="gdf-measure">
                     <span className="gdf-id mono">{shortId(m.measure_id)}</span>
                     <span className="gdf-name">{m.display_name}</span>
@@ -130,12 +158,18 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
                   <span className="ta-r gdf-goalcell">
                     <span className="gdf-input-wrap">
                       <input type="number" min="0" max="100" step="0.5" className="gdf-input"
-                        value={isCustom ? custom : ''} placeholder={String(benchmark)}
+                        value={editing ? draft : savedStr} placeholder={String(benchmark)}
                         aria-label={`Your goal for ${m.display_name}`}
-                        onChange={(e) => commit(m.measure_id, e.target.value)} />
+                        onChange={(e) => setDrafts((d) => ({ ...d, [m.measure_id]: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); applyDraft(m); }
+                          if (e.key === 'Escape') { e.preventDefault(); dropDraft(m.measure_id); }
+                        }} />
                       <span className="gdf-input-pct" aria-hidden="true">%</span>
                     </span>
-                    {isCustom && <span className="gdf-tag">custom</span>}
+                    {dirty ? (
+                      <button type="button" className="gdf-apply" onClick={() => applyDraft(m)}>Apply</button>
+                    ) : isCustom && <span className="gdf-tag">custom</span>}
                   </span>
                   <span className={`gdf-standing gdf-standing-${tone}`}>
                     <span className={`gdf-dot gdf-dot-${tone}`} aria-hidden="true" />

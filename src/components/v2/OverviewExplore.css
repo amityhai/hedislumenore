@@ -337,16 +337,20 @@
    by suppressing everything else, so the unselected bubbles stay fully legible. */
 .ov2-bubble.is-selected { transform: scale(1.05); box-shadow: 0 0 0 4px var(--c-surface), 0 0 0 7px currentColor, var(--sh-md); z-index: 4; }
 .ov2-bubble.is-selected:hover { transform: scale(1.08); }
-/* A gentle recede, not a disable: the labels stay readable and the field still
-   reads as one set — only the selected bubble is meant to feel foregrounded. */
-.ov2-bubble.is-dim { opacity: 0.82; }
+/* Recede, but stay readable — the unselected bubbles are still data, not a
+   disabled state. The selected bubble now carries its own ring and lift, so this
+   only has to step back a little; at 0.5 + desaturation the rest read as greyed
+   out. */
+.ov2-bubble.is-dim { opacity: 0.78; }
 /* Providers/Equity bubbles are display-only (no detail panel to open). */
 .ov2-bubble.is-static { cursor: default; }
 .ov2-bubble.is-static:hover { transform: none; box-shadow: var(--sh-sm), inset 0 2px 6px rgba(255,255,255,0.18); }
 
 .ov2-bubble-id { font-weight: 700; font-size: 13px; letter-spacing: -0.01em; line-height: 1.05; }
 .ov2-bubble-rate { font-weight: 600; font-size: 12px; opacity: 0.92; }
-.ov2-bubble-goal { font-weight: 500; font-size: 10.5px; line-height: 1.2; opacity: 0.72; letter-spacing: 0.01em; }
+/* Rides the rate line — "58% / 66%" — so rate and target read as one comparison
+   instead of two stacked facts. */
+.ov2-bubble-goal { font-weight: 500; opacity: 0.62; letter-spacing: 0.01em; }
 /* The variable size actually encodes: open-gap members. Given its own weight so
    a bigger disc visibly reads "more people", not "worse rate" (that's the shade). */
 .ov2-bubble-open { margin-top: 1px; font-weight: 600; font-size: 11px; line-height: 1.2; opacity: 0.95; letter-spacing: 0.01em; white-space: nowrap; }
@@ -398,12 +402,91 @@
 .ov2-bubble.is-proto .ov2-bubble-rate,
 .ov2-bubble.is-proto .ov2-bubble-open,
 .ov2-bubble.is-proto .ov2-bubble-goal { color: color-mix(in srgb, var(--tone-deep) 78%, transparent); }
+/* Selected, on the pale proto fill. The generic `is-selected` ring reads as a
+   hairline against a near-white disc, so the selection gets its own treatment:
+   a deeper tint, a solid tone ring off a white keyline, and a bigger lift. */
+.ov2-bubble.is-proto.is-selected {
+  background: color-mix(in srgb, var(--tone-base) 32%, #fff);
+  box-shadow: 0 0 0 3px var(--c-surface), 0 0 0 6px var(--tone-base), var(--sh-lg, var(--sh-md));
+  transform: scale(1.09);
+  z-index: 5;
+}
+.ov2-bubble.is-proto.is-selected:hover { transform: scale(1.12); }
+.ov2-bubble.is-proto.is-selected > span { color: var(--tone-deep); }
+.ov2-bubble.is-proto.is-selected .ov2-bubble-id { font-weight: 800; }
+.ov2-bubble.is-proto.is-selected .ov2-ring-arc { stroke: var(--tone-deep); }
+.ov2-bubble.is-proto.is-selected .ov2-ring-track { stroke: color-mix(in srgb, var(--tone-base) 40%, #fff); }
+
 /* The ring sits under the labels (it's first in the DOM, spans paint over it). */
 .ov2-bubble-ring { position: absolute; inset: 0; pointer-events: none; }
 .ov2-ring-track { stroke: color-mix(in srgb, var(--tone-base) 24%, #fff); }
 .ov2-ring-arc {
   stroke: color-mix(in srgb, var(--tone-deep) 40%, var(--tone-base));
   transition: stroke-dasharray 0.5s cubic-bezier(.22,1,.36,1);
+}
+
+/* ── Board view toggle + table view ─────────────────────────────────────── */
+.ov2-viewtoggle {
+  display: inline-flex; align-items: center; gap: 2px; margin-left: auto; margin-right: 10px;
+  padding: 2px; border: 1px solid var(--c-border-light); border-radius: var(--r-full);
+  background: var(--c-bg-subtle, rgba(0,0,0,0.03));
+}
+.ov2-viewbtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border: none; border-radius: var(--r-full); cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--c-text-3); background: transparent;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.ov2-viewbtn:hover { color: var(--c-text); }
+.ov2-viewbtn.is-active { background: var(--c-surface); color: var(--c-text); box-shadow: var(--sh-sm); }
+.ov2-viewbtn svg { flex: none; }
+
+/* The reading view. Fills the same slot the bubble field does, scrolling its own
+   body so the detail panel beside it stays put. */
+.ov2-tablewrap { min-width: 0; min-height: clamp(320px, 45vh, 520px); max-height: 100%; overflow: auto; padding: 4px 0 0; }
+.ov2-table-loading { padding: 14px 16px; }
+.ov2-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ov2-table thead th {
+  position: sticky; top: 0; z-index: 2; text-align: left; white-space: nowrap;
+  padding: 10px 14px; background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4);
+}
+.ov2-table thead th.ta-r, .ov2-table td.ta-r { text-align: right; }
+.ov2-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--c-border-light); color: var(--c-text-2); white-space: nowrap; }
+.ov2-table tbody tr { cursor: pointer; transition: background 0.12s ease; }
+.ov2-table tbody tr:hover { background: var(--c-bg-subtle); }
+.ov2-table tbody tr.is-selected { background: var(--c-primary-light); box-shadow: inset 3px 0 0 var(--c-primary); }
+.ov2-table tbody tr:focus-visible { outline: 2px solid var(--c-primary-ring); outline-offset: -2px; }
+.ov2-table-measure { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+.ov2-table-dot { flex: none; width: 8px; height: 8px; border-radius: var(--r-full); }
+.ov2-table-dot-below { background: var(--c-error); }
+.ov2-table-dot-at { background: var(--c-info); }
+.ov2-table-dot-above { background: var(--c-success); }
+.ov2-table-id { flex: none; min-width: 56px; font-size: 11px; font-weight: 700; color: var(--c-text-3); }
+.ov2-table-name { color: var(--c-text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.ov2-table-dim { color: var(--c-text-4); }
+.ov2-table .is-neg { color: var(--c-error-text); font-weight: 600; }
+.ov2-table .is-pos { color: var(--c-success-text); font-weight: 600; }
+.ov2-table-rate { padding: 2px 8px; border-radius: var(--r-xs); font-weight: 700; }
+.ov2-table-rate-below { background: var(--c-error-bg); color: var(--c-error-text); }
+.ov2-table-rate-at { background: var(--c-info-bg); color: var(--c-info-text); }
+.ov2-table-rate-above { background: var(--c-success-bg); color: var(--c-success-text); }
+
+/* On a phone the table is the default view, so it has to be worth reading there:
+   drop the two columns that restate something already on the row (Goal is in the
+   Gap, Eligible is the denominator of Open gaps) and let the measure name wrap
+   instead of forcing a 1000px scroll. */
+@media (max-width: 720px) {
+  .ov2-table thead th:nth-child(3), .ov2-table tbody td:nth-child(3),
+  .ov2-table thead th:nth-child(5), .ov2-table tbody td:nth-child(5) { display: none; }
+  .ov2-table thead th, .ov2-table tbody td { padding: 9px 10px; }
+  .ov2-table tbody td:first-child { white-space: normal; }
+  .ov2-table-measure { align-items: flex-start; gap: 7px; }
+  .ov2-table-dot { margin-top: 6px; }
+  .ov2-table-id { min-width: 44px; }
+  .ov2-table-name { white-space: normal; overflow-wrap: anywhere; }
 }
 
 /* Detail panel — scrolls internally if its content exceeds the card height.
@@ -501,6 +584,16 @@
 }
 .ov2-clear:hover { color: var(--c-text); border-color: var(--c-border); background: var(--c-surface-2, rgba(0,0,0,0.03)); }
 .ov2-clear svg { flex-shrink: 0; }
+
+/* Clear, floated over the bubble field's top-right corner — it undoes a
+   selection made in the field, so it sits with the field rather than in the
+   detail panel's header. Opaque so bubbles can never show through it. */
+.ov2-clear-field {
+  position: absolute; top: 12px; right: 14px; z-index: 6;
+  background: var(--c-surface); box-shadow: var(--sh-sm);
+  animation: ov2-panel-in 0.2s ease both;
+}
+.ov2-clear-field:hover { background: var(--c-surface); border-color: var(--c-text-4); }
 
 .ov2-chip { align-self: flex-start; padding: 4px 10px; border-radius: var(--r-xs); font-size: 12px; font-weight: 600; border: 1px solid; }
 .ov2-chip-below { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error-border); }

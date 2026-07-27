@@ -21,7 +21,7 @@ import {
 } from '../../services/workflowService';
 import {
   STATUS_TONE, num, shortId, acronym, behaviorRead, portfolioRead,
-  rankByPriority, priorityFactors, withCustomGoals,
+  withCustomGoals,
   categoryOf, categoriesOf,
   SAMPLE_MEASURES, sampleKpis, sampleLowest, sampleCrsps, sampleEquityAlerts, sampleTrend,
   sampleProviders, sampleEquity,
@@ -127,15 +127,33 @@ const FieldLegend = ({ shown, total, sizeBy, tone, min, max, lens }) => {
 };
 
 const MAX_BUBBLES = 20;
-const PACK_DENSITY = 0.46; // total bubble area as a fraction of the field area
+const PACK_DENSITY = 0.42; // total bubble area as a fraction of the field area
 
-// Bubble radii are derived from the field, not fixed: a 92px radius that reads
-// well on a 1200px desktop field swallows a 320px phone field whole. The
-// shorter edge drives the scale so a wide, short field stays legible too.
+// ── Bubble size bounds ───────────────────────────────────────
+// The MINIMUM is a legibility floor, not an aesthetic one: a bubble that can't
+// carry its own id and rate is a dot the reader has to hover to identify, which
+// defeats the point of drawing it. D_LABEL is the diameter at which the id and
+// the "44% / 55%" line both fit, so the smallest bubble on the board is still
+// self-describing. The MAXIMUM stops the largest measure from swallowing the
+// field and starving the packer.
+//
+// These two also fix what the size channel can encode: an area range of
+// (R_MAX/R_MIN)² ≈ 6.7x against roughly 12x in the data, so the extremes
+// compress toward the bounds rather than the middle stretching. That trade is
+// deliberate — an honest-but-illegible 8px dot reads as noise, and the exact
+// counts are printed on the bubble and in the table view anyway.
+const D_LABEL = 68;          // smallest diameter that fits id + rate/goal
+const R_MIN = D_LABEL / 2;   // 34
+const R_MAX = 88;
+
+// Radii are derived from the field as well as the bounds: an 88px radius that
+// reads well on a 1200px desktop field swallows a 320px phone field whole, so
+// the shorter edge scales both bounds down together and the floor gives way
+// when the field genuinely can't host it.
 function radiusScale(W, H) {
   const edge = Math.min(W, H);
-  const rMax = Math.max(30, Math.min(92, edge * 0.2));
-  const rMin = Math.max(15, Math.min(30, rMax * 0.36));
+  const rMax = Math.max(30, Math.min(R_MAX, edge * 0.2));
+  const rMin = Math.max(15, Math.min(R_MIN, rMax * 0.42));
   return { rMin, rMax };
 }
 
@@ -269,6 +287,27 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
   // The status tab drives the bubble field (a field needs one band at a time).
   // Held here rather than in ScorecardV2: it only means anything to this board.
   const [statusFilter, setStatusFilter] = useState('Below Goal');
+  // The board renders the same set two ways. The bubble field is the comparison
+  // view (relative size and progress at a glance); the table is the reading view
+  // (exact numbers, every measure in one scroll). An explicit pick is persisted;
+  // null means "no preference", and the default then follows the viewport.
+  const [boardView, setBoardView] = useState(() => localStorage.getItem('qp_v2_board') || null);
+  const pickBoardView = (v) => { setBoardView(v); localStorage.setItem('qp_v2_board', v); };
+
+  // Below this width the field's bubble budget drops to 8 and the legibility
+  // floor collides with the fitted maximum, so every disc comes out the same
+  // size and the size channel encodes nothing. The table says more in that
+  // space, so it becomes the default — an explicit pick still wins.
+  const [isNarrow, setIsNarrow] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 720px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)');
+    const onChange = (e) => setIsNarrow(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const effectiveView = boardView || (isNarrow ? 'table' : 'bubbles');
   const setCategory = onCategory || (() => {});
   const [selectedId, setSelectedId] = useState(null);
   const [assignScope, setAssignScope] = useState(null); // {measure, level, intervention}
@@ -297,9 +336,21 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
 
   // Category ("sub-category") tabs come from whatever domains the data carries.
   const categories = useMemo(() => categoriesOf(grid), [grid]);
-  // The active category scopes every measure derivation below; null = All. Bubble
-  // sizing (maxV) is normalized within the category so switching status tabs
-  // inside a category never rescales the field.
+  const categoryCounts = useMemo(() => {
+    const c = {};
+    grid.forEach((m) => { const k = categoryOf(m); if (k) c[k] = (c[k] || 0) + 1; });
+    return c;
+  }, [grid]);
+  // There is no "All" tab, so a category is always in force once the data names
+  // one — seed the first the moment it's known.
+  useEffect(() => {
+    if (!category && categories.length) setCategory(categories[0]);
+    // setCategory is a prop-or-noop; re-running on its identity would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, categories]);
+  // The active category scopes every measure derivation below. Bubble sizing
+  // (maxV) is normalized within the category so switching status tabs inside a
+  // category never rescales the field.
   const catGrid = useMemo(
     () => (category ? grid.filter((m) => categoryOf(m) === category) : grid),
     [grid, category]
@@ -631,9 +682,29 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
               <h2 className="ov2-section-title">{LENSES[0]}</h2>
             )}
             {lens === 'Measures' && categories.length > 1 && (
-              <CategoryTabs categories={categories} value={category} onChange={setCategory} count={grid.length} />
+              <CategoryTabs categories={categories} value={category} onChange={setCategory} counts={categoryCounts} />
             )}
           </div>
+          {lens === 'Measures' && (
+            <div className="ov2-viewtoggle" role="group" aria-label="Board view">
+              <button type="button" aria-pressed={effectiveView === 'bubbles'}
+                className={`ov2-viewbtn ${effectiveView === 'bubbles' ? 'is-active' : ''}`}
+                onClick={() => pickBoardView('bubbles')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <circle cx="8" cy="9" r="4.5" /><circle cx="17" cy="15" r="3" />
+                </svg>
+                Bubbles
+              </button>
+              <button type="button" aria-pressed={effectiveView === 'table'}
+                className={`ov2-viewbtn ${effectiveView === 'table' ? 'is-active' : ''}`}
+                onClick={() => pickBoardView('table')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" />
+                </svg>
+                Table
+              </button>
+            </div>
+          )}
           {lens === 'Measures' && (
             <div className="ov2-pills" role="group" aria-label="Filter by status">
               {FILTERS.map((f) => (
@@ -647,7 +718,23 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
 
         <div className="ov2-body" ref={bodyRef}
           style={panelW ? { '--ov2-panel-w': `${panelW}px` } : undefined}>
+          {effectiveView === 'table' ? (
+            <MeasureTable rows={panelList} loading={loading} error={error} onRetry={refetch}
+              selectedId={selectedId} onPick={setSelectedId} statusFilter={statusFilter} />
+          ) : (
           <div className="ov2-field-wrap" onClick={() => selectedId && setSelectedId(null)}>
+            {/* Clear rides the field, not the panel header: the selection was made
+                here, so the way out of it belongs here too — and the panel's top
+                row is then free for the measure's own identity and stepper. */}
+            {selectedId && !loading && !error && (
+              <button type="button" className="ov2-clear ov2-clear-field"
+                onClick={(e) => { e.stopPropagation(); setSelectedId(null); }} title="Clear selection">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                Clear
+              </button>
+            )}
             {error ? (
               <ErrorState message="Couldn't load measures." onRetry={refetch} />
             ) : (
@@ -682,13 +769,21 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                       const frac = Math.max(0, Math.min(1, b.att != null ? b.att : b.rate / b.goal));
                       // Legibility tiers: the id always fits, the rate needs a
                       // second line, the goal a third, the gap a fourth.
-                      const compact = d < 64;
+                      // Tiers are pinned to D_LABEL, the size floor: at the
+                      // smallest bubble the board draws, the id and the
+                      // "44% / 55%" line both fit, so nothing is ever an
+                      // unidentifiable dot. `compact` only fires below the floor,
+                      // i.e. when the field itself is too small to honour it.
+                      const compact = d < D_LABEL;
                       const small = d < 88; // long ids ("AMM Cont") overrun 13px type here
                       // The size anchor: bubbles are sized by open-gap members, so
                       // print that count. Without it the eye reads size off the
                       // goal-distance lines and thinks size = "furthest below".
                       const showOpen = d >= 88 && b.sizeBy === 'gap' && b.value > 0;
-                      const showGoal = d >= 104 && b.goal > 0;
+                      // The goal rides the rate line as "58% / 66%" rather than
+                      // taking a line of its own — same information, one less row
+                      // of type inside the disc, so it fits at the floor.
+                      const showGoal = d >= D_LABEL && b.goal > 0;
                       return (
                         <button key={b.key}
                           className={`ov2-bubble ov2-bubble-${b.tone} ${proto ? 'is-proto' : ''} ${compact ? 'is-compact' : ''} ${small ? 'is-sm' : ''} ${isSel ? 'is-selected' : ''} ${selectedId && !isSel ? 'is-dim' : ''} ${b.measureId ? '' : 'is-static'}`}
@@ -706,13 +801,17 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                             </svg>
                           )}
                           <span className="ov2-bubble-id">{b.label}</span>
-                          {!compact && <span className="ov2-bubble-rate num">{b.rate}%</span>}
+                          {!compact && (
+                            <span className="ov2-bubble-rate num">
+                              {b.rate}%
+                              {showGoal && <span className="ov2-bubble-goal"> / {b.goal}%</span>}
+                            </span>
+                          )}
                           {showOpen && (
                             <span className="ov2-bubble-open num">
                               {fmtCount(b.value)}<span className="ov2-bubble-open-tag"> open</span>
                             </span>
                           )}
-                          {showGoal && <span className="ov2-bubble-goal num">goal {b.goal}%</span>}
                         </button>
                       );
                     })}
@@ -727,6 +826,7 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
               <FieldLegend shown={packed.length} total={fieldTotal} lens={lens} {...legend} />
             )}
           </div>
+          )}
 
           <div className="ov2-resizer" role="separator" aria-orientation="vertical"
             aria-label="Resize panel — drag, arrow keys, or double-click to reset" tabIndex={0}
@@ -741,7 +841,6 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                   peers={selectedPeers} selectedMonth={selectedMonth}
                   pos={selIdx >= 0 ? selIdx + 1 : null} total={panelIds.length}
                   onStep={stepMeasure}
-                  onClear={() => setSelectedId(null)}
                   onInvestigate={() => onInvestigate && onInvestigate(selected)}
                   onAssign={(intervention) => setAssignScope({ measure: selected, level: 'measure', intervention })} />
               ) : (
@@ -809,6 +908,73 @@ const OverviewAssign = ({ scope, token, selectedMonth, onClose, onAssign }) => {
   );
 };
 
+// The board's reading view. Same measures, same ranking and same selection as the
+// bubble field — but the numbers the field can only encode (goal, gap, eligible,
+// open gaps) are printed, and every measure is in one scroll rather than capped
+// at what the field can legibly pack.
+const MeasureTable = ({ rows, loading, error, onRetry, selectedId, onPick, statusFilter }) => {
+  if (error) return <div className="ov2-tablewrap"><ErrorState message="Couldn't load measures." onRetry={onRetry} /></div>;
+  if (loading) {
+    return (
+      <div className="ov2-tablewrap">
+        <div className="ov2-table-loading">
+          {[...Array(8)].map((_, i) => <Skeleton key={i} height={38} radius={8} style={{ marginBottom: 8 }} />)}
+        </div>
+      </div>
+    );
+  }
+  if (!rows.length) {
+    return (
+      <div className="ov2-tablewrap">
+        <EmptyState icon={statusFilter === 'Below Goal' ? '✅' : '🔍'}
+          title={`No measures ${statusFilter.toLowerCase()}`}
+          hint={statusFilter === 'Below Goal' ? 'Nothing needs attention this month.' : 'Try another status.'} />
+      </div>
+    );
+  }
+  return (
+    <div className="ov2-tablewrap">
+      <table className="ov2-table">
+        <thead>
+          <tr>
+            <th>Measure</th>
+            <th className="ta-r">Rate</th><th className="ta-r">Goal</th><th className="ta-r">Gap</th>
+            <th className="ta-r">Eligible</th><th className="ta-r">Open gaps</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((m) => {
+            const rate = num(m.rate), goal = num(m.goal_50th);
+            const gap = Math.round((rate - goal) * 10) / 10;
+            const denom = num(m.denominator);
+            const open = Math.max(0, denom - num(m.numerator));
+            const tone = STATUS_TONE[m.kpi_status] || 'below';
+            const sel = m.measure_id === selectedId;
+            return (
+              <tr key={m.measure_id} className={sel ? 'is-selected' : ''}
+                onClick={() => onPick(m.measure_id)} tabIndex={0} role="button"
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(m.measure_id); } }}>
+                <td>
+                  <span className="ov2-table-measure">
+                    <span className={`ov2-table-dot ov2-table-dot-${tone}`} aria-hidden="true" />
+                    <span className="ov2-table-id mono">{shortId(m.measure_id)}</span>
+                    <span className="ov2-table-name">{m.display_name}</span>
+                  </span>
+                </td>
+                <td className="ta-r"><span className={`ov2-table-rate ov2-table-rate-${tone} num`}>{rate}%</span></td>
+                <td className="ta-r num ov2-table-dim">{goal}%</td>
+                <td className={`ta-r num ${gap < 0 ? 'is-neg' : 'is-pos'}`}>{gap >= 0 ? '+' : ''}{gap} pts</td>
+                <td className="ta-r num ov2-table-dim">{denom ? denom.toLocaleString() : '—'}</td>
+                <td className="ta-r num">{open ? open.toLocaleString() : '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 // Shared signal list used by every read.
 export const Signals = ({ items, className = '' }) => (
   <ul className={`ov2-read-signals ${className}`}>
@@ -818,28 +984,22 @@ export const Signals = ({ items, className = '' }) => (
   </ul>
 );
 
-// One collapsible intelligence row. The one-line summary is always visible; the
-// math/detail expands on click. This is what keeps the four-stage read to four
-// scannable lines instead of four screens of scroll.
-export const Stage = ({ label, summary, tag, tagKind, defaultOpen = false, children }) => {
-  const [open, setOpen] = useState(defaultOpen);
+// One intelligence row: a labelled summary line with its supporting detail
+// beneath. The accordion is gone — it existed to keep a four-stage read to four
+// scannable lines, and there is only one stage left, so collapsing it just hid
+// the content behind a click for no gain.
+export const Stage = ({ label, summary, tag, tagKind, children }) => {
   const hasBody = Boolean(children);
   return (
-    <section className={`ov2-st ${open ? 'is-open' : ''}`}>
-      <button type="button" className="ov2-st-head" aria-expanded={hasBody ? open : undefined}
-        disabled={!hasBody} onClick={() => hasBody && setOpen((o) => !o)}>
+    <section className="ov2-st is-open is-static">
+      <div className="ov2-st-head">
         <span className="ov2-st-top">
           <span className="eyebrow ov2-st-label">{label}</span>
           {tag && <span className={`ov2-st-tag mono ${tagKind === 'preview' ? 'is-preview' : ''}`}>{tag}</span>}
-          {hasBody && (
-            <span className="ov2-st-chev" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-            </span>
-          )}
         </span>
         <span className="ov2-st-summary">{summary}</span>
-      </button>
-      {open && hasBody && <div className="ov2-st-body">{children}</div>}
+      </div>
+      {hasBody && <div className="ov2-st-body">{children}</div>}
     </section>
   );
 };
@@ -854,12 +1014,6 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth,
   const denominator = num(measure.denominator);
   const nonCompliant = Math.max(0, denominator - numerator);
 
-  // Stage 2 · Decision Intelligence — where this measure sits in the priority
-  // order for the current status group, and the math behind that rank.
-  const ranked = useMemo(() => rankByPriority(peers && peers.length ? peers : [measure]), [peers, measure]);
-  const mine = ranked.find((s) => s.measure.measure_id === measure.measure_id) || ranked[0];
-  const leader = ranked[0];
-
   const { data: trend, loading: trendLoading } = useAsync(
     () => fetchMiniChartData(measure.measure_id, token).catch(() => []),
     [measure.measure_id, selectedMonth], { enabled: !!token }
@@ -871,14 +1025,10 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth,
   // Stage 1 — Behavior Intelligence: a plain-language read of what's happening,
   // generated from the same numbers shown in the header and expandable detail.
   const read = behaviorRead(measure, trendData, crsps);
-  const isLeader = leader && leader.measure.measure_id === measure.measure_id;
-  const prioSummary = isLeader
-    ? `#1 of ${ranked.length} — the top recoverable opportunity here.`
-    : `#${mine.rank} of ${ranked.length} — work ${shortId(leader.measure.measure_id)} first.`;
 
   return (
     <div className="ov2-intel">
-      <Stage label="Behavior" summary={read.synthesis} tag={`Confidence · ${read.confidence.level}`}>
+      <Stage label="Where to focus" summary={read.synthesis}>
         <Signals items={read.signals} />
         {trendLoading ? <Skeleton height={64} radius={8} style={{ marginTop: 12 }} /> : <MiniTrend data={trendData} />}
         {denominator > 0 && (
@@ -891,6 +1041,10 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth,
         <p className="ov2-read-why mono">{read.confidence.why}</p>
       </Stage>
 
+      {/* The "Priority · where to focus" stage is retired: the read above now
+          carries that name, and a second ranked card said the same thing twice.
+          Restore by re-adding rankByPriority/priorityFactors here if the score
+          breakdown is wanted back.
       <Stage label="Priority · where to focus" summary={prioSummary} tag={`Score ${mine.score}`}>
         <div className="ov2-prio">
           <span className="ov2-prio-bar"><span className="ov2-prio-fill" style={{ width: `${Math.max(4, mine.score)}%` }} /></span>
@@ -898,6 +1052,7 @@ export const MeasureIntel = ({ measure, crsps = [], token, peers, selectedMonth,
         </div>
         <Signals items={priorityFactors(mine)} className="ov2-prio-factors" />
       </Stage>
+      */}
 
       {onAssign && <AssignmentStatus measureId={measure.measure_id} onAssign={onAssign} className="ov2-intel-assign" />}
     </div>
@@ -919,12 +1074,12 @@ export const ProviderIntel = ({ intel, compact = false, onAssign, hideAssign = f
   const { read, top } = intel;
   return (
     <div className="ov2-intel pva-intel">
-      <Stage label="Standing" summary={read.synthesis}
-        tag={`Confidence · ${read.confidence.level}`} defaultOpen={!compact}>
+      <Stage label="Standing" summary={read.synthesis}>
         <Signals items={read.signals} />
         <p className="ov2-read-why mono">{read.confidence.why}</p>
       </Stage>
 
+      {/* Retired alongside the measure-level priority card — see MeasureIntel.
       {!compact && top && (
         <Stage label="Where to focus"
           summary={`Work ${shortId(top.measure.measure_id)} first — ${top.open.toLocaleString()} members open · ${top.gap} pts under goal.`}
@@ -936,6 +1091,7 @@ export const ProviderIntel = ({ intel, compact = false, onAssign, hideAssign = f
           <Signals items={priorityFactors(top)} className="ov2-prio-factors" />
         </Stage>
       )}
+      */}
 
       {!compact && top && onAssign && !hideAssign && (
         <AssignmentStatus measureId={top.measure.measure_id}
@@ -1029,8 +1185,7 @@ const DefaultPanel = ({ loading, panel, cards, onPick }) => (
 
     {!loading && panel.read && (
       <div className="ov2-intel">
-        <Stage label="Board read" summary={panel.read.synthesis}
-          tag={`Confidence · ${panel.read.confidence.level}`} defaultOpen>
+        <Stage label="Board read" summary={panel.read.synthesis}>
           <Signals items={panel.read.signals} />
           <p className="ov2-read-why mono">{panel.read.confidence.why}</p>
         </Stage>
@@ -1041,7 +1196,7 @@ const DefaultPanel = ({ loading, panel, cards, onPick }) => (
   </div>
 );
 
-const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, pos, total, onStep, onClear, onInvestigate, onAssign }) => {
+const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, pos, total, onStep, onInvestigate, onAssign }) => {
   const rate = num(measure.rate), goal = num(measure.goal_50th);
   const gap = Math.round((rate - goal) * 10) / 10;
   const tone = STATUS_TONE[measure.kpi_status] || 'below';
@@ -1063,14 +1218,8 @@ const SelectedPanel = ({ measure, crsps, token, peers, selectedMonth, pos, total
               aria-label="Next measure" title="Next measure" onClick={() => onStep(1)}>›</button>
           </div>
         )}
-        {onClear && (
-          <button type="button" className="ov2-clear" onClick={onClear} title="Clear selection">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-            Clear
-          </button>
-        )}
+        {/* Clear lives on the bubble field now (top-right), beside the selection
+            it undoes — see .ov2-clear-field. */}
       </div>
       <h2 className="ov2-measure-name">{measure.display_name}</h2>
       {measure.measure_definition && <p className="ov2-measure-def">{measure.measure_definition}</p>}

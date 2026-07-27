@@ -92,7 +92,7 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
       <section className="pva-card">
         <div className="pva-card-head">
           <h2 className="pva-card-title">Provider insights</h2>
-          <span className="pva-card-sub">standing · where to focus</span>
+          <span className="pva-card-sub">standing across this portfolio</span>
         </div>
         {gridAsync.loading ? (
           <Skeleton height={16} radius={9999} />

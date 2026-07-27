@@ -36,11 +36,16 @@ export const acronym = (name) => ((name || '').split(/\s+/).filter(Boolean).map(
 // HEDIS reporting domains ("sub-categories"). Live grid rows carry their own
 // `category`; the sample set below is tagged from this map so the category tabs
 // are demonstrable on the fallback path too. Anything unmapped falls to EOC.
+// EOC is the roster from the client's "HEDIS Category Distribution (EOC)" sheet —
+// real measure codes and names, so the sample set matches the measures people
+// actually name in review. Only that sheet was supplied; ECDS and URU keep their
+// placeholder measures until the other sheets land.
 export const CATEGORY_MAP = {
-  APM_E: 'EOC', FUM_7: 'EOC', FUM_30: 'EOC', FUA_7: 'EOC', HBD: 'EOC', SSD: 'EOC',
-  CBP: 'EOC', AMM_Acute: 'EOC', AMM_Cont: 'EOC', SPC: 'EOC', SPD: 'EOC', ADD: 'EOC', BPD: 'EOC',
-  BCS_E: 'ECDS', CCS: 'ECDS', COL_E: 'ECDS', IMA: 'ECDS', CIS: 'ECDS', CHL: 'ECDS', FVA: 'ECDS', W30: 'ECDS', WCV: 'ECDS',
-  AAP: 'AAC', PPC_Pre: 'AAC',
+  AAB: 'EOC', AAP: 'EOC', ADD: 'EOC', AMM: 'EOC', APC: 'EOC', BCS: 'EOC', CBP: 'EOC',
+  CCS: 'EOC', COL: 'EOC', CPC: 'EOC', DAE: 'EOC', DRR: 'EOC', EED: 'EOC', FUA: 'EOC',
+  FUH: 'EOC', FUI: 'EOC', FUM: 'EOC', GSD: 'EOC', HBD: 'EOC', IET: 'EOC', KED: 'EOC',
+  PPC: 'EOC', SAA: 'EOC', SMD: 'EOC', SSD: 'EOC', TBC: 'EOC', WCC: 'EOC', WCV: 'EOC',
+  IMA: 'ECDS', CIS: 'ECDS', CHL: 'ECDS', FVA: 'ECDS', W30: 'ECDS',
   PCE: 'URU', AMR: 'URU',
 };
 export const categoryOf = (m) => (m && (m.category || CATEGORY_MAP[m.measure_id])) || 'EOC';
@@ -67,40 +72,60 @@ export const statusFor = (rate, goal) => {
 // Used as a fallback so the views are always demonstrable (the bundled JWT is
 // frequently expired). Spread across all three status buckets with varied
 // distance-from-goal so the bubble sizing is visible.
-const M = (measure_id, display_name, rate, goal_50th, def) => {
+// The eligible population is given per measure rather than derived from the rate.
+// It used to be `1500 + (rate * 37) % 5000`, which made every variable a function
+// of the rate: open-gap counts landed in a 1.3k–1.8k band and the bubble field
+// drew two dozen near-identical circles, so the size channel carried nothing.
+// Real denominators span orders of magnitude — a whole-population access measure
+// against a depression-remission cohort — and the goals span 12% to 88%, so the
+// field now varies in both size and ring fill.
+const M = (measure_id, display_name, rate, goal_50th, eligible, def) => {
   const kpi_status = statusFor(rate, goal_50th);
-  const denominator = 1500 + ((rate * 37) % 5000);
+  const denominator = eligible;
   const numerator = Math.round((rate / 100) * denominator);
   return { measure_id, display_name, rate, goal_50th, kpi_status, numerator, denominator, measure_definition: def, category: CATEGORY_MAP[measure_id] || 'EOC' };
 };
 
 export const SAMPLE_MEASURES = [
-  M('AAP', 'Adult Access to Preventive/Ambulatory Health', 62, 68, 'Adults with at least one outpatient or preventive visit during the year.'),
-  M('APM_E', 'Antipsychotic Metabolic Monitoring', 49, 60, 'Members on antipsychotics with appropriate metabolic monitoring.'),
-  M('FUM_7', 'Follow-Up After ED Visit — Mental Illness (7-day)', 41, 55, 'Follow-up within 7 days of an ED visit for mental illness.'),
-  M('FUM_30', 'Follow-Up After ED Visit — Mental Illness (30-day)', 58, 66, 'Follow-up within 30 days of an ED visit for mental illness.'),
-  M('FUA_7', 'Follow-Up After ED Visit — Substance Use (7-day)', 38, 52, 'Follow-up within 7 days of an ED visit for substance use.'),
-  M('HBD', 'Hemoglobin A1c Control for Diabetes', 57, 65, 'Diabetic patients whose most recent HbA1c is in control.'),
-  M('BCS_E', 'Breast Cancer Screening', 64, 70, 'Women 50–74 who had a mammogram to screen for breast cancer.'),
-  M('CCS', 'Cervical Cancer Screening', 60, 67, 'Women screened for cervical cancer at the recommended interval.'),
-  M('COL_E', 'Colorectal Cancer Screening', 53, 64, 'Adults 45–75 screened for colorectal cancer.'),
-  M('SSD', 'Diabetes Screening — Schizophrenia/Bipolar', 47, 58, 'Members on antipsychotics screened for diabetes.'),
-  M('AMR', 'Asthma Medication Ratio', 55, 63, 'Members with persistent asthma with an acceptable medication ratio.'),
-  M('IMA', 'Immunizations for Adolescents', 51, 60, 'Adolescents who received recommended immunizations by age 13.'),
-  M('WCV', 'Well-Child Visits (3–6 yrs)', 59, 65, 'Children with the recommended number of well-child visits.'),
-  M('PPC_Pre', 'Prenatal Care — Timeliness', 61, 68, 'Pregnant members who received timely prenatal care.'),
-  M('CBP', 'Controlling High Blood Pressure', 67, 70, 'Members with hypertension whose blood pressure is controlled.'),
-  M('AMM_Acute', 'Antidepressant Medication — Acute Phase', 69, 70, 'Members who stayed on antidepressants through the acute phase.'),
-  M('SPC', 'Statin Therapy — Cardiovascular Disease', 71, 70, 'Members with CVD on appropriate statin therapy.'),
-  M('SPD', 'Statin Therapy — Diabetes', 68, 68, 'Diabetic members on appropriate statin therapy.'),
-  M('ADD', 'Follow-Up for Children on ADHD Medication', 66, 65, 'Children on ADHD meds with appropriate follow-up.'),
-  M('AMM_Cont', 'Antidepressant Medication — Continuation', 72, 70, 'Members who stayed on antidepressants through continuation.'),
-  M('CHL', 'Chlamydia Screening in Women', 81, 70, 'Sexually active women screened for chlamydia during the year.'),
-  M('CIS', 'Childhood Immunization Status', 78, 68, 'Children who received recommended immunizations by age 2.'),
-  M('W30', 'Well-Child Visits — First 30 Months', 76, 66, 'Infants with the recommended well-child visits in 30 months.'),
-  M('BPD', 'Blood Pressure Control for Diabetes', 74, 67, 'Diabetic members whose blood pressure is controlled.'),
-  M('FVA', 'Flu Vaccinations for Adults', 83, 70, 'Adults who received an influenza vaccination.'),
-  M('PCE', 'COPD — Pharmacotherapy Management', 79, 69, 'COPD members on appropriate pharmacotherapy.'),
+  // ── EOC — the client's measure roster (code + name as supplied) ──────────
+  // rate, goal, eligible population.
+  M('AAB', 'Avoidance of Antibiotic Treatment for Acute Bronchitis/Bronchiolitis', 28, 32, 8400, 'Episodes of acute bronchitis NOT dispensed an antibiotic.'),
+  M('AAP', "Adults' Access to Preventive/Ambulatory Health Services", 81, 86, 46000, 'Adults with at least one ambulatory or preventive visit during the year.'),
+  M('ADD', 'Follow-Up Care for Children Prescribed ADHD Medication', 41, 45, 2100, 'Children on ADHD medication with the recommended follow-up visits.'),
+  M('AMM', 'Antidepressant Medication Management', 74, 72, 5600, 'Members who stayed on antidepressant medication as prescribed.'),
+  M('APC', 'Asthma Medication Ratio', 58, 63, 3900, 'Members with persistent asthma holding an acceptable controller ratio.'),
+  M('BCS', 'Breast Cancer Screening', 69, 74, 12800, 'Women 50–74 screened for breast cancer with a mammogram.'),
+  M('CBP', 'Controlling High Blood Pressure', 57, 62, 15400, 'Members with hypertension whose blood pressure is adequately controlled.'),
+  M('CCS', 'Cervical Cancer Screening', 66, 71, 11200, 'Women screened for cervical cancer at the recommended interval.'),
+  M('COL', 'Colorectal Cancer Screening', 44, 55, 18600, 'Adults 45–75 screened for colorectal cancer.'),
+  M('CPC', 'Care for Older Adults', 52, 48, 2700, 'Older adults receiving the full care-assessment set.'),
+  M('DAE', 'Appropriate Testing for Pharyngitis', 84, 88, 4300, 'Pharyngitis episodes with an appropriate strep test before antibiotics.'),
+  M('DRR', 'Depression Remission or Response', 8, 12, 900, 'Members reaching remission or response after a positive depression screen.'),
+  M('EED', 'Eye Exam for Patients With Diabetes', 49, 58, 9700, 'Diabetic members with a retinal eye exam in the measurement year.'),
+  M('FUA', 'Follow-Up After Emergency Department Visit for People With Mental Illness', 29, 36, 3100, 'Follow-up within 7 days of an ED visit for mental illness.'),
+  M('FUH', 'Follow-Up After Hospitalization for Mental Illness', 51, 58, 1800, 'Follow-up within 7 days of a mental-illness inpatient discharge.'),
+  M('FUI', 'Follow-Up After High-Intensity Care for Substance Use Disorder', 17, 24, 1150, 'Follow-up after high-intensity substance use disorder care.'),
+  M('FUM', 'Follow-Up After Emergency Department Visit for People With Multiple High-Risk Chronic Conditions', 63, 68, 2450, 'Follow-up within 7 days of an ED visit for multiple chronic conditions.'),
+  M('GSD', 'Glycemic Status Assessment for Patients With Diabetes', 55, 61, 10400, 'Diabetic members whose glycemic status was assessed and in range.'),
+  M('HBD', 'Hemoglobin A1c Control for Patients With Diabetes', 61, 59, 9900, 'Diabetic members whose most recent HbA1c is in control.'),
+  M('IET', 'Initiation and Engagement of Substance Use Disorder Treatment', 13, 18, 6200, 'Members who initiated and then engaged in SUD treatment.'),
+  M('KED', 'Kidney Health Evaluation for Patients With Diabetes', 36, 42, 8900, 'Diabetic members with both an eGFR and a uACR in the year.'),
+  M('PPC', 'Prenatal and Postpartum Care', 78, 82, 2300, 'Pregnant members receiving timely prenatal and postpartum care.'),
+  M('SAA', 'Adherence to Antipsychotic Medications for Individuals With Schizophrenia', 62, 66, 1400, 'Members with schizophrenia adherent to their antipsychotic medication.'),
+  M('SMD', 'Diabetes Screening for People With Schizophrenia or Bipolar Disorder Using Antipsychotic Medications', 83, 79, 1650, 'Members on antipsychotics screened for diabetes.'),
+  M('SSD', 'Diabetes Monitoring for People With Diabetes and Schizophrenia', 57, 64, 780, 'Members with both diabetes and schizophrenia receiving diabetes monitoring.'),
+  M('TBC', 'Tobacco Use Screening and Cessation Intervention', 71, 76, 22500, 'Members screened for tobacco use and offered a cessation intervention.'),
+  M('WCC', 'Well-Child Visits in the First 30 Months of Life', 59, 65, 3400, 'Infants and toddlers with the recommended well-child visits.'),
+  M('WCV', 'Child and Adolescent Well-Care Visits', 46, 52, 16800, 'Children and adolescents with at least one well-care visit.'),
+
+  // ── ECDS / URU — placeholders until those sheets are supplied ────────────
+  M('IMA', 'Immunizations for Adolescents', 51, 60, 4100, 'Adolescents who received recommended immunizations by age 13.'),
+  M('CIS', 'Childhood Immunization Status', 78, 68, 3600, 'Children who received recommended immunizations by age 2.'),
+  M('CHL', 'Chlamydia Screening in Women', 81, 70, 5200, 'Sexually active women screened for chlamydia during the year.'),
+  M('FVA', 'Flu Vaccinations for Adults', 83, 70, 24000, 'Adults who received an influenza vaccination.'),
+  M('W30', 'Well-Child Visits — First 30 Months', 76, 66, 2900, 'Infants with the recommended well-child visits in 30 months.'),
+  M('PCE', 'COPD — Pharmacotherapy Management', 79, 69, 2050, 'COPD members on appropriate pharmacotherapy.'),
+  M('AMR', 'Asthma Medication Ratio — Rural cohort', 55, 63, 3800, 'Rural members with persistent asthma holding an acceptable ratio.'),
 ];
 
 export const sampleKpis = () => {
@@ -217,7 +242,7 @@ export const fmtCompact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/
 // follow-up measures are triple-weighted in Medicaid quality programs); the rest
 // default to 1. Kept as an explicit, editable table so the weight shows in the
 // math rather than hiding in a model.
-const MEASURE_WEIGHT = { FUM_7: 3, FUA_7: 3, FUH: 3, FUM_30: 2, APM_E: 2, SSD: 2, AMM_Acute: 2, AMM_Cont: 2 };
+const MEASURE_WEIGHT = { FUA: 3, FUH: 3, FUM: 3, FUI: 3, IET: 2, SAA: 2, SSD: 2, SMD: 2, AMM: 2, ADD: 2 };
 
 // Priority = recoverable work × how far below goal × program weight × urgency.
 // Every term comes from the measure's own numbers, so a rank can always explain

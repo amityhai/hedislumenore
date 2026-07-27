@@ -7,7 +7,13 @@
 }
 
 /* Back + breadcrumb row */
-.sc2-topnav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; animation: ov2-fade 0.3s ease both; }
+/* Own stacking context, above the page cards below it — the crumbs carry the
+   measure/provider switcher popups, which would otherwise open behind the
+   header card that starts a few pixels lower. */
+.sc2-topnav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 30; animation: ov2-fade 0.3s ease both; }
+/* Period control, pushed to the row's right edge — the same corner it occupies
+   in the Overview header, so it stays where the eye already looks for it. */
+.sc2-topnav-month { margin-left: auto; flex-shrink: 0; }
 .sc2-back {
   display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
   height: 30px; padding: 0 13px 0 11px; border-radius: var(--r-full);
@@ -30,6 +36,51 @@
 }
 .sc2-crumb:hover { color: var(--c-primary); }
 .sc2-crumb.is-current { color: var(--c-text); cursor: default; }
+
+/* Crumbs that switch what they name — the measure and the provider. The chevron
+   is the only thing distinguishing them from a plain crumb, so the trail keeps
+   reading as a trail rather than as a row of controls. */
+.sc2-crumb-menu { position: relative; display: inline-flex; }
+/* Given a field's chrome — background and a light border — so it reads as
+   something you can open. As a bare word with a chevron it looked like a typo in
+   the trail rather than a control. */
+.sc2-crumb-switch {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--c-text);
+  padding: 4px 9px; border: 1px solid var(--c-border-light); border-radius: var(--r-xs);
+  background: var(--c-bg-subtle, rgba(0,0,0,0.03));
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+.sc2-crumb-switch:hover { background: var(--c-primary-light); border-color: var(--c-primary); color: var(--c-primary-dark); }
+.sc2-crumb-switch[aria-expanded="true"] { background: var(--c-primary-light); border-color: var(--c-primary); color: var(--c-primary-dark); }
+/* An SVG caret, vertically centred. The "⌄" glyph sits off its own baseline, so
+   it never lined up with the uppercase crumb text beside it. */
+.sc2-crumb-chev { display: inline-flex; align-items: center; color: var(--c-text-4); transition: transform 0.16s ease, color 0.14s ease; }
+.sc2-crumb-switch:hover .sc2-crumb-chev,
+.sc2-crumb-switch[aria-expanded="true"] .sc2-crumb-chev { color: currentColor; }
+.sc2-crumb-chev.is-open { transform: rotate(180deg); }
+.sc2-crumb-pop {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
+  min-width: 280px; max-width: 420px; max-height: 340px; overflow-y: auto;
+  padding: 6px; border: 1px solid var(--c-border); border-radius: var(--r-md, 12px);
+  background: var(--c-surface); box-shadow: var(--sh-lg, var(--sh-md));
+  animation: ov2-fade 0.14s ease both;
+}
+.sc2-crumb-opt {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 7px 9px; border: none; border-radius: var(--r-sm); background: transparent;
+  font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0;
+  color: var(--c-text-2); cursor: pointer; transition: background 0.12s ease;
+}
+.sc2-crumb-opt:hover { background: var(--c-primary-light); }
+.sc2-crumb-opt.is-current { background: var(--c-primary-light); color: var(--c-primary-dark); font-weight: 600; cursor: default; }
+.sc2-crumb-opt-tag {
+  flex: none; min-width: 58px; padding: 2px 6px; border-radius: var(--r-xs);
+  font-size: 10.5px; font-weight: 700; text-align: center;
+  background: var(--c-bg-subtle, rgba(0,0,0,0.04)); color: var(--c-text-3);
+}
+.sc2-crumb-opt-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc2-crumb-opt-rate { flex: none; font-weight: 600; font-size: 12px; color: var(--c-text-3); }
+.sc2-crumb-empty { padding: 10px; font-size: 12.5px; color: var(--c-text-3); text-transform: none; letter-spacing: 0; }
 
 /* ── Category ("sub-category") tabs — shared Overview + Explorer ───── */
 .sc2-cats { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }

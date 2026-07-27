@@ -14,7 +14,7 @@ import {
   fetchMeasureStratificationRace,
   fetchMeasureStratificationEthnicity,
 } from '../../services/workflowService';
-import { num, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, worklistRead, addAssignment, activePlaysForMember, ASSIGNMENTS_EVENT } from './v2utils';
+import { num, shortId, statusFor, STATUS_TONE, sampleEquity, sampleMembers, STAFF, INTERVENTIONS, stratumRead, worklistRead, addAssignment, activePlaysForMember, ASSIGNMENTS_EVENT } from './v2utils';
 import { Signals } from './OverviewExplore';
 
 const toneFor = (rate, goal) => STATUS_TONE[statusFor(rate, goal)] || 'below';
@@ -158,6 +158,11 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
 
   // Context header metrics — reflect the effective stratum so the header follows
   // an in-page equity filter, not just the stratum this worklist opened on.
+  // A provider carried across a measure switch arrives as an identity only —
+  // its rate and goal belong to the measure it came from and are being
+  // re-resolved. Falling through to the measure's own numbers here would print
+  // the network rate under the provider's name, so hold the metrics instead.
+  const providerPending = !!provider?._stale;
   const rate = num(effStrat?.rate ?? provider?.rate ?? measure?.rate);
   const goal = num(effStrat?.goal ?? provider?.goal ?? measure?.goal_50th);
   const delta = Math.round((rate - goal) * 10) / 10;
@@ -224,7 +229,16 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
             <div className="mwl-head-titlerow">
               <h2 className="mwl-head-title">{title}</h2>
               {insight?.read.isDisparity && <span className="mwl-head-flag mono">WIDEST DISPARITY</span>}
-              {/* No rate badge — the Rate metric on the right already states it. */}
+              {/* No rate badge — the Rate metric on the right already states it.
+                  The measure is named explicitly: the title is the provider (or
+                  the stratum), so without this the page never says which measure
+                  these members are non-compliant on. */}
+              {measure?.display_name && title !== measure.display_name && (
+                <span className="mwl-head-measure">
+                  Measure · <strong>{measure.display_name}</strong>
+                  <span className="mwl-head-mid mono">{shortId(measure.measure_id)}</span>
+                </span>
+              )}
               {providerName && <span className="mwl-head-provider">Provider · <strong>{providerName}</strong></span>}
             </div>
             {/* Assign the play and Analyze the provider are the two moves off this
@@ -251,9 +265,9 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
             )}
           </div>
           <div className="mwl-head-metrics">
-            <div><span className="mwl-mk">Rate</span><span className="mwl-mv num">{rate}%</span></div>
-            <div><span className="mwl-mk">Goal</span><span className="mwl-mv num">{goal}%</span></div>
-            <div><span className="mwl-mk">Delta</span><span className={`mwl-mv num ${delta < 0 ? 'is-neg' : 'is-pos'}`}>{delta >= 0 ? '+' : ''}{delta} pts</span></div>
+            <div><span className="mwl-mk">Rate</span><span className="mwl-mv num">{providerPending ? '—' : `${rate}%`}</span></div>
+            <div><span className="mwl-mk">Goal</span><span className="mwl-mv num">{providerPending ? '—' : `${goal}%`}</span></div>
+            <div><span className="mwl-mk">Delta</span><span className={`mwl-mv num ${delta < 0 ? 'is-neg' : 'is-pos'}`}>{providerPending ? '—' : `${delta >= 0 ? '+' : ''}${delta} pts`}</span></div>
             <div className="mwl-msep" />
             <div><span className="mwl-mk">Members</span><span className="mwl-mv num">{loading ? '—' : members.length}</span></div>
             <div><span className="mwl-mk">Non-comp.</span><span className="mwl-mv num is-neg">{loading ? '—' : nonCompliant}</span></div>
@@ -501,7 +515,6 @@ const HeadRead = ({ insight, loading }) => {
       <section className="mwl-read-col">
         <div className="mwl-read-top">
           <span className="eyebrow">Standing</span>
-          <span className="ov2-st-tag mono">Confidence · {read.confidence.level}</span>
         </div>
         <p className="mwl-read-lead">{read.synthesis}</p>
         <Signals items={read.signals} />

@@ -93,6 +93,42 @@
 .apx-stack .is-strong { color: var(--c-primary-dark); font-weight: 600; }
 .apx-stack .is-strong span { color: var(--c-primary-dark); }
 
+/* The two figures that actually differ once several interventions are picked:
+   the work queued, and the people it lands on. Given display weight because this
+   is the number the assigner is deciding on. */
+.apx-block-members { padding: 14px 14px 12px; border: 1px solid var(--c-border-light); border-radius: var(--r-md, 12px); background: var(--c-surface); }
+.apx-figures { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 8px; }
+.apx-fig { display: flex; flex-direction: column; gap: 2px; }
+.apx-fig-v { font-size: 21px; font-weight: 700; line-height: 1.05; color: var(--c-text-3); letter-spacing: -0.02em; }
+.apx-fig.is-lead .apx-fig-v { font-size: 30px; color: var(--c-primary-dark); }
+.apx-fig-k { font-size: 11.5px; font-weight: 600; color: var(--c-text-4); }
+.apx-fig-sep { width: 1px; align-self: stretch; margin: 4px 0; background: var(--c-border-light); }
+.apx-fig-note { font-size: 12px; color: var(--c-text-3); margin-bottom: 8px; }
+.apx-fig-note strong { color: var(--c-text-2); font-weight: 700; }
+
+/* Interventions — a multi-select chip set plus a custom entry, replacing the
+   single-pick dropdown. One member commonly needs several plays. */
+.apx-ivs { display: flex; flex-wrap: wrap; gap: 8px; }
+.apx-iv {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; text-align: left;
+  color: var(--c-text-2); background: var(--c-surface);
+  border: 1px solid var(--c-border); border-radius: var(--r-full);
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+.apx-iv:hover { border-color: var(--c-primary); background: var(--c-primary-light); }
+.apx-iv.is-on { border-color: var(--c-primary); background: var(--c-primary-light); color: var(--c-primary-dark); font-weight: 600; }
+.apx-iv:hover .apx-check { border-color: var(--c-primary); }
+.apx-iv-add { display: flex; gap: 8px; margin-top: 10px; }
+.apx-iv-add input { flex: 1; min-width: 0; }
+.apx-iv-add button { flex: none; }
+
+/* Provider pool — what the scope auto-selected, and a way to see it. */
+.apx-pool { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--c-text-2); }
+.apx-pool-count strong { color: var(--c-text); font-weight: 700; }
+/* The pool itself opens as a docked table beside the panel — see ProvidersPanel,
+   which reuses the member roster's .apxm chrome. */
+
 /* Clickable targeting affordances */
 .apx-pick {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
@@ -260,6 +296,8 @@
    over the covered tint so a picked row always reads as picked. */
 .apxm-table tbody tr.is-picked, .apxm-table tbody tr.is-picked:hover { background: var(--c-assign-light); box-shadow: inset 3px 0 0 var(--c-assign); }
 .apxm-table .ta-r { text-align: right; }
+.apxm-table .is-neg { color: var(--c-error-text); font-weight: 600; }
+.apxm-table .is-pos { color: var(--c-success-text); font-weight: 600; }
 
 /* Checkbox column pins to the left edge so the pick control (and the row it
    belongs to) stays put while the wider columns scroll under it. Each sticky

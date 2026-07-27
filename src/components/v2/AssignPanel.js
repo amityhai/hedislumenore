@@ -7,7 +7,7 @@ import {
   fetchEthnicityMemberDetails,
   fetchCRSPMemberDetails,
 } from '../../services/workflowService';
-import { num, statusFor, STAFF, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure, activePlaysForMember, ASSIGNMENTS_EVENT, sampleMembersForStrata } from './v2utils';
+import { num, statusFor, INTERVENTIONS, addAssignment, assignmentScopeKey, activeAssignmentsForMeasure, activePlaysForMember, ASSIGNMENTS_EVENT, sampleMembersForStrata } from './v2utils';
 
 export const UNASSIGNED = 'Unassigned pool';
 
@@ -111,17 +111,34 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     return n;
   });
   const clearPicked = () => setPicked({});
-  // A recommended action can seed the intervention (see the "Assign this
-  // intervention" button on the measure card's Recommended-action stage). The
-  // recommendation vocabulary is separate from the assign list, so a preset that
-  // isn't already an option gets prepended rather than dropped.
-  const [intervention, setIntervention] = useState(scope.intervention || INTERVENTIONS[0]);
-  const interventionOptions = useMemo(
-    () => (scope.intervention && !INTERVENTIONS.includes(scope.intervention)
-      ? [scope.intervention, ...INTERVENTIONS] : INTERVENTIONS),
-    [scope.intervention]
+  // Interventions are a SET, not a single pick: one member commonly needs a call
+  // *and* an appointment, and each is its own task. A recommended action can seed
+  // the set (see the measure card's "Assign this intervention" button); a preset
+  // outside the standard vocabulary is kept as a custom option rather than
+  // dropped, alongside anything typed into the custom field.
+  const [customList, setCustomList] = useState(
+    () => (scope.intervention && !INTERVENTIONS.includes(scope.intervention) ? [scope.intervention] : [])
   );
-  const [staff, setStaff] = useState(UNASSIGNED);
+  const [interventions, setInterventions] = useState(() => [scope.intervention || INTERVENTIONS[0]]);
+  const [customDraft, setCustomDraft] = useState('');
+  const interventionOptions = useMemo(() => [...customList, ...INTERVENTIONS], [customList]);
+  const toggleIntervention = (x) => setInterventions((cur) =>
+    (cur.includes(x) ? cur.filter((i) => i !== x) : [...cur, x]));
+  const addCustom = () => {
+    const v = customDraft.trim();
+    if (!v) return;
+    if (!interventionOptions.includes(v)) setCustomList((c) => [v, ...c]);
+    setInterventions((cur) => (cur.includes(v) ? cur : [...cur, v]));
+    setCustomDraft('');
+  };
+  // Every record still carries one intervention, so the label shown to a reader
+  // (roster header, toast) joins the set.
+  const interventionLabel = interventions.join(' · ') || '—';
+  // Providers are picked by the scope, not by hand: arriving from a measure means
+  // the whole CRSP pool is in play, so this field reports the pool rather than
+  // asking who to give it to. Staffing stays the unassigned pool for now.
+  const staff = UNASSIGNED;
+  const [showPool, setShowPool] = useState(false);
   const [due, setDue] = useState(defaultDue);
   const [why, setWhy] = useState('');
 
@@ -175,12 +192,30 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     // A hand-picked set is exact and overrides every predicate narrowing.
     if (hasPicked) return { members: pickedList.length, providers: 1, approx: false };
 
-    const base = atMeasure && provPick
-      ? provPick.reduce((s, r) => s + r.nonCompliant, 0)
-      : baseNonCompliant;
+    // A provider subset takes its SHARE of the measure's open gaps, not the raw
+    // sum of the subset's own counts. Provider rows and the measure roll-up come
+    // from different queries and don't reconcile — summing them made dropping one
+    // provider from 30 report five times more members than the whole measure has.
+    // Allocating proportionally is bounded by the measure's own total and makes
+    // the full pool land exactly on it.
+    const providerNarrowed = atMeasure && provPick && provPick.length !== providerRows.length;
+    let base = baseNonCompliant;
+    if (atMeasure && provPick) {
+      const poolOpen = providerRows.reduce((s, r) => s + r.nonCompliant, 0);
+      const pickOpen = provPick.reduce((s, r) => s + r.nonCompliant, 0);
+      base = poolOpen > 0
+        ? Math.round(measureNonCompliant * Math.min(1, pickOpen / poolOpen))
+        : Math.round(measureNonCompliant * (provPick.length / Math.max(1, providerRows.length)));
+    }
     const providerCount = atMeasure ? (provPick ? provPick.length : providerRows.length) : 1;
 
-    if (!strataReach) return { members: base, providers: providerCount, approx: false };
+    if (!strataReach) {
+      return {
+        members: base, providers: providerCount,
+        approx: providerNarrowed,
+        why: providerNarrowed ? "provider counts scaled to the measure's total" : undefined,
+      };
+    }
 
     // The stratum counts describe the whole network. They're exact only when
     // nothing else narrows the scope; otherwise there's no provider × stratum
@@ -192,6 +227,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
       : Math.round(base * (measureNonCompliant > 0 ? strataReach.members / measureNonCompliant : 0));
 
     const why = [];
+    if (providerNarrowed) why.push("provider counts scaled to the measure's total");
     if (!wholeNetwork) why.push('no provider × group cross-tab');
     if (strataReach.crossDim) why.push('selected groups overlap');
     return { members, providers: providerCount, approx: why.length > 0, why: why.join('; ') };
@@ -231,8 +267,21 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   );
   const priorCovered = priorForScope.reduce((s, a) => s + (a.coverEstimate || 0), 0);
   const skipped = Math.min(inScope.members, priorCovered);
+  // `created` is the count of distinct MEMBERS this play newly reaches; `tasks` is
+  // the work it queues. They differ once several interventions are picked — the
+  // same member carrying a call, a letter and an appointment is 3 tasks, 1 member.
   const created = Math.max(0, inScope.members - skipped);
+  const perMember = Math.max(1, interventions.length);
+  const tasks = created * perMember;
   const hasPrior = priorForScope.length > 0;
+
+  // Who the tasks land on. From a measure scope this is the auto-selected CRSP
+  // pool (narrowed if the concentration set is targeted); from a provider scope
+  // it is that one provider.
+  const poolProviders = useMemo(() => {
+    if (!atMeasure) return scope.provider ? [scope.provider] : [];
+    return provPick || providerRows;
+  }, [atMeasure, provPick, providerRows, scope.provider]);
 
   // "If every gap closes" is a useless projection — it's always 100%. What the
   // assigner needs is the inverse: how much of this scope has to convert to hit
@@ -259,24 +308,41 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
     ];
   }, [provPick, strata]);
 
+  // Provider picking mirrors the member roster: null means "the whole pool", so
+  // every row reads as ticked until one is turned off. Ticking back up to the
+  // full set collapses to null rather than an equivalent explicit list.
+  const providerPicked = (p) => (provPick ? provPick.some((x) => x.crsp === p.crsp) : true);
+  const toggleProvider = (p) => {
+    const cur = provPick || providerRows;
+    const next = cur.some((x) => x.crsp === p.crsp)
+      ? cur.filter((x) => x.crsp !== p.crsp)
+      : [...cur, p];
+    setProvPick(next.length === providerRows.length ? null : next);
+  };
+  const allProvidersPicked = !provPick || provPick.length === providerRows.length;
+  const toggleAllProviders = () => setProvPick(allProvidersPicked ? [] : null);
+
   const clearTarget = () => { setProvPick(null); setStrata([]); };
   const toggleStratum = (r) => setStrata((cur) =>
     cur.some((x) => sameRow(x, r)) ? cur.filter((x) => !sameRow(x, r)) : [...cur, r]);
 
   const submit = () => {
     // Persist the assignment locally so it survives reload — the tracking board
-    // and the "action taken" chips read from the same store. `coverEstimate` is
-    // the tasks this play newly creates, so reopening the scope later skips it.
-    const record = addAssignment({
+    // and the "action taken" chips read from the same store. One record per
+    // intervention, since each is separately worked and separately completed;
+    // `coverEstimate` is the MEMBERS this play newly covers, so reopening the
+    // scope later skips them regardless of how many interventions were picked.
+    const records = (interventions.length ? interventions : [INTERVENTIONS[0]]).map((iv) => addAssignment({
       measureId: measure?.measure_id,
       measureName: measure?.display_name,
       level: scope.level,
       crsp: crspForScope,
       providers: provPick ? provPick.map((r) => r.crsp) : null,
       target,
-      intervention, assignedTo: staff, due, why,
+      intervention: iv, assignedTo: staff, due, why,
       coverEstimate: created,
-    });
+    }));
+    const record = records[0];
     onAssign({
       scope: {
         measureId: measure?.measure_id,
@@ -286,9 +352,10 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
         strata: target.strata || null,
         nonCompliantOnly: true,
       },
-      intervention, assignedTo: staff, due, why,
-      preview: { members: inScope.members, created, skipped },
+      intervention: interventionLabel, interventions, assignedTo: staff, due, why,
+      preview: { members: inScope.members, created: tasks, uniqueMembers: created, skipped },
       assignmentId: record.id,
+      assignmentIds: records.map((r) => r.id),
     });
   };
 
@@ -315,7 +382,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
 
   return (
     <div className="apx-scrim" onClick={onClose}>
-      <div className={`apx-shell ${memberScope ? 'has-members' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`apx-shell ${memberScope || showPool ? 'has-members' : ''}`} onClick={(e) => e.stopPropagation()}>
       <div className="apx" role="dialog" aria-modal="true" aria-label="Assign intervention">
         <header className="apx-head">
           <div>
@@ -372,26 +439,47 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
             </section>
           )}
 
-          <section className="apx-block">
-            <h4 className="apx-block-title">Members</h4>
-            {hasPicked ? (
-              <ul className="apx-stack">
-                <li><span className="num">{pickedList.length.toLocaleString()}</span> hand-picked from the roster</li>
-                <li className="is-strong">→ <span className="num">{created.toLocaleString()}</span> new tasks</li>
-                <li><button type="button" className="apx-linkbtn" onClick={clearPicked}>Clear selection</button></li>
-              </ul>
-            ) : hasCounts ? (
-              <ul className="apx-stack">
-                <li><span className="num">{inScope.members.toLocaleString()}</span> non-compliant in scope{inScope.approx && <em> (estimated — {inScope.why})</em>}</li>
-                {hasPrior && (
-                  <li className="is-muted">
-                    <span className="num">{skipped.toLocaleString()}</span> already covered by an active play — will be skipped
-                  </li>
+          <section className="apx-block apx-block-members">
+            <h4 className="apx-block-title">Members &amp; work</h4>
+            {hasCounts || hasPicked ? (
+              <>
+                {/* The blast radius, stated as the two numbers that are actually
+                    different: the work queued, and the people it lands on. */}
+                <div className="apx-figures">
+                  <div className="apx-fig is-lead">
+                    <span className="apx-fig-v num">{tasks.toLocaleString()}</span>
+                    <span className="apx-fig-k">{tasks === 1 ? 'task' : 'total tasks'}</span>
+                  </div>
+                  <span className="apx-fig-sep" aria-hidden="true" />
+                  <div className="apx-fig">
+                    <span className="apx-fig-v num">{created.toLocaleString()}</span>
+                    <span className="apx-fig-k">unique {created === 1 ? 'member' : 'members'}</span>
+                  </div>
+                </div>
+                {perMember > 1 && (
+                  <p className="apx-fig-note">
+                    <strong className="num">{perMember}</strong> interventions × <strong className="num">{created.toLocaleString()}</strong> members —
+                    a member carrying all {perMember} is {perMember} tasks but still one member.
+                  </p>
                 )}
-                <li className="is-strong">
-                  → <span className="num">{created.toLocaleString()}</span> {hasPrior ? 'newly-eligible tasks' : 'new tasks'}
-                </li>
-              </ul>
+                <ul className="apx-stack">
+                  {hasPicked ? (
+                    <>
+                      <li><span className="num">{pickedList.length.toLocaleString()}</span> hand-picked from the roster</li>
+                      <li><button type="button" className="apx-linkbtn" onClick={clearPicked}>Clear selection</button></li>
+                    </>
+                  ) : (
+                    <>
+                      <li><span className="num">{inScope.members.toLocaleString()}</span> non-compliant in scope{inScope.approx && <em> (estimated — {inScope.why})</em>}</li>
+                      {hasPrior && (
+                        <li className="is-muted">
+                          <span className="num">{skipped.toLocaleString()}</span> already covered by an active play — will be skipped
+                        </li>
+                      )}
+                    </>
+                  )}
+                </ul>
+              </>
             ) : (
               <p className="apx-line is-muted">Member counts aren't available for this provider.</p>
             )}
@@ -429,8 +517,8 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                       <span className="apx-eq-group">{r.group}</span>
                       {/* Peek at just this group's roster without changing what's targeted. */}
                       <span className={`apx-eq-view ${viewing ? 'is-viewing' : ''}`} role="button" tabIndex={0}
-                        onClick={(e) => { e.stopPropagation(); setMemberScope(viewing ? null : { kind: 'stratum', row: r }); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setMemberScope(viewing ? null : { kind: 'stratum', row: r }); } }}>
+                        onClick={(e) => { e.stopPropagation(); setMemberScope(viewing ? null : { kind: 'stratum', row: r }); setShowPool(false); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setMemberScope(viewing ? null : { kind: 'stratum', row: r }); setShowPool(false); } }}>
                         {viewing ? 'viewing ✓' : 'view members ›'}
                       </span>
                       <span className="apx-eq-rate num">{r.rate}%</span>
@@ -450,19 +538,52 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           </section>
 
           <div className="apx-form">
-            <label className="apx-field">
-              <span>Intervention</span>
-              <select value={intervention} onChange={(e) => setIntervention(e.target.value)}>
-                {interventionOptions.map((x) => <option key={x}>{x}</option>)}
-              </select>
-            </label>
-            <label className="apx-field">
-              <span>Assign to</span>
-              <select value={staff} onChange={(e) => setStaff(e.target.value)}>
-                <option>{UNASSIGNED}</option>
-                {STAFF.map((x) => <option key={x}>{x}</option>)}
-              </select>
-            </label>
+            <div className="apx-field apx-field-wide">
+              <span>Interventions <em>(pick one or more)</em></span>
+              <div className="apx-ivs">
+                {interventionOptions.map((x) => {
+                  const on = interventions.includes(x);
+                  return (
+                    <button key={x} type="button" aria-pressed={on}
+                      className={`apx-iv ${on ? 'is-on' : ''}`} onClick={() => toggleIntervention(x)}>
+                      <span className="apx-check" aria-hidden="true" />
+                      {x}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="apx-iv-add">
+                <input type="text" value={customDraft} placeholder="Add a custom intervention…"
+                  aria-label="Add a custom intervention"
+                  onChange={(e) => setCustomDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }} />
+                <button type="button" className="btn btn-secondary btn-sm"
+                  disabled={!customDraft.trim()} onClick={addCustom}>Add</button>
+              </div>
+            </div>
+
+            {/* Not "assign to a person": arriving from a measure auto-selects the
+                whole CRSP pool, so the field reports that pool and offers to show
+                it. Staffing stays the unassigned queue. */}
+            <div className="apx-field apx-field-wide">
+              <span>Providers in scope</span>
+              <div className="apx-pool">
+                <span className="apx-pool-count">
+                  <strong className="num">{poolProviders.length}</strong>{' '}
+                  {poolProviders.length === 1 ? 'provider' : 'CRSPs / providers'}
+                  {atMeasure && !provPick && ' — auto-selected from the measure'}
+                  {atMeasure && provPick && ' — narrowed to the targeted set'}
+                </span>
+                {atMeasure && providerRows.length > 0 && (
+                  <button type="button" className={`btn btn-secondary btn-sm apx-viewmembers ${showPool ? 'is-on' : ''}`}
+                    aria-pressed={showPool} onClick={() => { setShowPool((s) => !s); setMemberScope(null); }}>
+                    {showPool ? 'Hide providers' : 'View / pick providers'}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
             <label className="apx-field">
               <span>Due</span>
               <input type="date" min={today()} value={due} onChange={(e) => setDue(e.target.value)} />
@@ -477,10 +598,10 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
         <footer className="apx-foot">
           <p className={`apx-summary ${reach?.short ? 'is-short' : ''}`}>
             {hasPicked ? (
-              <>Creates <strong className="num">{created.toLocaleString()}</strong> {created === 1 ? 'task' : 'tasks'} for the <strong>{pickedList.length.toLocaleString()}</strong> selected {pickedList.length === 1 ? 'member' : 'members'}</>
+              <>Creates <strong className="num">{tasks.toLocaleString()}</strong> {tasks === 1 ? 'task' : 'tasks'} across the <strong>{pickedList.length.toLocaleString()}</strong> selected {pickedList.length === 1 ? 'member' : 'members'}</>
             ) : !hasCounts ? 'Scope has no member counts to preview.' : (
               <>
-                Creates <strong className="num">{created.toLocaleString()}</strong> tasks · skips <strong className="num">{skipped.toLocaleString()}</strong>
+                Creates <strong className="num">{tasks.toLocaleString()}</strong> tasks for <strong className="num">{created.toLocaleString()}</strong> members · skips <strong className="num">{skipped.toLocaleString()}</strong>
                 {reach && (reach.short
                   ? <> · <strong>too small</strong> — even if all close, {baseRate}% → <strong className="num">{reach.ceiling}%</strong>, still <strong className="num">{reach.gap.toLocaleString()}</strong> short of goal</>
                   : <> · <strong className="num">{reach.mustClose.toLocaleString()}</strong> ({reach.share}%) must close to reach {goal}%</>)}
@@ -489,12 +610,20 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           </p>
           <div className="apx-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="button" className="btn btn-assign" disabled={!created} onClick={submit}>
-              Assign {created > 0 ? created.toLocaleString() : ''}
+            <button type="button" className="btn btn-assign" disabled={!tasks || !interventions.length} onClick={submit}>
+              Assign {tasks > 0 ? tasks.toLocaleString() : ''}
             </button>
           </div>
         </footer>
       </div>
+
+      {showPool && (
+        <ProvidersPanel rows={providerRows} goal={goal}
+          isPicked={providerPicked} onToggle={toggleProvider}
+          allPicked={allProvidersPicked} onToggleAll={toggleAllProviders}
+          pickedCount={provPick ? provPick.length : providerRows.length}
+          onClose={() => setShowPool(false)} />
+      )}
 
       {memberScope && (
         <MembersPanel
@@ -506,8 +635,8 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           crsp={crspForScope}
           stratum={viewStratum}
           strata={strata}
-          isStratumView={memberScope.kind === 'stratum'}
-          intervention={intervention}
+          isStratumView={memberScope?.kind === 'stratum'}
+          intervention={interventionLabel}
           picked={picked}
           stratumTargeted={stratumTargeted}
           onToggleStratumTarget={toggleViewStratum}
@@ -518,6 +647,88 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
       )}
       </div>
     </div>
+  );
+};
+
+// ── Providers panel ──────────────────────────────────────────
+// The CRSP pool behind the "N providers" line, docked the same way the member
+// roster is — a compact list in the form couldn't show the numbers that decide
+// which providers are worth keeping in scope. Rows are tickable, and the panel's
+// counts follow: the whole pool is in scope until something is turned off.
+const ProvidersPanel = ({ rows, goal, isPicked, onToggle, allPicked, onToggleAll, pickedCount, onClose }) => {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const sorted = useMemo(() => [...rows].sort((a, b) => num(a.rate) - num(b.rate)), [rows]);
+  const someChecked = !allPicked && pickedCount > 0;
+  const below = sorted.filter((p) => statusFor(p.rate, goal) === 'Below Goal').length;
+
+  return (
+    <section className="apxm" role="dialog" aria-modal="true" aria-label="Providers in scope">
+      <header className="apxm-head">
+        <div className="apxm-head-id">
+          <h3>Providers</h3>
+          <span className="apxm-scope">{sorted.length} in the pool</span>
+          <span className="apxm-scope-sub">{below} below goal · sorted worst first</span>
+        </div>
+        <div className="apxm-tabs">
+          <span className="apxm-selected"><span className="num">{pickedCount}</span> selected</span>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm apxm-x" onClick={onClose} aria-label="Hide providers">✕</button>
+        </div>
+      </header>
+
+      <div className="apxm-scroll">
+        {sorted.length === 0 ? (
+          <p className="apxm-note">No providers in this scope.</p>
+        ) : (
+          <table className="apxm-table">
+            <thead>
+              <tr>
+                <th className="apxm-pick">
+                  <input type="checkbox" aria-label="Select all providers"
+                    checked={allPicked} ref={(el) => { if (el) el.indeterminate = someChecked; }}
+                    onChange={onToggleAll} />
+                </th>
+                <th>Provider</th>
+                <th className="ta-r">Rate</th><th className="ta-r">Goal</th><th className="ta-r">Delta</th>
+                <th className="ta-r">Members</th><th className="ta-r">Open gaps</th><th className="ta-r">To goal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((p, i) => {
+                const rate = num(p.rate);
+                const d = Math.round((rate - goal) * 10) / 10;
+                const on = isPicked(p);
+                return (
+                  <tr key={`${p.crsp}-${i}`} className={on ? 'is-picked' : ''}>
+                    <td className="apxm-pick">
+                      <input type="checkbox" aria-label={`Select ${p.crsp}`} checked={on} onChange={() => onToggle(p)} />
+                    </td>
+                    <td className="apxm-name">{p.crsp}</td>
+                    <td className="ta-r num">{rate}%</td>
+                    <td className="ta-r num apxm-dim">{goal}%</td>
+                    <td className={`ta-r num ${d < 0 ? 'is-neg' : 'is-pos'}`}>{d >= 0 ? '+' : ''}{d} pts</td>
+                    <td className="ta-r num apxm-dim">{p.denom ? p.denom.toLocaleString() : '—'}</td>
+                    <td className="ta-r num">{p.nonCompliant ? p.nonCompliant.toLocaleString() : '—'}</td>
+                    <td className="ta-r num">{p.need ? p.need.toLocaleString() : '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <footer className="apxm-foot">
+        <span className="apxm-foot-note">
+          Untick a provider to drop it from the assignment — the panel's counts follow. <strong>To goal</strong> is how many of that provider's members must close to reach {goal}%.
+        </span>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Hide</button>
+      </footer>
+    </section>
   );
 };
 
