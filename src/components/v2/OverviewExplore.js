@@ -763,7 +763,10 @@ const OverviewExplore = ({ onInvestigate, token, selectedMonth, onMonthChange, a
                       // att is that fraction, capped 0..1. Bubbles without a goal
                       // (Providers/Equity lens) keep the flat tone.
                       const proto = b.goal > 0;
-                      const sw = Math.max(3, d * 0.055);          // ring thickness (constant)
+                      // Ring thickness is constant across bubbles — it carries no
+                      // data, so scaling it with the disc made big bubbles read as
+                      // "heavier" on a channel that means nothing.
+                      const sw = 6;
                       const rr = b.radius - sw / 2 - 1;           // inset so the stroke sits inside the disc
                       const circ = 2 * Math.PI * rr;
                       const frac = Math.max(0, Math.min(1, b.att != null ? b.att : b.rate / b.goal));
