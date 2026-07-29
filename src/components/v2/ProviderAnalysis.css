@@ -160,7 +160,7 @@
 .pva-actions { display: flex; align-items: stretch; gap: 10px; margin-top: 16px; }
 .pva-actions .pva-assign { flex: 1; margin-top: 0; }
 .pva-actions .pva-assign:not(.asx-taken) { display: flex; }
-.pva-actions .pva-assign .asx-assign { width: 100%; height: 100%; justify-content: center; }
+.pva-actions .pva-assign .asx-assign { width: 100%; min-height: 100%; justify-content: center; }
 .pva-actions .pva-worklist { flex: 1; margin-top: 0; align-self: auto; }
 
 @media (max-width: 900px) {

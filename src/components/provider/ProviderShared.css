@@ -1,0 +1,63 @@
+/* ── Shared bits across provider-portal pages ─────────────────── */
+
+/* Page header — every provider page (Home, Interventions, Performance)
+   opens with this title + one-line description. */
+.pv-hero { margin-bottom: 24px; }
+.pv-hero-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin: 0; }
+.pv-hero-sub { font-size: 13.5px; color: var(--c-text-3); margin: 6px 0 0; }
+
+.pv-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+}
+
+.pv-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0 0 14px;
+}
+.pv-section-sub { font-size: 13px; color: var(--c-text-3); margin: -8px 0 16px; }
+
+.pv-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--r-full);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pv-status-pill.is-info    { background: var(--c-info-bg);    color: var(--c-info-text); }
+.pv-status-pill.is-warn    { background: var(--c-warn-bg);    color: var(--c-warn-text); }
+.pv-status-pill.is-success { background: var(--c-success-bg); color: var(--c-success-text); }
+.pv-status-pill.is-error   { background: var(--c-error-bg);   color: var(--c-error-text); }
+.pv-status-pill.is-neutral { background: var(--c-bg-subtle);  color: var(--c-text-3); border: 1px solid var(--c-border); }
+
+.pv-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: 13.5px;
+}
+
+.pv-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pv-btn:hover:not(:disabled) { background: var(--c-bg-subtle); border-color: var(--c-text-4); }
+.pv-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pv-btn-primary { background: var(--pv-primary); border-color: var(--pv-primary); color: #fff; }
+.pv-btn-primary:hover:not(:disabled) { background: var(--pv-primary-dark); border-color: var(--pv-primary-dark); }

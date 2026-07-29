@@ -200,6 +200,29 @@
 
 .sidebar-closed .nav-item.active::before { display: none; }
 
+.sidebar-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 12px 16px;
+  padding: 10px 14px;
+  border: none;
+  border-top: 1px solid var(--c-border-light);
+  border-radius: 0;
+  background: transparent;
+  color: var(--c-text-3);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sidebar-signout:hover { color: var(--c-error-text); }
+.sidebar-open .sidebar-signout { justify-content: flex-start; padding-top: 16px; }
+.sidebar-closed .sidebar-signout-text { display: none; }
+.sidebar-closed .sidebar-signout { justify-content: center; padding-top: 16px; }
+
 /* ── User profile ───────────────────────────────────────────── */
 .user-profile {
   padding: 20px 20px 24px;

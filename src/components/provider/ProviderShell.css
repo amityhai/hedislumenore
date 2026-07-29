@@ -1,0 +1,224 @@
+/* ── Provider Portal shell ────────────────────────────────────
+   Left sidebar, mirroring the staff app's shell (App.css) so both audiences
+   share the same navigation shape — only the theme color and nav items
+   differ. Scoped under `.provider-portal` so its tokens never leak into the
+   staff app. */
+
+.provider-portal {
+  --pv-primary:      #3f74c9;
+  --pv-primary-dark: #2f5da8;
+  --pv-primary-ring: rgba(63, 116, 201, 0.16);
+  --pv-primary-light:#e8f0fb;
+  --pv-primary-subtle:#c4d6f0;
+
+  display: flex;
+  min-height: 100vh;
+  background: var(--c-bg);
+  font-family: var(--font);
+  color: var(--c-text);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.pv-sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--c-border-light);
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+.pv-sidebar-open { width: var(--sidebar-w); left: 0; }
+.pv-sidebar-closed { width: 80px; left: 0; }
+
+.pv-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 12px;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 100%;
+}
+.pv-sidebar-closed .pv-sidebar-header { flex-direction: column; justify-content: center; gap: 12px; }
+
+.pv-sidebar-toggle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.pv-sidebar-toggle:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+
+.pv-brand {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  user-select: none;
+  width: 100%;
+}
+.pv-brand-icon { flex-shrink: 0; min-width: 28px; }
+.pv-sidebar-open .pv-brand { justify-content: flex-start; }
+.pv-sidebar-closed .pv-brand-text,
+.pv-sidebar-closed .pv-sidebar-badge-wrap { display: none; }
+
+.pv-sidebar-badge-wrap { padding: 0 16px 12px; }
+.pv-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--pv-primary-dark);
+  background: var(--pv-primary-light);
+  border: 1px solid var(--pv-primary-subtle);
+  border-radius: var(--r-full);
+  padding: 4px 9px;
+}
+
+.pv-nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 16px;
+  flex: 1;
+}
+
+.pv-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  color: var(--c-text-3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  user-select: none;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  text-align: left;
+  position: relative;
+}
+.pv-nav-item svg { flex-shrink: 0; }
+.pv-sidebar-open .pv-nav-item { justify-content: flex-start; }
+.pv-sidebar-closed .pv-nav-item { justify-content: center; padding: 10px 16px; gap: 0; }
+.pv-sidebar-closed .pv-nav-item-text { display: none; }
+
+.pv-nav-item:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
+.pv-nav-item.active {
+  background: var(--pv-primary-light);
+  color: var(--pv-primary-dark);
+  font-weight: 600;
+}
+.pv-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 3px;
+  border-radius: var(--r-full);
+  background: var(--pv-primary);
+}
+.pv-sidebar-closed .pv-nav-item.active::before { display: none; }
+
+.pv-sidebar-identity {
+  padding: 12px 16px 0;
+  border-top: 1px solid var(--c-border-light);
+  margin: 0 12px;
+}
+.pv-identity-name { font-size: 13px; font-weight: 600; color: var(--c-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-identity-meta { font-size: 11.5px; color: var(--c-text-4); font-family: var(--font-mono); margin-top: 2px; }
+.pv-sidebar-closed .pv-sidebar-identity { display: none; }
+
+.pv-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 12px 16px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--c-text-3);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+}
+.pv-signout:hover { background: var(--c-bg-subtle); color: var(--c-error-text); }
+.pv-sidebar-open .pv-signout { justify-content: flex-start; }
+.pv-sidebar-closed .pv-signout-text { display: none; }
+.pv-sidebar-closed .pv-signout { justify-content: center; }
+
+/* ── Main content ────────────────────────────────────────────── */
+.pv-main-content {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  transition: margin-left 0.3s ease;
+  min-width: 0;
+}
+.pv-main-content-expanded { margin-left: 80px; }
+
+.pv-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 32px 60px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+.pv-mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px; left: 16px;
+  z-index: 60;
+  width: 38px; height: 38px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--sh-sm);
+}
+.pv-sidebar-scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 32, 0.42);
+  z-index: 49;
+}
+
+@media (max-width: 768px) {
+  .pv-mobile-menu-btn { display: flex; }
+  .pv-sidebar-scrim { display: block; }
+  .pv-sidebar-closed { left: -80px; }
+  .pv-main-content,
+  .pv-main-content-expanded { margin-left: 0; }
+  .pv-content { padding: 64px 16px 48px; }
+}

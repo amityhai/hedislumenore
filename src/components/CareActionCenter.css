@@ -11,7 +11,7 @@
 /* ── KPIs ────────────────────────────────────────────────────── */
 .cac-kpis {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 22px;
 }
@@ -34,6 +34,7 @@
 .cac-kpi-below::before { background: var(--c-error); }
 .cac-kpi-warn::before  { background: var(--c-warn); }
 .cac-kpi-at::before    { background: var(--c-info); }
+.cac-kpi-done::before  { background: var(--c-success); }
 
 .cac-kpi-label {
   font-size: 12px;
@@ -120,10 +121,14 @@
   font-size: 12px;
   font-weight: 600;
 }
-/* Assignment is workflow state, not goal status — teal family, not green,
-   matching the v2 worklist's assigned pill. */
-.cac-pill-unassigned { background: var(--c-warn-bg); color: var(--c-warn-text); }
-.cac-pill-assigned   { background: var(--c-primary-light); color: var(--c-primary-dark); border: 1px solid var(--c-primary-subtle); }
+/* Lifecycle status, sourced from the shared v2 assignment store (the same
+   one Intervention Tracking used to render as its own page) — same color
+   tokens that page used, just relocated here now that it's one table. */
+.status-pill-unassigned    { background: var(--c-warn-bg); color: var(--c-warn-text); }
+.status-pill-assigned      { background: var(--c-assign-light); color: var(--c-assign-dark); }
+.status-pill-in_progress   { background: var(--c-info-bg); color: var(--c-info-text); }
+.status-pill-action_taken  { background: var(--c-success-bg); color: var(--c-success-text); }
+.status-pill-closed        { background: var(--c-bg-subtle); color: var(--c-text-3); }
 
 
 /* ── Pagination ──────────────────────────────────────────────── */
@@ -157,7 +162,9 @@
 .cac-pagination .btn-icon { font-size: 16px; line-height: 1; }
 
 /* ── Modal ───────────────────────────────────────────────────── */
-.modal-overlay {
+/* Prefixed (cac-modal-*, cac-form-group) so these never collide with any
+   other page's generic .modal classes. */
+.cac-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
@@ -170,7 +177,7 @@
 }
 @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
 
-.modal {
+.cac-modal {
   width: 100%;
   max-width: 460px;
   background: var(--c-surface);
@@ -181,20 +188,20 @@
 }
 @keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 
-.modal-header {
+.cac-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
 }
-.modal-header h2 { font-size: 17px; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; }
-.modal-close {
+.cac-modal-header h2 { font-size: 17px; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; }
+.cac-modal-close {
   background: transparent; border: none; cursor: pointer;
   color: var(--c-text-4); font-size: 15px; padding: 4px 8px; border-radius: var(--r-sm);
 }
-.modal-close:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
+.cac-modal-close:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
 
-.modal-meta {
+.cac-modal-meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px 16px;
@@ -203,16 +210,30 @@
   border-radius: var(--r-md);
   margin-bottom: 18px;
 }
-.modal-meta > div { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--c-text-2); }
-.modal-meta > div:first-child { grid-column: 1 / -1; }
-.modal-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-text-4); font-weight: 600; }
+.cac-modal-meta > div { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--c-text-2); }
+.cac-modal-meta > div:first-child { grid-column: 1 / -1; }
+.cac-modal-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-text-4); font-weight: 600; }
 
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--c-text-2); margin-bottom: 6px; }
-.form-group .req { color: var(--c-error); }
-.form-group input,
-.form-group select,
-.form-group textarea {
+/* Shown when the row being edited is covered by a population/stratum play
+   rather than one created just for this member — the status/remove controls
+   below it act on that whole play, not just this row. */
+.cac-broad-notice {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--c-text-2);
+  background: var(--c-info-bg);
+  border: 1px solid var(--c-info-border, var(--c-border));
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.cac-form-group { margin-bottom: 14px; }
+.cac-form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--c-text-2); margin-bottom: 6px; }
+.cac-form-group .req { color: var(--c-error); }
+.cac-form-group input,
+.cac-form-group select,
+.cac-form-group textarea {
   width: 100%;
   padding: 9px 12px;
   border: 1px solid var(--c-border);
@@ -223,16 +244,16 @@
   background: var(--c-surface);
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.cac-form-group input:focus,
+.cac-form-group select:focus,
+.cac-form-group textarea:focus {
   outline: none;
   border-color: var(--c-primary);
   box-shadow: 0 0 0 3px var(--c-primary-ring);
 }
-.form-group textarea { resize: vertical; }
+.cac-form-group textarea { resize: vertical; }
 
-.modal-actions {
+.cac-modal-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -240,7 +261,7 @@
   margin-top: 20px;
 }
 /* Explains the disabled Save button instead of letting it read as broken. */
-.modal-hint { margin-right: auto; font-size: 12px; color: var(--c-text-3); }
+.cac-modal-hint { margin-right: auto; font-size: 12px; color: var(--c-text-3); }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
@@ -251,5 +272,5 @@
   .cac { padding: var(--page-pad-mobile); }
   .cac-table-wrap { overflow-x: auto; }
   .cac-table { min-width: 640px; }
-  .modal-meta { grid-template-columns: 1fr; }
+  .cac-modal-meta { grid-template-columns: 1fr; }
 }

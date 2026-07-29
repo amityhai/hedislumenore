@@ -12,7 +12,12 @@ import {
   fetchCACActionableCount,
   saveCareAction,
 } from '../services/workflowService';
-import { sampleMembers, SAMPLE_MEASURES, STAFF } from './v2/v2utils';
+import {
+  sampleMembers, SAMPLE_MEASURES, STAFF,
+  activePlaysForMember, addAssignment, updateAssignment, removeAssignment,
+  ASSIGN_STATUSES, ASSIGN_STATUS_LABEL,
+} from './v2/v2utils';
+import { useAssignments } from './v2/AssignmentStatus';
 
 // Demo rows in the grid's row shape ([memberId, name, measure, crsp, assignedTo])
 // so the page stays demonstrable when the workflow is unreachable — same
@@ -26,6 +31,17 @@ const sampleGridRows = () =>
     i % 4 === 0 ? STAFF[i % STAFF.length] : 'Unassigned',
   ]);
 
+// A stratum/population target keeps matching members who enter the pool later,
+// so a play like this can cover a member row even though no one ever touched
+// that specific row's "Assign" button. An explicit member set is fixed.
+// (Mirrors the same map formerly in Intervention Tracking, now folded in here
+// since that page's status board was merged into this table.)
+const TARGET_KIND = {
+  stratum: { label: 'group predicate', hint: 'Auto-covers members who enter this group later' },
+  population: { label: 'whole population', hint: 'Auto-covers new non-compliant members' },
+  members: { label: 'fixed member set', hint: 'A hand-picked set — never grows' },
+};
+
 // `onBack` is gone: the sidebar is the navigation — an in-page "Back to
 // Overview" duplicated it and pointed at the parked classic dashboard.
 const CareActionCenter = ({ token }) => {
@@ -36,7 +52,15 @@ const CareActionCenter = ({ token }) => {
   const [actionType, setActionType] = useState('');
   const [assignedStaff, setAssignedStaff] = useState('');
   const [notes, setNotes] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Live read of the shared v2 assignment store — the same one Intervention
+  // Tracking used to read on its own page. Merging that page into this one
+  // means a row here can now be "covered" by a play created anywhere in the
+  // app (measure explorer, provider view, member worklist), not just by this
+  // page's own Assign flow.
+  const assignments = useAssignments();
 
   // Data
   const [measures, setMeasures] = useState([]);
@@ -61,9 +85,40 @@ const CareActionCenter = ({ token }) => {
   const [kpiData, setKpiData] = useState({ nonCompliant: 0, unassigned: 0, actionable: 0 });
   const [loadingKpi, setLoadingKpi] = useState(true);
 
-  // ── Derived: client-side filtering ──────────────────────────
-  const isUnassigned = (row) => !row[4] || row[4] === 'Unassigned';
+  // ── Derived: assignment-store coverage, per row ─────────────
+  // Keyed by memberId|measureId so a member showing up under two different
+  // measures gets decorated independently. `activePlaysForMember` already
+  // implements the member/population/stratum coverage rules (v2utils.js) —
+  // reused verbatim rather than re-derived here.
+  const decorationMap = useMemo(() => {
+    const map = new Map();
+    gridData.forEach((row) => {
+      const plays = activePlaysForMember({ memberId: row[0], crsp: row[3], compliant: false }, row[2]);
+      map.set(`${row[0]}|${row[2]}`, {
+        plays,
+        status: plays[0] ? plays[0].status : null,
+        isBroad: plays[0] ? plays[0].target?.kind !== 'members' : false,
+      });
+    });
+    return map;
+  }, [gridData, assignments]);
 
+  const decorationForRow = (row) => decorationMap.get(`${row[0]}|${row[2]}`) || { plays: [], status: null, isBroad: false };
+
+  // Whole-store count, not just the visible page — matches how Intervention
+  // Tracking computed the same figure.
+  const actionTakenCount = assignments.filter((a) => a.status === 'action_taken').length;
+
+  // A play's status is the authoritative lifecycle signal once one exists.
+  // Falls back to the legacy row[4]-only check for the demo/sample path,
+  // where there's no backing assignment store data to read.
+  const rowStatus = (row) => {
+    const d = decorationForRow(row);
+    if (d.status) return d.status;
+    return row[4] && row[4] !== 'Unassigned' ? 'assigned' : 'unassigned';
+  };
+
+  // ── Derived: client-side filtering ──────────────────────────
   const filteredData = useMemo(() => {
     return gridData.filter((row) => {
       // Measure and CRSP are server-side filters on the live path — the fetch
@@ -72,12 +127,12 @@ const CareActionCenter = ({ token }) => {
       // or picking a measure would visibly do nothing.
       if (gridSample && selectedMeasure && row[2] !== selectedMeasure) return false;
       if (gridSample && selectedCrsp && row[3] !== selectedCrsp) return false;
-      if (assignmentFilter === 'unassigned' && !isUnassigned(row)) return false;
-      if (assignmentFilter === 'assigned' && isUnassigned(row)) return false;
+      if (assignmentFilter && rowStatus(row) !== assignmentFilter) return false;
       if (staffFilter && row[4] !== staffFilter) return false;
       return true;
     });
-  }, [gridData, gridSample, selectedMeasure, selectedCrsp, assignmentFilter, staffFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridData, gridSample, selectedMeasure, selectedCrsp, assignmentFilter, staffFilter, decorationMap]);
 
   // Option lists. The live endpoints supply the measure/CRSP vocabularies; when
   // they're down the dropdowns fall back to the values actually present in the
@@ -165,13 +220,17 @@ const CareActionCenter = ({ token }) => {
 
   // ── Modal handlers ──────────────────────────────────────────
   const handleOpenModal = (row) => {
+    const d = decorationForRow(row);
+    const latestPlay = d.plays[0] || null;
     setSelectedAction({
       memberId: row[0], name: row[1], measure: row[2], crsp: row[3],
       assignedTo: row[4] || 'Unassigned',
+      latestPlay,
     });
-    setAssignedStaff(row[4] && row[4] !== 'Unassigned' ? row[4] : '');
+    setAssignedStaff(latestPlay?.assignedTo || (row[4] && row[4] !== 'Unassigned' ? row[4] : ''));
     setActionType('');
     setNotes('');
+    setSelectedStatus(latestPlay?.status || '');
   };
 
   const handleCloseModal = () => {
@@ -180,11 +239,32 @@ const CareActionCenter = ({ token }) => {
     setActionType('');
     setAssignedStaff('');
     setNotes('');
+    setSelectedStatus('');
+  };
+
+  // A play created here always covers just this member — its removal simply
+  // reverts the row. A play covering a whole population/stratum was created
+  // elsewhere (measure/provider/worklist assign flows); removing it clears
+  // every member row it covered, not just the one the modal was opened from.
+  const handleRemoveAssignment = () => {
+    const play = selectedAction?.latestPlay;
+    if (!play) return;
+    removeAssignment(play.id);
+    if (play.target?.kind === 'members') {
+      setGridData((rows) => rows.map((r) =>
+        (r[0] === selectedAction.memberId && r[2] === selectedAction.measure) ? [r[0], r[1], r[2], r[3], 'Unassigned'] : r
+      ));
+    }
+    toast({ type: 'success', message: 'Assignment removed.' });
+    handleCloseModal();
   };
 
   // Close the loop: persist, optimistically update the row + KPI, confirm.
+  // A brand-new assignment writes both the (simulated) backend action and a
+  // durable local play; an already-assigned row only carries a status change.
   const handleSaveAction = async () => {
-    if (!actionType) { toast({ type: 'error', message: 'Choose an action type before saving.' }); return; }
+    const isNewAssignment = !selectedAction.latestPlay;
+    if (isNewAssignment && !actionType) { toast({ type: 'error', message: 'Choose an action type before saving.' }); return; }
     setSaving(true);
     try {
       const res = await saveCareAction({
@@ -196,15 +276,31 @@ const CareActionCenter = ({ token }) => {
         notes,
       }, token);
 
-      const wasUnassigned = selectedAction.assignedTo === 'Unassigned';
+      const wasUnassigned = isNewAssignment && selectedAction.assignedTo === 'Unassigned';
       // Optimistic: reflect the new assignment in the table immediately.
       setGridData((rows) => rows.map((r) =>
-        r[0] === selectedAction.memberId
+        (r[0] === selectedAction.memberId && r[2] === selectedAction.measure)
           ? [r[0], r[1], r[2], r[3], assignedStaff || r[4]]
           : r
       ));
       if (wasUnassigned && assignedStaff) {
         setKpiData((k) => ({ ...k, unassigned: Math.max(0, k.unassigned - 1) }));
+      }
+
+      if (isNewAssignment && assignedStaff) {
+        // Durable, independent of the (currently simulated) backend save —
+        // this is what makes the assignment and its status survive a reload.
+        addAssignment({
+          measureId: selectedAction.measure,
+          measureName: selectedAction.measure,
+          crsp: selectedAction.crsp,
+          assignedTo: assignedStaff,
+          intervention: actionType,
+          target: { kind: 'members', memberIds: [selectedAction.memberId], label: selectedAction.name },
+          why: notes || undefined,
+        });
+      } else if (selectedAction.latestPlay && selectedStatus && selectedStatus !== selectedAction.latestPlay.status) {
+        updateAssignment(selectedAction.latestPlay.id, { status: selectedStatus });
       }
 
       toast({
@@ -214,7 +310,7 @@ const CareActionCenter = ({ token }) => {
           : `Action saved for ${selectedAction.name}.`,
       });
       setSelectedAction(null);
-      setActionType(''); setAssignedStaff(''); setNotes('');
+      setActionType(''); setAssignedStaff(''); setNotes(''); setSelectedStatus('');
     } catch {
       toast({ type: 'error', message: 'Couldn’t save the action. Please retry.' });
     } finally {
@@ -260,6 +356,10 @@ const CareActionCenter = ({ token }) => {
             ? <Skeleton width={84} height={26} radius={6} style={{ marginTop: 6 }} />
             : <div className="cac-kpi-value num">{kpiData.actionable.toLocaleString()}</div>}
         </div>
+        <div className="cac-kpi cac-kpi-done">
+          <div className="cac-kpi-label">Action taken</div>
+          <div className="cac-kpi-value num">{actionTakenCount.toLocaleString()}</div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -282,9 +382,13 @@ const CareActionCenter = ({ token }) => {
           value={assignmentFilter}
           onChange={setAssignmentFilter}
           options={[
-            { value: '', label: 'All Assignments' },
+            { value: '', label: 'All Statuses' },
             { value: 'unassigned', label: 'Unassigned' },
-            { value: 'assigned', label: 'Assigned' },
+            // 'closed' is deliberately omitted: a closed play drops out of
+            // active coverage (v2utils activeAssignmentsForMeasure), so a row
+            // never actually sits in a "closed" state — it just reverts to
+            // unassigned, same as everywhere else in the app that reads plays.
+            ...ASSIGN_STATUSES.filter((s) => s !== 'closed').map((s) => ({ value: s, label: ASSIGN_STATUS_LABEL[s] })),
           ]}
           title="Filter by assignment status"
         />
@@ -323,29 +427,45 @@ const CareActionCenter = ({ token }) => {
             ) : filteredData.length === 0 ? (
               <tr><td colSpan="6"><EmptyState icon="✅" title="No matching care gaps" hint="Try clearing a filter, or switch the measure/CRSP above." /></td></tr>
             ) : (
-              paginatedData.map((row, idx) => (
-                // The whole row opens the action modal; the button is the visible
-                // affordance and the keyboard path.
-                <tr key={idx} className="cac-row" onClick={() => handleOpenModal(row)}>
-                  <td className="num">{row[0]}</td>
-                  <td className="cac-name">{row[1]}</td>
-                  <td>{row[2]}</td>
-                  <td>{row[3]}</td>
-                  <td>
-                    {isUnassigned(row)
-                      ? <span className="cac-pill cac-pill-unassigned">Unassigned</span>
-                      : <span className="cac-pill cac-pill-assigned">{row[4]}</span>}
-                  </td>
-                  <td className="ta-r">
-                    <button
-                      className={`btn ${isUnassigned(row) ? 'btn-assign' : 'btn-secondary'} btn-sm`}
-                      onClick={(e) => { e.stopPropagation(); handleOpenModal(row); }}
-                    >
-                      {isUnassigned(row) ? 'Assign' : 'View / Edit'}
-                    </button>
-                  </td>
-                </tr>
-              ))
+              paginatedData.map((row, idx) => {
+                const status = rowStatus(row);
+                const d = decorationForRow(row);
+                const isUnassignedRow = status === 'unassigned';
+                const assigneeLabel = d.plays[0]?.assignedTo
+                  || (row[4] && row[4] !== 'Unassigned' ? row[4] : null)
+                  || ASSIGN_STATUS_LABEL[status];
+                return (
+                  // The whole row opens the action modal; the button is the visible
+                  // affordance and the keyboard path.
+                  <tr key={idx} className="cac-row" onClick={() => handleOpenModal(row)}>
+                    <td className="num">{row[0]}</td>
+                    <td className="cac-name">{row[1]}</td>
+                    <td>{row[2]}</td>
+                    <td>{row[3]}</td>
+                    <td>
+                      {isUnassignedRow ? (
+                        <span className="cac-pill status-pill-unassigned">Unassigned</span>
+                      ) : (
+                        <span
+                          className={`cac-pill status-pill-${status}`}
+                          title={d.isBroad ? 'Applies to a whole population/stratum play' : undefined}
+                        >
+                          {assigneeLabel}
+                          {d.isBroad && <span aria-hidden="true"> ●</span>}
+                        </span>
+                      )}
+                    </td>
+                    <td className="ta-r">
+                      <button
+                        className={`btn ${isUnassignedRow ? 'btn-assign' : 'btn-secondary'} btn-sm`}
+                        onClick={(e) => { e.stopPropagation(); handleOpenModal(row); }}
+                      >
+                        {isUnassignedRow ? 'Assign' : 'View / Edit'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -370,56 +490,85 @@ const CareActionCenter = ({ token }) => {
       </div>
 
       {/* Action modal */}
-      {selectedAction && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Member action">
-            <div className="modal-header">
-              <h2>{selectedAction.name}</h2>
-              <button className="modal-close" onClick={handleCloseModal} aria-label="Close">✕</button>
-            </div>
+      {selectedAction && (() => {
+        const isNewAssignment = !selectedAction.latestPlay;
+        const isBroadPlay = selectedAction.latestPlay && selectedAction.latestPlay.target?.kind !== 'members';
+        const kind = isBroadPlay ? (TARGET_KIND[selectedAction.latestPlay.target?.kind] || TARGET_KIND.population) : null;
+        return (
+          <div className="cac-modal-overlay" onClick={handleCloseModal}>
+            <div className="cac-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Member action">
+              <div className="cac-modal-header">
+                <h2>{selectedAction.name}</h2>
+                <button className="cac-modal-close" onClick={handleCloseModal} aria-label="Close">✕</button>
+              </div>
 
-            <div className="modal-meta">
-              <div><span className="modal-meta-label">Member ID</span><span className="num">{selectedAction.memberId}</span></div>
-              <div><span className="modal-meta-label">Measure</span><span>{selectedAction.measure}</span></div>
-              <div><span className="modal-meta-label">CRSP</span><span>{selectedAction.crsp}</span></div>
-            </div>
+              <div className="cac-modal-meta">
+                <div><span className="cac-modal-meta-label">Member ID</span><span className="num">{selectedAction.memberId}</span></div>
+                <div><span className="cac-modal-meta-label">Measure</span><span>{selectedAction.measure}</span></div>
+                <div><span className="cac-modal-meta-label">CRSP</span><span>{selectedAction.crsp}</span></div>
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="assign">Assigned to</label>
-              <input
-                id="assign" type="text" list="cac-staff-options"
-                placeholder="Enter staff name"
-                value={assignedStaff} onChange={(e) => setAssignedStaff(e.target.value)}
-              />
-              {/* Suggest staff already assigned elsewhere, so names stay consistent */}
-              <datalist id="cac-staff-options">
-                {staffOptions.map((s) => <option key={s} value={s} />)}
-              </datalist>
-            </div>
-            <div className="form-group">
-              <label htmlFor="atype">Action type <span className="req">*</span></label>
-              <select id="atype" value={actionType} onChange={(e) => setActionType(e.target.value)}>
-                <option value="">— Select an action —</option>
-                <option value="schedule-visit">Schedule Follow-up Visit</option>
-                <option value="assign-coordinator">Assign Care Coordinator</option>
-                <option value="send-outreach">Send Outreach</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="notes">Notes</label>
-              <textarea id="notes" rows="3" placeholder="Add any relevant notes…" value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </div>
+              {selectedAction.latestPlay && (
+                <>
+                  {isBroadPlay && (
+                    <p className="cac-broad-notice">
+                      This status applies to a <strong>{kind.label}</strong> play — changing it will affect every
+                      member it covers, not just {selectedAction.name}.
+                    </p>
+                  )}
+                  <div className="cac-form-group">
+                    <label htmlFor="pstatus">Status</label>
+                    <select id="pstatus" value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
+                      {ASSIGN_STATUSES.map((s) => <option key={s} value={s}>{ASSIGN_STATUS_LABEL[s]}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
 
-            <div className="modal-actions">
-              {!actionType && <span className="modal-hint">Choose an action type to save</span>}
-              <button className="btn btn-secondary" onClick={handleCloseModal} disabled={saving}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveAction} disabled={saving || !actionType}>
-                {saving ? 'Saving…' : 'Save Action'}
-              </button>
+              <div className="cac-form-group">
+                <label htmlFor="assign">Assigned to</label>
+                <input
+                  id="assign" type="text" list="cac-staff-options"
+                  placeholder="Enter staff name"
+                  value={assignedStaff} onChange={(e) => setAssignedStaff(e.target.value)}
+                />
+                {/* Suggest staff already assigned elsewhere, so names stay consistent */}
+                <datalist id="cac-staff-options">
+                  {staffOptions.map((s) => <option key={s} value={s} />)}
+                </datalist>
+              </div>
+              <div className="cac-form-group">
+                <label htmlFor="atype">
+                  Action type {isNewAssignment && <span className="req">*</span>}
+                </label>
+                <select id="atype" value={actionType} onChange={(e) => setActionType(e.target.value)}>
+                  <option value="">— Select an action —</option>
+                  <option value="schedule-visit">Schedule Follow-up Visit</option>
+                  <option value="assign-coordinator">Assign Care Coordinator</option>
+                  <option value="send-outreach">Send Outreach</option>
+                </select>
+              </div>
+              <div className="cac-form-group">
+                <label htmlFor="notes">Notes</label>
+                <textarea id="notes" rows="3" placeholder="Add any relevant notes…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </div>
+
+              <div className="cac-modal-actions">
+                {isNewAssignment && !actionType && <span className="cac-modal-hint">Choose an action type to save</span>}
+                {selectedAction.latestPlay && (
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={handleRemoveAssignment} disabled={saving}>
+                    {isBroadPlay ? 'Remove this population/stratum-wide play' : 'Remove assignment'}
+                  </button>
+                )}
+                <button className="btn btn-secondary" onClick={handleCloseModal} disabled={saving}>Cancel</button>
+                <button className="btn btn-primary" onClick={handleSaveAction} disabled={saving || (isNewAssignment && !actionType)}>
+                  {saving ? 'Saving…' : 'Save Action'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

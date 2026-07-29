@@ -203,8 +203,8 @@ body {
    submit. One variant, one hue, one shape, so "assign" is recognisable before
    the label is read. Pair it with .btn-sm in lists; it needs no tonal sibling —
    a second assign style would defeat the point. */
-.btn-assign { background: #f5f6fa; color: var(--c-assign-dark); border-color: #b7bad0; }
-.btn-assign:hover { background: var(--c-assign-light); border-color: var(--c-assign); }
+.btn-assign { background: var(--c-assign-light); color: var(--c-assign-dark); border-color: var(--c-assign-subtle); }
+.btn-assign:hover { background: var(--c-assign-subtle); border-color: var(--c-assign); }
 .btn-assign:focus-visible { box-shadow: 0 0 0 3px var(--c-assign-ring); }
 
 /* Tonal: an action in the brand family that isn't *the* action. Use where the

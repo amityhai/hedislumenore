@@ -1,0 +1,126 @@
+.pv-drawer-scrim {
+  /* Portaled to document.body, outside .provider-portal — redeclare its
+     tokens here so var(--pv-primary) etc. resolve inside the portal too. */
+  --pv-primary:      #3f74c9;
+  --pv-primary-dark: #2f5da8;
+  --pv-primary-ring: rgba(63, 116, 201, 0.16);
+  --pv-primary-light:#e8f0fb;
+  --pv-primary-subtle:#c4d6f0;
+
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 32, 0.42);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pv-drawer {
+  width: 480px;
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  background: var(--c-surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xl);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  overflow: hidden;
+}
+
+.pv-drawer-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+.pv-drawer-eyebrow { font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.08em; color: var(--c-text-4); text-transform: uppercase; }
+.pv-drawer-title { font-size: 18px; font-weight: 700; color: var(--c-text); margin: 4px 0 0; letter-spacing: -0.01em; }
+.pv-drawer-close {
+  position: absolute;
+  top: 18px; right: 18px;
+  width: 30px; height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--c-text-3);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pv-drawer-close:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+
+.pv-drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; }
+
+.pv-drawer-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--c-border-light); font-size: 13px; }
+.pv-drawer-row:last-child { border-bottom: none; }
+.pv-drawer-row-label { color: var(--c-text-3); }
+.pv-drawer-row-value { color: var(--c-text-2); font-weight: 600; text-align: right; }
+.pv-drawer-row-value.is-overdue { color: var(--c-error-text); }
+
+.pv-drawer-why { font-size: 13px; color: var(--c-text-2); line-height: 1.5; background: var(--c-bg-subtle); border-radius: var(--r-md); padding: 12px 14px; margin: 14px 0; }
+
+.pv-stepper { display: flex; gap: 6px; margin: 18px 0; }
+.pv-step-btn {
+  flex: 1;
+  height: 36px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+/* :not(.is-current) so hovering the already-selected (solid-blue) button
+   doesn't flip its text to the same blue via the higher-specificity hover
+   rule — that made the label unreadable on hover. */
+.pv-step-btn:not(.is-current):hover:not(:disabled) { border-color: var(--pv-primary); color: var(--pv-primary); }
+.pv-step-btn.is-current { background: var(--pv-primary); border-color: var(--pv-primary); color: #fff; }
+.pv-step-btn.is-current:hover { background: var(--pv-primary-dark); border-color: var(--pv-primary-dark); }
+.pv-step-btn.is-done { background: var(--pv-primary-light); border-color: var(--pv-primary-subtle); color: var(--pv-primary-dark); }
+.pv-step-btn:disabled { cursor: not-allowed; }
+
+.pv-log-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text);
+  text-align: left;
+}
+.pv-log-toggle-chevron { transition: transform 0.15s ease; flex-shrink: 0; color: var(--c-text-3); }
+.pv-log-toggle-chevron.is-open { transform: rotate(180deg); }
+
+.pv-log { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.pv-log-entry { font-size: 12.5px; padding: 10px 12px; background: var(--c-bg-subtle); border-radius: var(--r-sm); }
+.pv-log-entry-meta { color: var(--c-text-4); font-family: var(--font-mono); font-size: 11px; margin-bottom: 3px; }
+.pv-log-entry-note { color: var(--c-text-2); }
+
+.pv-drawer-foot { border-top: 1px solid var(--c-border); padding: 16px 24px 20px; flex-shrink: 0; }
+.pv-note-input {
+  width: 100%;
+  min-height: 64px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--c-text);
+  resize: vertical;
+  outline: none;
+  margin-bottom: 10px;
+}
+.pv-note-input:focus { border-color: var(--pv-primary); box-shadow: 0 0 0 3px var(--pv-primary-ring); }
+
+.pv-drawer-foot-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.pv-drawer-foot-actions .pv-btn { min-width: 88px; }

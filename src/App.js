@@ -5,7 +5,7 @@ import ScorecardV2 from './components/v2/ScorecardV2';
 import OutcomeAnalysis from './components/v2/OutcomeAnalysis';
 import ProviderDirectory from './components/v2/ProviderDirectory';
 import GoalDefinition from './components/v2/GoalDefinition';
-import InterventionTracking from './components/v2/InterventionTracking';
+import Login from './components/Login';
 // Parked pages (see PAGES / NAV_ITEMS below):
 // import TrackingBoard from './components/v2/TrackingBoard';
 // import Dashboard from './components/Dashboard';
@@ -15,13 +15,14 @@ import InterventionTracking from './components/v2/InterventionTracking';
 import { getCurrentMonthValue } from './components/MonthFilter';
 import { setToken, getToken, isTokenValid, setupTokenRefreshInterval } from './services/tokenService';
 import { setSelectedWorkflowMonth, fetchAvailableMonths } from './services/workflowService';
+import { isStaffSignedIn, setStaffSignedIn, clearStaffSignedIn } from './services/staffSession';
 
 // ── Hash routing ─────────────────────────────────────────────
 // Lightweight, dependency-free routing so pages are deep-linkable and survive a
 // refresh. Format: #/<page>[/<measureId>], e.g. #/detail/BCS_E.
 // Only the two active flows are routable while the redesign focuses on them —
 // the rest of the list is parked below; move entries back to re-enable.
-const PAGES = ['v2', 'providers', 'goals', 'interventions', 'cac', 'outcome'];
+const PAGES = ['v2', 'providers', 'goals', 'cac', 'outcome'];
 // Parked: 'tracking', 'dashboard', 'detail', 'sim', 'prov'
 const ALIASES = { rateSimulator: 'sim', providerScores: 'prov' };
 
@@ -37,7 +38,6 @@ const NAV_ITEMS = [
   { page: 'providers', label: 'Providers', icon: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z' },
   { page: 'goals', label: 'Goal Definition', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 3a7 7 0 1 1 0 14 7 7 0 0 1 0-14zm0 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z' },
   { page: 'outcome', label: 'Outcome Analysis', icon: 'M4 20h16v2H2V4h2v16zm3-4h2v-6H7v6zm4 0h2V7h-2v9zm4 0h2v-3h-2v3z' },
-  { page: 'interventions', label: 'Intervention Tracking', icon: 'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z' },
   { page: 'cac', label: 'Care Action Center', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z' },
   // Parked while the redesign focuses on Overview + Care Action Center —
   // uncomment (and restore the page in PAGES above) to bring a tab back:
@@ -77,6 +77,11 @@ const parseHash = () => {
 };
 
 function App() {
+  // No real staff-auth endpoint exists yet (the API token below is a fixed
+  // demo bearer token, not tied to this) — this gate is the same "no live
+  // endpoint yet" treatment as the provider portal: any submitted credentials
+  // succeed, but the app is genuinely inaccessible without going through it.
+  const [staffAuthed, setStaffAuthed] = useState(isStaffSignedIn);
   const [route, setRoute] = useState(parseHash);
   const currentPage = route.page;
   // Used by the parked MeasureDetail page; kept so deep links survive re-enabling.
@@ -216,6 +221,23 @@ function App() {
     setTokenState(newToken);
   };
 
+  const handleStaffLogin = async () => {
+    setStaffSignedIn();
+    setStaffAuthed(true);
+  };
+
+  const handleSignOut = () => {
+    clearStaffSignedIn();
+    setStaffAuthed(false);
+  };
+
+  // The provider portal is a fully separate bundle (provider.html →
+  // src/ProviderApp.js) — reached by a real cross-app link, not a route in
+  // here. This gate only ever shows the staff login.
+  if (!staffAuthed) {
+    return <Login onSubmit={handleStaffLogin} />;
+  }
+
   return (
     <div className="app">
       {isMobile && !sidebarOpen && (
@@ -269,6 +291,12 @@ function App() {
             </button>
           ))}
         </nav>
+        <button type="button" className="sidebar-signout" onClick={handleSignOut} title="Sign out">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span className="sidebar-signout-text">Sign out</span>
+        </button>
       </aside>
 
       <main className={`main-content ${sidebarOpen ? '' : 'main-content-expanded'}`}>
@@ -278,7 +306,6 @@ function App() {
           {currentPage === 'providers' && <ProviderDirectory token={token} selectedMonth={selectedMonth} onSidebar={requestSidebar} />}
           {currentPage === 'goals' && <GoalDefinition token={token} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />}
           {currentPage === 'outcome' && <OutcomeAnalysis />}
-          {currentPage === 'interventions' && <InterventionTracking />}
           {currentPage === 'cac' && <CareActionCenter onBack={handleBack} token={token} />}
           {/* Parked pages — restore alongside their PAGES / NAV_ITEMS entries:
           {currentPage === 'tracking' && <TrackingBoard />}
