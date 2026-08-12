@@ -17,8 +17,13 @@
   padding: 24px;
 }
 
+/* Both steps — the member's intervention list and the action form — render in
+   this one frame. Fixed width AND height (not max-height) so stepping in and
+   back out doesn't resize the dialog under the cursor; each step's own body
+   scrolls instead. */
 .pv-drawer {
-  width: 480px;
+  width: 820px;
+  height: 620px;
   max-width: 100%;
   max-height: calc(100vh - 48px);
   background: var(--c-surface);
@@ -31,6 +36,7 @@
 }
 
 .pv-drawer-head {
+  position: relative;
   padding: 20px 24px;
   border-bottom: 1px solid var(--c-border);
   flex-shrink: 0;
@@ -50,6 +56,25 @@
 }
 .pv-drawer-close:hover { background: var(--c-bg-subtle); color: var(--c-text); }
 
+/* Step back to the member's full list. Sits above the eyebrow so the header
+   reads top-down as "where I came from → what I'm on". */
+.pv-drawer-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: -4px 0 8px -6px;
+  padding: 3px 8px 3px 6px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--c-text-3);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pv-drawer-back:hover { background: var(--c-bg-subtle); color: var(--pv-primary); }
+
 .pv-drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; }
 
 .pv-drawer-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--c-border-light); font-size: 13px; }
@@ -60,27 +85,84 @@
 
 .pv-drawer-why { font-size: 13px; color: var(--c-text-2); line-height: 1.5; background: var(--c-bg-subtle); border-radius: var(--r-md); padding: 12px 14px; margin: 14px 0; }
 
-.pv-stepper { display: flex; gap: 6px; margin: 18px 0; }
-.pv-step-btn {
-  flex: 1;
-  height: 36px;
+/* ── Member modal: every intervention for this person ─────────────────────── */
+.pv-iv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pv-iv-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-4);
+  padding: 0 12px 9px 0;
+  border-bottom: 1px solid var(--c-border);
+  white-space: nowrap;
+}
+.pv-iv-table td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--c-border-light); vertical-align: middle; color: var(--c-text-2); }
+.pv-iv-table tr:last-child td { border-bottom: none; }
+.pv-iv-table th.pv-iv-num, .pv-iv-table td.pv-iv-num { text-align: right; padding-right: 0; white-space: nowrap; font-family: var(--font-mono); font-size: 12px; }
+.pv-iv-num.is-overdue { color: var(--c-error-text); }
+.pv-iv-left { font-size: 11px; color: var(--c-text-4); margin-top: 2px; }
+.pv-iv-measure { font-weight: 600; color: var(--c-text); }
+.pv-iv-act { height: 30px; padding: 0 12px; font-size: 12.5px; white-space: nowrap; }
+
+/* The soonest-due open row — the one thing to do next. A left rail plus a
+   literal label, so the priority survives greyscale and colour-blindness
+   rather than resting on the tint alone. */
+.pv-iv-table tr.is-next td { background: var(--pv-primary-light); }
+.pv-iv-table tr.is-next td:first-child { box-shadow: inset 3px 0 0 var(--pv-primary); padding-left: 12px; }
+.pv-iv-next {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pv-primary-dark);
+}
+/* Already handled — still listed for the record, but visibly at rest. */
+.pv-iv-table tr.is-done td { opacity: 0.6; }
+
+/* ── Action modal ────────────────────────────────────────────────────────── */
+.pv-window {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background: var(--pv-primary-light);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+}
+.pv-window-label { font-size: 11.5px; color: var(--c-text-3); }
+.pv-window-value { font-size: 14px; font-weight: 700; color: var(--c-text); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.pv-window-value.is-clock { color: var(--c-success-text); }
+.pv-window-value.is-late { color: var(--c-error-text); }
+
+.pv-field-label { font-size: 13px; font-weight: 700; color: var(--c-text); margin: 18px 0 10px; }
+.pv-req { color: var(--c-error-text); }
+
+.pv-radio-row { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.pv-radio { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--c-text-2); cursor: pointer; }
+.pv-radio input { accent-color: var(--pv-primary); width: 15px; height: 15px; cursor: pointer; }
+.pv-radio.is-on { color: var(--c-text); font-weight: 600; }
+
+.pv-cpt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pv-cpt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
   border-radius: var(--r-sm);
   border: 1px solid var(--c-border);
   background: var(--c-surface);
-  color: var(--c-text-3);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
+  color: var(--c-text-2);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
   cursor: pointer;
 }
-/* :not(.is-current) so hovering the already-selected (solid-blue) button
-   doesn't flip its text to the same blue via the higher-specificity hover
-   rule — that made the label unreadable on hover. */
-.pv-step-btn:not(.is-current):hover:not(:disabled) { border-color: var(--pv-primary); color: var(--pv-primary); }
-.pv-step-btn.is-current { background: var(--pv-primary); border-color: var(--pv-primary); color: #fff; }
-.pv-step-btn.is-current:hover { background: var(--pv-primary-dark); border-color: var(--pv-primary-dark); }
-.pv-step-btn.is-done { background: var(--pv-primary-light); border-color: var(--pv-primary-subtle); color: var(--pv-primary-dark); }
-.pv-step-btn:disabled { cursor: not-allowed; }
+.pv-cpt:hover { border-color: var(--pv-primary); color: var(--pv-primary); }
+.pv-cpt.is-on { background: var(--pv-primary-light); border-color: var(--pv-primary-subtle); color: var(--pv-primary-dark); font-weight: 700; }
+.pv-cpt-x { font-size: 14px; line-height: 1; }
 
 .pv-log-toggle {
   display: flex;
@@ -110,6 +192,7 @@
 .pv-note-input {
   width: 100%;
   min-height: 64px;
+  margin-top: 18px;
   border: 1px solid var(--c-border);
   border-radius: var(--r-md);
   padding: 10px 12px;

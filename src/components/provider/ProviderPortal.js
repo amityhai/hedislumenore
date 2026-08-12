@@ -74,8 +74,8 @@ const ProviderPortal = ({ page, onNavigate }) => {
 
       <ProviderInterventionDrawer
         assignment={selected}
+        providerName={session.providerName}
         onClose={() => setSelected(null)}
-        onChange={setSelected}
       />
     </ProviderShell>
   );

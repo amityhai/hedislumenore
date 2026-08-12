@@ -69,6 +69,51 @@ export const interventionStatusMeta = (a) => {
 export const interventionLabel = (a) =>
   (a.interventions && a.interventions.length ? a.interventions.join(', ') : a.intervention) || 'Outreach';
 
+// ── Dates on the intervention ───────────────────────────────────────────────
+// Providers reason in "how long have I got", not ISO strings. The clock runs
+// from *today* to the due date — not from the assigned date — so a row that sat
+// untouched for a month reads as more urgent, which is the point.
+export const MS_DAY = 86400000;
+export const daysUntilDue = (a) => {
+  if (!a.due) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  return Math.round((Date.parse(`${a.due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / MS_DAY);
+};
+export const assignedDate = (a) => (a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : null);
+// MM-DD-YYYY — the format the care-management tools these providers already use
+// put on every intervention record.
+export const fmtDate = (isoDate) => {
+  if (!isoDate) return '—';
+  const [y, m, d] = isoDate.split('-');
+  return `${m}-${d}-${y}`;
+};
+
+// ── Provider-facing disposition ─────────────────────────────────────────────
+// A provider records what happened in their own terms; each choice maps onto
+// the shared assignment status the staff app already reads, so the two sides
+// stay in sync without staff learning a second vocabulary. `disposition` is
+// stored alongside so the provider's literal answer survives the mapping
+// (accepted and delivered are distinct acts even where staff see one status).
+export const DISPOSITIONS = [
+  { key: 'accepted', label: 'Intervention Accepted', status: 'in_progress' },
+  { key: 'delivered', label: 'Intervention Delivered', status: 'action_taken' },
+  { key: 'rejected', label: 'Intervention Rejected', status: 'closed' },
+];
+export const dispositionFor = (a) =>
+  a.disposition || (DISPOSITIONS.find((d) => d.status === a.status) || {}).key || '';
+
+// Billable codes a provider can attach when documenting delivery, keyed by
+// intervention type. A sample coding reference for the demo — not a
+// billing-grade catalog, and deliberately short so the picker stays scannable.
+const CPT_CODES = {
+  'Outreach call': ['98966', '98967', '98968', '99441'],
+  'Schedule appointment': ['99401', '99402', '99429'],
+  'Send reminder letter': ['99490', '98961', '99484'],
+  'Refer to care manager': ['T1017', 'T1016', '99484'],
+  'Telehealth follow-up': ['99421', '99422', '99423', '99457'],
+};
+export const cptCodesFor = (a) => CPT_CODES[interventionLabel(a).split(', ')[0]] || ['99401', '99402'];
+
 // The member this intervention is actually for — care happens to a person,
 // not a population, so every provider-portal surface reads through this
 // rather than the generic (population/stratum/crsp) scope label.
@@ -77,10 +122,13 @@ export const interventionMember = (a) => a.member || null;
 // Advance/close an intervention and log the note as an append-only outreach
 // entry — additive to the shared record, so staff-side views (which don't
 // know about `outreachLog`) keep working unmodified.
-export const logProviderOutreach = (assignment, { status, note }) => {
-  const entry = { at: Date.now(), note: note || '', status };
+export const logProviderOutreach = (assignment, { status, note, disposition, cpt }) => {
+  const entry = { at: Date.now(), note: note || '', status, disposition, cpt: cpt || [] };
   const log = [...(assignment.outreachLog || []), entry];
-  return updateAssignment(assignment.id, { status, outreachLog: log });
+  const patch = { status, outreachLog: log };
+  if (disposition) patch.disposition = disposition;
+  if (cpt) patch.cpt = cpt;
+  return updateAssignment(assignment.id, patch);
 };
 
 export { ASSIGN_STATUSES, ASSIGN_STATUS_LABEL, statusFor, num, addAssignment };
@@ -96,10 +144,14 @@ const iso = (daysFromNow) => {
   return d.toISOString().slice(0, 10);
 };
 
+// Bumped whenever the shape of a seeded row changes, so a browser holding an
+// older localStorage seed re-seeds instead of rendering a half-migrated inbox.
+const SEED_VERSION = 3;
+
 export const seedDemoInterventions = (providerName) => {
   const existing = getProviderInterventions(providerName);
-  // Already seeded at the member level — leave it alone.
-  if (existing.length > 0 && existing.every((a) => a.member)) return;
+  // Already seeded at the current shape — leave it alone.
+  if (existing.length > 0 && existing.every((a) => a.member && a.seedVersion === SEED_VERSION)) return;
   // Anything here predates member-level targeting (localStorage carried over
   // from before this change, shaped like `{ target: { kind: 'population' } }`
   // with no `member`) — replace it with a proper member-level seed rather
@@ -117,16 +169,24 @@ export const seedDemoInterventions = (providerName) => {
   const offset = hashStr(providerName) % openGapPool.length;
   const pickMember = (i) => openGapPool[(offset + i * 3) % openGapPool.length];
 
+  // `memberIdx` deliberately reuses an earlier member so some people carry gaps
+  // in several measures at once — that overlap is the whole point of the home
+  // page's member-grouped queue, and a seed of five unique members would make
+  // every row read "1 measure."
   const plan = [
     { status: 'assigned', due: iso(-3), intervention: 'Outreach call', why: 'Member is overdue for screening this cycle — reach out to schedule.' },
     { status: 'in_progress', due: iso(4), intervention: 'Schedule appointment', why: 'Care manager is coordinating a visit slot with this member.' },
     { status: 'assigned', due: iso(9), intervention: 'Send reminder letter', why: 'Reminder queued for this member’s open gap.' },
     { status: 'action_taken', due: iso(-10), intervention: 'Telehealth follow-up', why: 'Follow-up visit completed for this member, awaiting claim.' },
     { status: 'assigned', due: iso(2), intervention: 'Refer to care manager', why: 'Member flagged for care-management outreach.' },
+    { status: 'assigned', due: iso(6), intervention: 'Outreach call', why: 'Second open gap for this member — bundle it into the same call.', memberIdx: 1 },
+    { status: 'assigned', due: iso(11), intervention: 'Schedule appointment', why: 'Third open gap for this member — one visit can close several.', memberIdx: 1 },
+    { status: 'assigned', due: iso(8), intervention: 'Send reminder letter', why: 'Second open gap for this member.', memberIdx: 2 },
+    { status: 'assigned', due: iso(13), intervention: 'Outreach call', why: 'Member has an open gap with no outreach logged yet.', memberIdx: 5 },
   ];
-  plan.forEach(({ status, due, intervention, why }, i) => {
+  plan.forEach(({ status, due, intervention, why, memberIdx }, i) => {
     const m = pickMeasure(i);
-    const member = pickMember(i);
+    const member = pickMember(memberIdx === undefined ? i : memberIdx);
     const rec = addAssignment({
       measureId: m.measure_id,
       measureName: m.display_name,
@@ -140,6 +200,12 @@ export const seedDemoInterventions = (providerName) => {
       due,
       why,
       coverEstimate: 1,
+      seedVersion: SEED_VERSION,
+      // Backdate to a 60-day delivery window ending at the due date. Without
+      // this every seeded row reads "assigned today" (addAssignment stamps
+      // Date.now()), which makes the action modal's assigned-date/remaining
+      // pair meaningless the moment you look at it.
+      createdAt: Date.parse(`${due}T00:00:00Z`) - 60 * MS_DAY,
     });
     if (status !== 'assigned') updateAssignment(rec.id, { status });
   });

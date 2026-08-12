@@ -21,29 +21,52 @@
   gap: 20px;
   align-items: start;
 }
+/* Grid items default to min-width:auto, so a long measure name refuses to
+   ellipsize and instead widens its track past 1fr — which pushed the right
+   card off-screen and put a scrollbar on the page. */
+.pv-two-col > * { min-width: 0; }
 
 .pv-panel { padding: 20px 22px; }
 
+/* A row is no longer itself clickable — the "Take action" button is the one
+   target, so the row is a plain container (a button can't nest a button). */
 .pv-attn-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid var(--c-border-light);
-  cursor: pointer;
-  background: none;
-  border-left: none; border-right: none; border-top: none;
-  width: 100%;
   text-align: left;
-  font-family: inherit;
 }
 .pv-attn-row:last-child { border-bottom: none; padding-bottom: 0; }
 .pv-attn-row:first-child { padding-top: 0; }
-.pv-attn-row:hover { background: var(--c-bg-subtle); }
 .pv-attn-main { flex: 1; min-width: 0; }
 .pv-attn-measure { font-size: 13.5px; font-weight: 600; color: var(--c-text); }
-.pv-attn-meta { font-size: 12px; color: var(--c-text-3); margin-top: 2px; }
-.pv-attn-due { font-size: 12px; color: var(--c-text-4); font-family: var(--font-mono); white-space: nowrap; }
+.pv-attn-meta {
+  display: flex;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--c-text-3);
+  margin-top: 2px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.pv-attn-meta-fixed { flex-shrink: 0; }
+.pv-attn-meta-clip { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* How many measures this member's open gaps span — the reason they're this
+   high in the queue, stated without any goal/rate language. */
+.pv-attn-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-2);
+  background: var(--c-bg-subtle);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-full);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.pv-attn-action { flex-shrink: 0; height: 30px; padding: 0 12px; font-size: 12.5px; }
 
 .pv-snap-row {
   display: flex;
