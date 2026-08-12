@@ -1,0 +1,493 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMENORE DESIGN SYSTEM · TIER 1 — CORE (PRIMITIVE) TOKENS
+   ───────────────────────────────────────────────────────────────────────────
+   The raw material of the house. Context-free, brand-free, immutable.
+   A core token names a POSITION ON A SCALE, never a purpose and never a role.
+
+       LEGAL      --lds-teal-600, --lds-radius-400, --lds-size-700
+       ILLEGAL    --lds-brand, --lds-radius-md, --lds-border-width-marker
+
+   WHY ORDINAL KEYS AND NOT t-shirt SIZES
+   ──────────────────────────────────────
+   `radius-md` and `font-size-sm` read like decisions. They aren't — they are
+   raw values. When Tier 1 uses decision-sounding names, Tier 3 looks
+   redundant, so components alias core directly and the semantic layer quietly
+   stops existing for that axis. That is exactly what happened to radius here:
+   it had no Tier 3 row at all, and thirteen components reached past it.
+
+   Ordinal keys are deliberately meaningless. `--lds-radius-400` tells you
+   nothing about where to use it, which forces the decision up into Tier 3
+   where it belongs. The number is a POSITION (the 4th step), not a value —
+   so re-tuning 10px to 11px does not invalidate the name.
+
+   RULES
+   1. Product code MUST NOT reference a Tier 1 token directly. Ever.
+      Only Tier 2 (brand hooks) and Tier 3 (semantic) may read these.
+   2. Tier 1 values never change per brand, per theme, or per product.
+      A brand does not repaint teal-600; it points its brand alias elsewhere.
+   3. Adding a value here is a design-system-council change (see governance.md).
+   4. No token in this file may be named for where it is used.
+
+   Prefix: --lds-*  (Lumenore Design System)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.1 COLOR · NEUTRAL — cool slate
+     The canvas family for every brand in the house. Deliberately cool
+     (blue-green cast) so warm accents read as deliberate, not accidental.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-neutral-0:    #ffffff;
+  --lds-neutral-25:   #fbfcfd;
+  --lds-neutral-50:   #f6f8f9;
+  --lds-neutral-100:  #eef2f3;
+  --lds-neutral-150:  #e8eef0;
+  --lds-neutral-200:  #e2e8ea;
+  --lds-neutral-300:  #cbd5d8;
+  --lds-neutral-400:  #9aa6ad;   /* NON-TEXT ONLY — 2.49:1 on white. Dividers, decorative glyphs. */
+  --lds-neutral-450:  #78858f;   /* 3.78:1 — meets the 3:1 non-text minimum for icons & control edges */
+  --lds-neutral-500:  #66717f;   /* Darkened from #6b7785: the old value scored 4.28:1 on the sunken
+                                    surface (--lds-neutral-50), so every caption inside a table head or
+                                    hero well missed AA. 4.66:1 on sunken, 4.96:1 on white. */
+  --lds-neutral-600:  #4b5266;
+  --lds-neutral-700:  #334155;
+  --lds-neutral-800:  #1f2a33;
+  --lds-neutral-900:  #16212b;
+  --lds-neutral-1000: #0f172a;
+
+  /* Pure black/white escape hatches — knockout text and true-black overlays. */
+  --lds-white: #ffffff;
+  --lds-black: #000000;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.2 COLOR · TEAL — Clinical Suite brand hue
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-teal-50:  #f5fafa;
+  --lds-teal-100: #e6f3f3;
+  --lds-teal-200: #cfe7e7;
+  --lds-teal-300: #a3d3d4;
+  --lds-teal-400: #4fb0b2;
+  --lds-teal-500: #16a0a2;
+  --lds-teal-550: #0e8a8c;   /* DEPRECATED for text and for any fill carrying a white label —
+                                4.17:1 against white, under AA. Retained only so the migration
+                                can diff the old brand against the new. */
+  --lds-teal-600: #0d8082;   /* Clinical Suite primary. Nudged two steps darker than the original
+                                #0e8a8c so the white label on a primary button clears AA
+                                (4.17:1 → 4.74:1). Visually near-identical; legally different. */
+  --lds-teal-700: #0a6e70;
+  --lds-teal-800: #085658;
+  --lds-teal-900: #063e40;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.3 COLOR · BLUE — Provider Portal brand hue + "at goal" status
+     Two ramps: `blue` is the calm, desaturated product blue; `azure` is the
+     Lumenore platform blue inherited from the PLG component library.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-blue-50:  #f2f7fd;
+  --lds-blue-100: #e8f0fb;
+  --lds-blue-200: #c4d6f0;
+  --lds-blue-300: #9cbbe6;
+  --lds-blue-400: #6b96d8;
+  --lds-blue-500: #3f74c9;   /* Provider Portal primary · "At Goal" */
+  --lds-blue-600: #2f63b8;
+  --lds-blue-700: #24488a;
+  --lds-blue-800: #1d3a6e;
+  --lds-blue-900: #16294d;
+
+  --lds-azure-500: #1170e5;  /* Lumenore icon/illustration/blue */
+  --lds-azure-600: #2563eb;  /* Lumenore color/blue/600-primary */
+  --lds-azure-700: #1262f8;  /* Lumenore icon/brand */
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.4 COLOR · GREEN — "above goal" / success
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-green-50:  #f0faf5;
+  --lds-green-100: #e3f4ec;
+  --lds-green-200: #b7e0cd;
+  --lds-green-300: #86cbaa;
+  --lds-green-400: #46b287;
+  --lds-green-500: #1f9d6b;
+  --lds-green-600: #087a54;   /* Darkened from #0a8a5f, which scored 3.83:1 on green-100 — the
+                                 "Above Goal" chip failed AA while the Below and At chips passed,
+                                 so the one good-news state was the least legible. 4.70:1 now. */
+  --lds-green-700: #0f6344;
+  --lds-green-800: #0b4d35;
+  --lds-green-900: #073626;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.5 COLOR · RED — "below goal" / danger
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-red-50:  #fdf3f2;
+  --lds-red-100: #fbeae8;
+  --lds-red-200: #f0c4c0;
+  --lds-red-300: #ec8b84;
+  --lds-red-400: #e77a74;
+  --lds-red-500: #d9544d;
+  --lds-red-600: #c4453d;
+  --lds-red-700: #b23a30;   /* AA on red-100 AND on white — see accessibility.md */
+  --lds-red-800: #8f2a23;
+  --lds-red-900: #6b1f1a;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.6 COLOR · AMBER — caution / unassigned / preview
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-amber-50:  #fdf9f0;
+  --lds-amber-100: #f7efdf;
+  --lds-amber-200: #f1dcae;
+  --lds-amber-300: #e6c274;
+  --lds-amber-400: #d9a33c;
+  --lds-amber-500: #c98a1a;
+  --lds-amber-600: #b87409;
+  --lds-amber-700: #8a5e12;   /* Darkened from #9a6a16 (4.13:1 on amber-100 — under AA). 4.98:1 now. */
+  --lds-amber-800: #77510f;
+  --lds-amber-900: #543909;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.7 COLOR · INDIGO — the workflow-verb hue ("assign")
+     Deliberately desaturated. A saturated violet read as a second product
+     bolted onto the page; this sits inside the cool canvas family while
+     staying unmistakably not-teal and not-a-status.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-indigo-50:  #f5f6fa;
+  --lds-indigo-100: #ecedf4;
+  --lds-indigo-200: #d2d5e4;
+  --lds-indigo-300: #aab0cb;
+  --lds-indigo-400: #7a80ab;
+  --lds-indigo-500: #5c6291;
+  --lds-indigo-600: #4a4f7c;
+  --lds-indigo-700: #3b4064;
+  --lds-indigo-800: #2e3250;
+  --lds-indigo-900: #22253c;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.8 COLOR · VIOLET — Data Labs brand hue
+     Saturated on purpose, unlike indigo. Indigo is a VERB (assign); violet is
+     a PLACE (you are in Data Labs). They sit at near-identical luminance
+     (1.04:1), so in greyscale they are the same colour — tolerable only
+     because no affordance in this house is carried by hue alone.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-violet-50:  #f7f4fc;
+  --lds-violet-100: #efe9f8;
+  --lds-violet-200: #d9cbee;
+  --lds-violet-300: #bda7e0;
+  --lds-violet-400: #9a76cc;
+  --lds-violet-500: #7f4fbd;
+  --lds-violet-600: #6b3aa8;   /* Data Labs primary — 7.51:1 on white */
+  --lds-violet-700: #552d86;   /* 8.40:1 on violet-100 */
+  --lds-violet-800: #412266;
+  --lds-violet-900: #2d1748;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.9 COLOR · PLUM — Funding brand hue
+     The obvious "money" hues are both taken: green is above-goal, amber is
+     caution. Funding's whole job is flagging revenue leakage, so a hue that
+     could be mistaken for a status would be actively dangerous here.
+     Plum is warm enough to feel transactional and belongs to nothing else.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-plum-50:  #fdf3f8;
+  --lds-plum-100: #fae9f1;
+  --lds-plum-200: #f0c8dd;
+  --lds-plum-300: #e19dc0;
+  --lds-plum-400: #cd6b9d;
+  --lds-plum-500: #b34179;
+  --lds-plum-600: #9c2f68;   /* Funding primary — 6.95:1 on white */
+  --lds-plum-700: #7d2453;   /* 8.00:1 on plum-100 */
+  --lds-plum-800: #5e1b3f;
+  --lds-plum-900: #40122b;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.10 COLOR · ROYAL — City of Detroit brand hue
+     Deeper and cooler than `blue`, which carries "at goal". The separation is
+     luminance, not hue (1.76:1), which would be marginal in a dense clinical
+     grid — it is acceptable here only because the City surface is aggregate,
+     view-only, and renders almost no status pills. See the brand file.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-royal-50:  #f1f5fc;
+  --lds-royal-100: #e6edf9;
+  --lds-royal-200: #c6d5ef;
+  --lds-royal-300: #9fb6e2;
+  --lds-royal-400: #6c8bcd;
+  --lds-royal-500: #3f5fb5;
+  --lds-royal-600: #2c4a9e;   /* City of Detroit primary — 8.14:1 on white */
+  --lds-royal-700: #213a7d;   /* 9.08:1 on royal-100 */
+  --lds-royal-800: #182c5f;
+  --lds-royal-900: #101d41;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.11 COLOR · EXPRESSIVE — illustration & data-viz only
+     Inherited from the Lumenore PLG icon library. NEVER used for UI state,
+     text, or interactive fills. These exist so illustration and charts have
+     a sanctioned palette instead of inventing hexes.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-expressive-orange: #fb6a1c;
+  --lds-expressive-peach:  #ffcdb2;
+  --lds-expressive-sky:    #9fc9e9;
+  --lds-expressive-slate:  #6285a0;
+  --lds-expressive-purple: #7c3aed;
+  --lds-expressive-cyan:   #0891b2;
+  --lds-expressive-emerald:#059669;
+  --lds-expressive-teal:   #14b8a6;
+  --lds-expressive-lime:   #65a30d;
+  --lds-expressive-indigo: #4f46e5;
+  --lds-expressive-yellow: #ca8a04;
+  --lds-expressive-grey:   #dadede;
+  --lds-expressive-mist:   #eff2f3;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     1.12 COLOR · ALPHA — scrims, rings, tints
+     Expressed as rgb() triplets so semantic tokens can pick the opacity.
+     One triplet per brand `base`, because the focus ring is derived from it.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-rgb-ink:    20 33 43;      /* cool near-black — shadows & scrims */
+  --lds-rgb-red:    217 84 77;     /* = red-500 — the danger focus ring */
+  --lds-rgb-teal:   13 128 130;
+  --lds-rgb-blue:   63 116 201;
+  --lds-rgb-indigo: 74 79 124;
+  --lds-rgb-violet: 107 58 168;
+  --lds-rgb-plum:   156 47 104;
+  --lds-rgb-royal:  44 74 158;
+  --lds-rgb-white:  255 255 255;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     2. SPACE — 2px base unit, 4px rhythm
+     Gaps, padding, margins, insets. NOT for sizing an element — that is the
+     `size` scale below. A 36px avatar and 36px of padding are unrelated
+     decisions and must not be able to drift into each other.
+
+     The 4px multiples are the default rhythm; the odd 2px steps (100, 300,
+     700, 900, 1100) exist for optical correction inside dense controls and
+     MUST NOT be used for page or section layout.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-space-0:    0px;
+  --lds-space-100:  2px;    /* optical only */
+  --lds-space-200:  4px;
+  --lds-space-300:  6px;    /* optical only */
+  --lds-space-400:  8px;
+  --lds-space-500:  10px;
+  --lds-space-600:  12px;
+  --lds-space-700:  14px;   /* optical only */
+  --lds-space-800:  16px;
+  --lds-space-900:  18px;   /* optical only */
+  --lds-space-1000: 20px;
+  --lds-space-1100: 22px;   /* optical only */
+  --lds-space-1200: 24px;
+  --lds-space-1300: 28px;
+  --lds-space-1400: 32px;
+  --lds-space-1500: 36px;
+  --lds-space-1600: 40px;
+  --lds-space-1700: 44px;
+  --lds-space-1800: 48px;
+  --lds-space-1900: 56px;
+  --lds-space-2000: 64px;
+  --lds-space-2100: 80px;
+
+  /* 2.1 OPTICAL INSET — a separate, deliberately tiny scale.
+         These are not rhythm steps. Each is a vertical padding chosen to hold
+         a control or row at its target height given its line box, which is why
+         they land on odd pixels the space scale does not contain. Folding them
+         into `space` would put 3, 7, 11 and 13 next to 4, 8, 12 and mush the
+         rhythm into "any number is fine", which is the opposite of a scale.
+         Vertical padding on dense controls ONLY. Never a gap, never a margin. */
+  --lds-space-optical-100:  3px;
+  --lds-space-optical-200:  7px;
+  --lds-space-optical-300: 11px;
+  --lds-space-optical-400: 13px;
+
+  /* 2.2 BLUR */
+  --lds-blur-100: 2px;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     3. SIZE — how big a THING is
+     Icons, avatars, control heights, row heights, hit targets. Distinct from
+     `space` on purpose (see above). Steps are 4px apart through the control
+     band, where a 2px error is visible, and open up above it.
+
+     This scale did not exist before. Its absence is why component tokens
+     carried raw pixel values: `avatar-size: 36px` had nothing to point at,
+     so it pointed at nothing — and promptly drifted to 38px in Figma.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-size-100:  12px;   /* dense table affordance — icon only, with a label */
+  --lds-size-200:  16px;   /* floor for a standalone icon */
+  --lds-size-300:  20px;
+  --lds-size-400:  24px;   /* icon baseline / keyline */
+  --lds-size-500:  28px;
+  --lds-size-600:  32px;
+  --lds-size-700:  36px;
+  --lds-size-800:  40px;
+  --lds-size-900:  44px;   /* WCAG 2.2 AA pointer-target floor */
+  --lds-size-1000: 48px;
+  --lds-size-1100: 56px;
+  --lds-size-1200: 60px;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     4. MEASURE — large layout dimensions
+     Overlay widths, panel widths, max-heights, text measures. Anything big
+     enough that it is a layout decision rather than an element size.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-measure-100:   80px;
+  --lds-measure-200:  232px;
+  --lds-measure-300:  240px;
+  --lds-measure-400:  260px;
+  --lds-measure-500:  280px;
+  --lds-measure-600:  360px;
+  --lds-measure-700:  380px;
+  --lds-measure-800:  420px;
+  --lds-measure-900:  460px;
+  --lds-measure-1000: 620px;
+  --lds-measure-1100: 640px;
+  --lds-measure-1200: 1160px;
+  --lds-measure-1300: 1280px;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     5. RADIUS — corners step with the box so they stay optically equal
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-radius-0:    0px;
+  --lds-radius-100:  3px;
+  --lds-radius-200:  6px;
+  --lds-radius-300:  8px;
+  --lds-radius-400:  10px;
+  --lds-radius-500:  14px;
+  --lds-radius-600:  18px;
+  --lds-radius-700:  24px;
+  --lds-radius-full: 9999px;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     6. TYPEFACE
+     Hanken Grotesk — UI. Humanist grotesque; open apertures survive 11px.
+     Spline Sans Mono — measure codes, member IDs, eyebrows. ≤600 weight only.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-family-sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --lds-family-mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* 6.1 FONT SIZE — a 13-step scale. Everything else is a bug.
+         Ratio is deliberately tight (~1.09 in the body band) because these are
+         dense analytical screens: the steps must be distinguishable without
+         forcing a 3-line title. */
+  --lds-font-size-100:  10px;
+  --lds-font-size-200:  11px;
+  --lds-font-size-300:  12px;
+  --lds-font-size-400:  13px;
+  --lds-font-size-500:  14px;
+  --lds-font-size-600:  15px;
+  --lds-font-size-700:  16px;
+  --lds-font-size-800:  18px;
+  --lds-font-size-900:  20px;
+  --lds-font-size-1000: 22px;
+  --lds-font-size-1100: 26px;
+  --lds-font-size-1200: 30px;
+  --lds-font-size-1300: 36px;
+
+  /* 6.2 FONT WEIGHT — four weights ship. 300 and 800 are not licensed for UI.
+         Keyed by the CSS numeric weight, which IS the ordinal here. */
+  --lds-font-weight-400: 400;
+  --lds-font-weight-500: 500;
+  --lds-font-weight-600: 600;
+  --lds-font-weight-700: 700;
+
+  /* 6.3 LINE HEIGHT — unitless */
+  --lds-line-height-100: 1;
+  --lds-line-height-200: 1.2;
+  --lds-line-height-300: 1.35;
+  --lds-line-height-400: 1.55;
+  --lds-line-height-500: 1.7;
+
+  /* 6.4 TRACKING — negative tracking tightens display sizes; positive
+         tracking opens uppercase micro-labels so they stay countable.
+         Ordered negative → positive, so 400 is the zero point. */
+  --lds-tracking-100: -0.03em;
+  --lds-tracking-200: -0.02em;
+  --lds-tracking-300: -0.01em;
+  --lds-tracking-400:  0em;
+  --lds-tracking-500:  0.04em;
+  --lds-tracking-600:  0.06em;
+  --lds-tracking-700:  0.12em;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     7. ELEVATION — cool-tinted, two-part (contact shadow + ambient spread)
+     Ordered strictly by depth. 300 sits between 200 and 400 because a page
+     card rests on a WHITE ground with nothing to lift off, so it needs a
+     wider, softer spread than a control resting on a card.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-elevation-100: 0 1px 2px rgb(var(--lds-rgb-ink) / 0.04);
+  --lds-elevation-200: 0 1px 3px rgb(var(--lds-rgb-ink) / 0.05), 0 1px 2px rgb(var(--lds-rgb-ink) / 0.03);
+  --lds-elevation-300: 0 1px 2px rgb(var(--lds-rgb-ink) / 0.05), 0 4px 16px rgb(var(--lds-rgb-ink) / 0.06);
+  --lds-elevation-400: 0 6px 18px rgb(var(--lds-rgb-ink) / 0.07), 0 2px 6px rgb(var(--lds-rgb-ink) / 0.04);
+  --lds-elevation-500: 0 14px 36px rgb(var(--lds-rgb-ink) / 0.08), 0 1px 3px rgb(var(--lds-rgb-ink) / 0.05);
+  --lds-elevation-600: 0 24px 60px rgb(var(--lds-rgb-ink) / 0.12), 0 8px 20px rgb(var(--lds-rgb-ink) / 0.06);
+
+  /* 7.1 ELEVATION · SOFT ramp — the "document, not console" alternative
+         Shallower and lower-contrast than the house ramp. For brands whose
+         surface should read as a report rather than a tool (Provider Portal,
+         City of Detroit). The ORDERING is identical — each step is still
+         strictly deeper than the one before it — because elevation encodes
+         layering, and a brand may restyle that signal but never reorder it. */
+  --lds-elevation-soft-100: 0 1px 2px rgb(var(--lds-rgb-ink) / 0.03);
+  --lds-elevation-soft-200: 0 1px 3px rgb(var(--lds-rgb-ink) / 0.035), 0 1px 2px rgb(var(--lds-rgb-ink) / 0.02);
+  --lds-elevation-soft-300: 0 1px 2px rgb(var(--lds-rgb-ink) / 0.035), 0 3px 12px rgb(var(--lds-rgb-ink) / 0.04);
+  --lds-elevation-soft-400: 0 4px 14px rgb(var(--lds-rgb-ink) / 0.05),  0 2px 5px rgb(var(--lds-rgb-ink) / 0.03);
+  --lds-elevation-soft-500: 0 10px 28px rgb(var(--lds-rgb-ink) / 0.055), 0 1px 3px rgb(var(--lds-rgb-ink) / 0.035);
+  --lds-elevation-soft-600: 0 18px 46px rgb(var(--lds-rgb-ink) / 0.08),  0 6px 16px rgb(var(--lds-rgb-ink) / 0.045);
+
+  /* ───────────────────────────────────────────────────────────────────────
+     8. Z-INDEX — a closed ordinal scale.
+     The LAYER NAMES (nav, modal, toast) are decisions and live in Tier 3.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-z-0:    -1;
+  --lds-z-100:   0;
+  --lds-z-200:   1;
+  --lds-z-300:  10;
+  --lds-z-400: 100;
+  --lds-z-500: 190;
+  --lds-z-600: 200;
+  --lds-z-700: 300;
+  --lds-z-800: 400;
+  --lds-z-900: 410;
+  --lds-z-1000: 500;
+  --lds-z-1100: 600;
+  --lds-z-1200: 700;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     9. MOTION
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-duration-0:   0ms;
+  --lds-duration-100: 140ms;
+  --lds-duration-200: 180ms;
+  --lds-duration-300: 260ms;
+  --lds-duration-400: 400ms;
+  --lds-duration-500: 800ms;
+  --lds-duration-600: 1400ms;
+  --lds-duration-700: 6000ms;
+
+  /* 9.1 EASING — the one deliberate exception to ordinal keying.
+         Curves have no depth or magnitude to order them by; `ease-300` would
+         be arbitrary rather than merely opaque. These names describe the
+         SHAPE of the curve, not where it is used, so they stay Tier 1. */
+  --lds-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --lds-ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+  --lds-ease-exit:     cubic-bezier(0.4, 0, 1, 1);
+  --lds-ease-emphasis: cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  /* ───────────────────────────────────────────────────────────────────────
+     10. BREAKPOINTS — six, closed. Documented as custom properties for
+     tooling/JS; CSS @media must use the literal px (CSS vars can't be used
+     in media queries). Keep the two in sync — see governance.md §Drift.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-breakpoint-100:  480px;
+  --lds-breakpoint-200:  640px;
+  --lds-breakpoint-300:  768px;   /* phone → tablet: sidebar becomes a drawer */
+  --lds-breakpoint-400: 1024px;   /* tablet → laptop: sidebar becomes a rail */
+  --lds-breakpoint-500: 1280px;
+  --lds-breakpoint-600: 1536px;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     11. BORDER WIDTH
+     The old `-marker` and `-ring` steps were named for the nav bar and the
+     bubble field — those are purposes, and they now live in Tier 3.
+     ─────────────────────────────────────────────────────────────────────── */
+  --lds-border-width-0:   0px;
+  --lds-border-width-100: 1px;
+  --lds-border-width-200: 2px;
+  --lds-border-width-300: 3px;
+  --lds-border-width-400: 6px;
+}

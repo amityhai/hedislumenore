@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPATIBILITY BRIDGE — legacy `--c-*` / `--r-*` / `--sh-*` → LDS
+   ───────────────────────────────────────────────────────────────────────────
+   The QualityPulse codebase already ships ~7,500 lines of CSS keyed to the
+   original token names. This file re-points every one of them at the new
+   three-tier system so adoption is a ONE-LINE import, not a 32-file rewrite.
+
+   STATUS: DEPRECATED ON ARRIVAL. Every alias here is scheduled for removal.
+   See docs/12-adoption-migration.md for the phase plan and the codemod.
+
+   Rules while this file exists:
+   • New code MUST NOT use a `--c-*` name. The linter fails the build on one.
+   • Deleting an alias requires zero remaining references (`npm run ds:usage`).
+   • This file is the ONLY place legacy names may appear outside product CSS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand ─────────────────────────────────────────────────────────── */
+  --c-primary:        var(--lds-brand-base);
+  --c-primary-dark:   var(--lds-brand-strong);
+  --c-primary-light:  var(--lds-brand-subtle);
+  --c-primary-subtle: var(--lds-brand-muted);
+  --c-primary-ring:   rgb(var(--lds-brand-rgb) / 0.18);
+
+  /* ── Workflow · assign ─────────────────────────────────────────────── */
+  --c-assign:        var(--lds-workflow-assign-accent);
+  --c-assign-dark:   var(--lds-workflow-assign-fg);
+  --c-assign-light:  var(--lds-workflow-assign-bg);
+  --c-assign-subtle: var(--lds-workflow-assign-border);
+  --c-assign-ring:   rgb(var(--lds-rgb-indigo) / 0.24);
+
+  /* ── Status ────────────────────────────────────────────────────────── */
+  --c-success:        var(--lds-status-above-accent);
+  --c-success-bg:     var(--lds-status-above-bg);
+  --c-success-text:   var(--lds-status-above-fg);
+  --c-success-border: var(--lds-status-above-border);
+
+  --c-info:           var(--lds-status-at-accent);
+  --c-info-bg:        var(--lds-status-at-bg);
+  --c-info-text:      var(--lds-status-at-fg);
+  --c-info-border:    var(--lds-status-at-border);
+
+  --c-error:          var(--lds-status-below-accent);
+  --c-error-bg:       var(--lds-status-below-bg);
+  --c-error-text:     var(--lds-status-below-fg);
+  --c-error-border:   var(--lds-status-below-border);
+
+  --c-warn:           var(--lds-status-caution-accent);
+  --c-warn-bg:        var(--lds-status-caution-bg);
+  --c-warn-text:      var(--lds-status-caution-fg);
+  --c-warn-border:    var(--lds-status-caution-border);
+
+  /* ── Neutrals ──────────────────────────────────────────────────────── */
+  --c-bg:           var(--lds-bg-canvas);
+  --c-bg-subtle:    var(--lds-bg-surface-sunken);
+  --c-surface:      var(--lds-bg-surface);
+  --c-border:       var(--lds-border-default);
+  --c-border-light: var(--lds-border-subtle);
+  --c-text:         var(--lds-fg-default);
+  --c-text-2:       var(--lds-fg-subtle);
+  --c-text-3:       var(--lds-fg-muted);
+  --c-text-4:       var(--lds-fg-faint);
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  --sidebar-bg:      var(--lds-bg-surface);
+  --sidebar-w:       var(--lds-sidebar-width);
+  --h-control:       var(--lds-control-height);
+  --page-pad:        var(--lds-page-padding);
+  --page-pad-mobile: var(--lds-page-padding-mobile);
+
+  /* ── Radius ────────────────────────────────────────────────────────── */
+  --r-xs:   var(--lds-radius-200);
+  --r-sm:   var(--lds-radius-300);
+  --r-md:   var(--lds-radius-400);
+  --r-lg:   var(--lds-radius-500);
+  --r-xl:   var(--lds-radius-600);
+  --r-full: var(--lds-radius-full);
+
+  /* ── Elevation ─────────────────────────────────────────────────────── */
+  --sh-xs:   var(--lds-elevation-100);
+  --sh-sm:   var(--lds-elevation-200);
+  --sh-card: var(--lds-elevation-300);
+  --sh-md:   var(--lds-elevation-400);
+  --sh-lg:   var(--lds-elevation-500);
+  --sh-xl:   var(--lds-elevation-600);
+
+  /* ── Type ──────────────────────────────────────────────────────────── */
+  --font:      var(--lds-family-sans);
+  --font-mono: var(--lds-family-mono);
+}
+
+/* ── Provider Portal legacy scope ─────────────────────────────────────
+   ProviderShell.css declares --pv-* locally. Re-pointing them here means the
+   provider app inherits the brand hooks instead of hard-coding blue, and the
+   local block in ProviderShell.css can be deleted (see migration Phase 2). */
+.provider-portal {
+  --pv-primary:       var(--lds-brand-base);
+  --pv-primary-dark:  var(--lds-brand-strong);
+  --pv-primary-light: var(--lds-brand-subtle);
+  --pv-primary-subtle:var(--lds-brand-muted);
+  --pv-primary-ring:  rgb(var(--lds-brand-rgb) / 0.16);
+}

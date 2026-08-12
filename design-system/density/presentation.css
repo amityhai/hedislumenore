@@ -1,0 +1,33 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DENSITY · PRESENTATION
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   Rooms, not desks. The mayor's office and city departments
+              reading a dashboard on a shared screen; also any staff product
+              being shown to a board rather than worked.
+   Character  Large numbers, generous air, view-only. Nothing here is a queue.
+   Rule       This is a density, not a brand — which is the point. Clinical
+              Suite in presentation mode is a legitimate combination, and it
+              is how a HEDIS roll-up should look in a funding review.
+
+   If a surface in this profile ever needs bulk actions or a dense grid, it is
+   not a presentation surface — switch its density, do not soften this one.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-density='presentation'] {
+  --lds-density-name: 'Presentation';
+
+  --lds-density-control-height:      48px;
+  --lds-density-control-height-sm:   40px;
+  --lds-density-control-height-lg:   56px;
+
+  --lds-density-gap-page-section:    var(--lds-space-1600);  /* 40 */
+  --lds-density-gap-card-grid:       var(--lds-space-1200);  /* 24 */
+  --lds-density-gap-inline:          var(--lds-space-1000);  /* 20 */
+  --lds-density-gap-inline-tight:    var(--lds-space-600);   /* 12 */
+
+  --lds-density-page-pad-top:        var(--lds-space-1900);  /* 56 */
+  --lds-density-page-pad-x:          var(--lds-space-2000);  /* 64 */
+  --lds-density-page-pad-bottom:     var(--lds-space-2000);  /* 64 */
+  --lds-density-page-pad-top-mobile: var(--lds-space-2000);  /* 64 */
+  --lds-density-page-pad-x-mobile:   var(--lds-space-1200);  /* 24 */
+}

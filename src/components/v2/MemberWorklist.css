@@ -234,7 +234,7 @@
 @keyframes mwl-pop { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 .mwl-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .mwl-modal-head h3 { font-size: 17px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
-.mwl-modal-x { background: transparent; border: none; color: var(--c-text-3); font-size: 15px; cursor: pointer; padding: 4px; border-radius: var(--r-sm); }
+.mwl-modal-x { background: transparent; border: none; color: var(--c-text-3); font-size: 20px; line-height: 1; cursor: pointer; padding: 4px; border-radius: var(--r-sm); }
 .mwl-modal-x:hover { background: var(--c-bg-subtle); color: var(--c-text); }
 .mwl-modal-member {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;

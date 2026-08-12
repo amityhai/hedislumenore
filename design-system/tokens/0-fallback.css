@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIER 0 — FALLBACK BRAND & DENSITY
+   ───────────────────────────────────────────────────────────────────────────
+   Neutral defaults so the system still renders if no brand or density file is
+   loaded. This is a safety net, not a brand — shipping on it is a governance
+   failure (governance.md §3).
+
+   WHY THIS FILE EXISTS AS A SEPARATE LAYER
+   These defaults used to live in 2-semantic.css written as
+       --lds-brand-base: var(--lds-brand-base, var(--lds-neutral-700));
+   which is a SELF-REFERENCE. CSS treats a custom property that references
+   itself as a dependency cycle and resolves the whole cycle to the
+   guaranteed-invalid value — so every brand-derived token silently became
+   invalid and primary buttons rendered transparent. Verified in Chrome.
+
+   The correct mechanism is the cascade: declare neutral defaults HERE, load
+   this BEFORE brands/*, and let a brand file overwrite them. No self-reference,
+   no cycle.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Brand — neutral until a brand file overwrites these. */
+  --lds-brand-name:     'Unbranded';
+  --lds-brand-subtlest: var(--lds-neutral-50);
+  --lds-brand-subtle:   var(--lds-neutral-100);
+  --lds-brand-muted:    var(--lds-neutral-200);
+  --lds-brand-base:     var(--lds-neutral-700);
+  --lds-brand-strong:   var(--lds-neutral-800);
+  --lds-brand-rgb:      var(--lds-rgb-ink);
+
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  /* A brand may scale the rounded-rectangle family. It may NOT touch
+     `radius-full` or `radius-none` — a pill is a pill in every product,
+     because shape carries meaning (principles.md §3). */
+  --lds-brand-radius-100: var(--lds-radius-200);
+  --lds-brand-radius-200: var(--lds-radius-300);
+  --lds-brand-radius-300: var(--lds-radius-400);
+  --lds-brand-radius-400: var(--lds-radius-500);
+  --lds-brand-radius-500: var(--lds-radius-600);
+
+  /* Density — orthogonal to brand, on purpose. Two products may share a hue
+     and differ in density; two may share a density and differ in hue. Folding
+     these into the brand layer would make "Clinical Suite, presentation mode"
+     inexpressible — which is exactly what a board readout needs. */
+  --lds-density-name: 'Dense';
+  --lds-density-control-height:      38px;
+  --lds-density-control-height-sm:   30px;
+  --lds-density-control-height-lg:   42px;
+  --lds-density-gap-page-section:    var(--lds-space-1100);
+  --lds-density-gap-card-grid:       var(--lds-space-800);
+  --lds-density-gap-inline:          var(--lds-space-600);
+  --lds-density-gap-inline-tight:    var(--lds-space-400);
+  --lds-density-page-pad-top:        var(--lds-space-1400);
+  --lds-density-page-pad-x:          var(--lds-space-1700);
+  --lds-density-page-pad-bottom:     var(--lds-space-1800);
+  --lds-density-page-pad-top-mobile: var(--lds-space-2000);
+  --lds-density-page-pad-x-mobile:   var(--lds-space-800);
+
+  /* Elevation: the house ramp. A brand may restyle the shadows but must NOT
+     reorder them — hairline < control < card < raised < overlay < modal
+     encodes layering, and layering is a shared signal like status. */
+  --lds-brand-elevation-100: var(--lds-elevation-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-600);
+}

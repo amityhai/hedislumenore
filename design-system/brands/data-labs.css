@@ -1,0 +1,56 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND · DATA LABS (intervention validation)
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   Internal analysts testing government-defined interventions
+              against DWIHN's own 2012–2025 outcome data, then updating,
+              retiring, or authoring new ones.
+   Voice      Investigative, provisional, honest about uncertainty. This is
+              the only product in the house where the right answer is often
+              "the evidence does not support this" — the UI must make that
+              finding as easy to state as a positive one.
+   Signature  Violet. Data Labs is upstream of the Clinical Suite: it decides
+              what an intervention IS before any of the other products assign
+              one. A separate hue marks that you have stepped out of casework
+              and into the evidence layer.
+
+   NOTE ON THE COLLISION
+   Violet sits ~1.04:1 from the assign indigo (`--lds-workflow-assign-*`) —
+   in greyscale they are indistinguishable. The two DO co-occur: an analyst
+   can assign an intervention from inside Data Labs. This is survivable for
+   the same reason Provider Portal's blue is: hue never carries an affordance
+   alone here — assign is a labelled button with its own shape, brand is
+   chrome. If either of those stops being true, this brand needs a new hue,
+   not a lint exception.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-brand='data-labs'] {
+  --lds-brand-name:     'Data Labs';
+  --lds-brand-subtlest: var(--lds-violet-50);
+  --lds-brand-subtle:   var(--lds-violet-100);
+  --lds-brand-muted:    var(--lds-violet-200);
+  --lds-brand-base:     var(--lds-violet-600);
+  --lds-brand-strong:   var(--lds-violet-700);
+  --lds-brand-rgb:      var(--lds-rgb-violet);
+
+  /* Type: house family. A brand MAY diverge here, but the size ramp is
+     tuned to this family's x-height — diverging means re-tuning it. */
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  /* Radius: house scale. */
+  --lds-brand-radius-100: var(--lds-radius-200);
+  --lds-brand-radius-200: var(--lds-radius-300);
+  --lds-brand-radius-300: var(--lds-radius-400);
+  --lds-brand-radius-400: var(--lds-radius-500);
+  --lds-brand-radius-500: var(--lds-radius-600);
+
+  /* Elevation: the house ramp. A brand may restyle the shadows but must NOT
+     reorder them — hairline < control < card < raised < overlay < modal
+     encodes layering, and layering is a shared signal like status. */
+  --lds-brand-elevation-100: var(--lds-elevation-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-600);
+}

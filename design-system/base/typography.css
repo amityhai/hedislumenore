@@ -1,0 +1,91 @@
+/* ═══ LDS · BASE · TYPOGRAPHY ═══════════════════════════════════════════
+   Type roles as classes. Every heading in the house comes from one of these;
+   a bare `font-size` in a component file is a lint failure.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── The page pattern ─────────────────────────────────────────────────
+   Fixed across every product in the house so a user moving between them
+   always lands the same way:
+       eyebrow (mono · uppercase · brand)
+       title   (26px · 700 · tight tracking)
+       subtitle (14px · muted · ONE line)
+   The subtitle is one line on purpose. Two lines means the title is not
+   doing its job. */
+.lds-eyebrow {
+  font-family: var(--lds-text-eyebrow-family);
+  font-size: var(--lds-text-eyebrow-size);
+  font-weight: var(--lds-text-eyebrow-weight);
+  letter-spacing: var(--lds-text-eyebrow-tracking);
+  color: var(--lds-text-eyebrow-color);
+  text-transform: uppercase;
+}
+
+.lds-page-title {
+  font-size: var(--lds-text-page-title-size);
+  font-weight: var(--lds-text-page-title-weight);
+  letter-spacing: var(--lds-text-page-title-tracking);
+  line-height: var(--lds-line-height-200);
+  color: var(--lds-fg-default);
+  margin-top: var(--lds-space-100);
+}
+
+.lds-page-subtitle {
+  font-size: var(--lds-font-size-500);
+  color: var(--lds-fg-muted);
+  margin-top: var(--lds-space-200);
+}
+
+.lds-display {
+  font-size: var(--lds-text-display-size);
+  font-weight: var(--lds-text-display-weight);
+  letter-spacing: var(--lds-text-display-tracking);
+  line-height: var(--lds-line-height-100);
+  color: var(--lds-fg-default);
+}
+
+.lds-section-title {
+  font-size: var(--lds-text-section-size);
+  font-weight: var(--lds-text-section-weight);
+  letter-spacing: var(--lds-text-section-tracking);
+  color: var(--lds-fg-default);
+}
+
+.lds-card-title {
+  font-size: var(--lds-text-card-title-size);
+  font-weight: var(--lds-text-card-title-weight);
+  letter-spacing: var(--lds-tracking-300);
+  color: var(--lds-fg-default);
+}
+
+.lds-body    { font-size: var(--lds-font-size-500); color: var(--lds-fg-subtle); }
+.lds-body-sm { font-size: var(--lds-font-size-400); color: var(--lds-fg-subtle); }
+.lds-caption { font-size: var(--lds-font-size-300); color: var(--lds-fg-muted); line-height: var(--lds-line-height-300); }
+
+/* Uppercase micro-label — KPI labels, column heads, definition terms.
+   Uppercase kills word-shape, so it is capped at ~3 words. If your label
+   needs a sentence, it is not a label; it is help text. */
+.lds-label {
+  font-size: var(--lds-text-label-size);
+  font-weight: var(--lds-text-label-weight);
+  letter-spacing: var(--lds-text-label-tracking);
+  text-transform: uppercase;
+  color: var(--lds-fg-muted);
+}
+
+/* ── Numerics ─────────────────────────────────────────────────────────
+   MANDATORY on every tabulated figure. Proportional digits make a column of
+   rates impossible to scan and make a value appear to jump when it updates. */
+.lds-num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: var(--lds-text-numeric-features);
+}
+
+/* Mono — measure codes, member IDs, NPIs. Never for prose. */
+.lds-mono { font-family: var(--lds-family-mono); font-weight: var(--lds-font-weight-400); }
+
+/* Truncation. Always pair with a `title` attribute or an accessible name —
+   an ellipsis that hides the only copy of a member's name is a data loss. */
+.lds-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+/* Measure cap for reading copy. Analytical screens are wide; prose is not. */
+.lds-prose { max-width: 76ch; line-height: var(--lds-line-height-400); }

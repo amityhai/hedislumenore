@@ -197,7 +197,7 @@
 .cac-modal-header h2 { font-size: 17px; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; }
 .cac-modal-close {
   background: transparent; border: none; cursor: pointer;
-  color: var(--c-text-4); font-size: 15px; padding: 4px 8px; border-radius: var(--r-sm);
+  color: var(--c-text-4); font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: var(--r-sm);
 }
 .cac-modal-close:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
 

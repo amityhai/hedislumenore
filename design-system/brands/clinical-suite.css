@@ -1,0 +1,58 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND · CLINICAL SUITE (staff app)  —  "Direction A · Clarity"
+   ───────────────────────────────────────────────────────────────────────────
+   Covers HEDIS (QualityPulse), Recidivism, and Member 360. These are ONE
+   brand, not three: they share a member, an intervention, and a staff user
+   who moves between them inside a single session. Re-tinting the chrome as
+   that user crosses from a care gap to a readmission risk would imply they
+   had changed systems. They have changed question, not tool.
+
+   Audience   Quality-improvement managers and care-gap coordinators inside the
+              health plan. Desktop-first, dense data, long sessions.
+   Voice      Calm, clinical, trustworthy. Data legibility over decoration.
+   Signature  Teal. It means "act" and "navigate" — never a result.
+
+   Which of the three you are in is carried by the signal-door switcher and
+   the page eyebrow, not by hue. See docs/03-components.md.
+
+   A brand file may set ONLY the hooks below. If you find yourself wanting to
+   override a `--lds-status-*`, a `--lds-control-height`, or a type role, the
+   answer is no — take it to the council (governance.md §3).
+
+   Applied at :root because the Clinical Suite is the default brand of this app.
+   `qualitypulse` is retained as a legacy alias; prefer `clinical-suite`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-lds-brand='clinical-suite'],
+[data-lds-brand='qualitypulse'] {
+  --lds-brand-name:     'Clinical Suite';
+  --lds-brand-subtlest: var(--lds-teal-50);
+  --lds-brand-subtle:   var(--lds-teal-100);
+  --lds-brand-muted:    var(--lds-teal-200);
+  --lds-brand-base:     var(--lds-teal-600);
+  --lds-brand-strong:   var(--lds-teal-700);
+  --lds-brand-rgb:      var(--lds-rgb-teal);
+
+  /* Type: house family. A brand MAY diverge here, but the size ramp is
+     tuned to this family's x-height — diverging means re-tuning it. */
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  /* Radius: house scale. */
+  --lds-brand-radius-100: var(--lds-radius-200);
+  --lds-brand-radius-200: var(--lds-radius-300);
+  --lds-brand-radius-300: var(--lds-radius-400);
+  --lds-brand-radius-400: var(--lds-radius-500);
+  --lds-brand-radius-500: var(--lds-radius-600);
+
+  /* Elevation: the house ramp. A brand may restyle the shadows but must NOT
+     reorder them — hairline < control < card < raised < overlay < modal
+     encodes layering, and layering is a shared signal like status. */
+  --lds-brand-elevation-100: var(--lds-elevation-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-600);
+}

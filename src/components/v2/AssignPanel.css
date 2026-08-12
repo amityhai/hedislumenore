@@ -39,7 +39,7 @@
 .apx-sub strong { color: var(--c-text-2); font-weight: 600; }
 /* Outdented so the 30px hit area's glyph sits on the header's optical margin
    rather than being pushed a full button-width off the corner. */
-.apx-x { flex: none; margin: -3px -7px 0 0; }
+.apx-x { flex: none; margin: -3px -7px 0 0; font-size: 18px; }
 
 /* min-height: 0 lets this flex child shrink below its content so it — not the
    whole panel — is what scrolls; without it the panel overflows its max-height
@@ -276,7 +276,7 @@
 .apxm-tab .num { color: inherit; font-weight: 700; }
 .apxm-tab:hover { color: var(--c-text-2); }
 .apxm-tab.is-on { background: var(--c-assign-light); color: var(--c-assign-dark); border-color: var(--c-assign-subtle); }
-.apxm-x { margin-left: 2px; }
+.apxm-x { margin-left: 2px; font-size: 18px; }
 
 .apxm-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .apxm-note { padding: 40px 18px; text-align: center; font-size: 12.5px; color: var(--c-text-3); }

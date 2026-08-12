@@ -1,0 +1,33 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DENSITY · DENSE  —  the house default
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   Internal staff working a queue: quality managers, care-gap
+              coordinators, benefit specialists. Long sessions, dense grids,
+              bulk actions, high familiarity with the tool.
+   Rule       Density is NOT a brand. Two products can share a hue and differ
+              in density; two products can share a density and differ in hue.
+              Keeping them on separate axes is what lets you say
+              "Clinical Suite, presentation mode" for a board readout.
+
+   Applied at :root because dense is what the staff apps ship.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-lds-density='dense'] {
+  --lds-density-name: 'Dense';
+
+  --lds-density-control-height:      38px;
+  --lds-density-control-height-sm:   30px;
+  --lds-density-control-height-lg:   42px;
+
+  --lds-density-gap-page-section:    var(--lds-space-1100);  /* 22 */
+  --lds-density-gap-card-grid:       var(--lds-space-800);   /* 16 */
+  --lds-density-gap-inline:          var(--lds-space-600);   /* 12 */
+  --lds-density-gap-inline-tight:    var(--lds-space-400);   /*  8 */
+
+  --lds-density-page-pad-top:        var(--lds-space-1400);  /* 32 */
+  --lds-density-page-pad-x:          var(--lds-space-1700);  /* 44 */
+  --lds-density-page-pad-bottom:     var(--lds-space-1800);  /* 48 */
+  --lds-density-page-pad-top-mobile: var(--lds-space-2000);  /* 64 */
+  --lds-density-page-pad-x-mobile:   var(--lds-space-800);   /* 16 */
+}

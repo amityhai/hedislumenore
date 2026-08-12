@@ -1,0 +1,40 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMENORE DESIGN SYSTEM — single entry point
+   ───────────────────────────────────────────────────────────────────────────
+   Import ONE line at the top of your app:
+
+       import 'design-system/index.css';
+
+   Order is load-bearing. Brand files must land between core and semantic:
+   semantic tokens read the brand hooks, so a brand loaded after them resolves
+   too late and you get the neutral fallback.
+
+       1-core        raw values
+       brands/*      brand hooks (6 declarations each)
+       2-semantic    purpose  ← product code targets this tier
+       3-component   last-mile component contracts
+       compat        deprecated legacy aliases (delete when usage hits 0)
+       base          reset + primitives that ship as CSS, not tokens
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import './tokens/1-core.css';
+@import './tokens/0-fallback.css';         /* neutral brand + density. MUST precede brands. */
+
+@import './brands/clinical-suite.css';     /* HEDIS · Recidivism · Member 360 — default */
+@import './brands/data-labs.css';
+@import './brands/funding.css';
+@import './brands/city-of-detroit.css';
+@import './brands/provider-portal.css';    /* audience brand, not a product */
+
+@import './density/dense.css';             /* house default */
+@import './density/comfortable.css';
+@import './density/presentation.css';
+
+@import './tokens/2-semantic.css';
+@import './tokens/3-component.css';
+
+@import './tokens/compat.css';
+
+@import './base/reset.css';
+@import './base/typography.css';
+@import './base/primitives.css';

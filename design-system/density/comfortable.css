@@ -1,0 +1,33 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DENSITY · COMFORTABLE
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   Users who visit rather than live here: contracted providers
+              (CRSPs) working an assigned worklist, and finance/benefit staff
+              on transactional tables. Lower frequency, lower training, higher
+              stakes per visit — so targets get bigger and rows breathe.
+   Note       `control-height` lands on 44px deliberately: that is the WCAG 2.2
+              target-size minimum, and this is the profile used by the people
+              least practised at hitting a 30px row control.
+
+   Applies across brands — Provider Portal and Funding are different brands
+   that share this density.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-density='comfortable'] {
+  --lds-density-name: 'Comfortable';
+
+  --lds-density-control-height:      44px;
+  --lds-density-control-height-sm:   36px;
+  --lds-density-control-height-lg:   48px;
+
+  --lds-density-gap-page-section:    var(--lds-space-1300);  /* 28 */
+  --lds-density-gap-card-grid:       var(--lds-space-1000);  /* 20 */
+  --lds-density-gap-inline:          var(--lds-space-800);   /* 16 */
+  --lds-density-gap-inline-tight:    var(--lds-space-500);   /* 10 */
+
+  --lds-density-page-pad-top:        var(--lds-space-1600);  /* 40 */
+  --lds-density-page-pad-x:          var(--lds-space-1800);  /* 48 */
+  --lds-density-page-pad-bottom:     var(--lds-space-1900);  /* 56 */
+  --lds-density-page-pad-top-mobile: var(--lds-space-2000);  /* 64 */
+  --lds-density-page-pad-x-mobile:   var(--lds-space-1000);  /* 20 */
+}

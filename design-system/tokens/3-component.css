@@ -1,0 +1,272 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMENORE DESIGN SYSTEM · COMPONENT TOKENS
+   Figma collection: `4 · Component`.
+   ───────────────────────────────────────────────────────────────────────────
+   The last mile. A component token names ONE property of ONE component in ONE
+   state. It exists for exactly two reasons:
+
+     1. A component needs to deviate from the semantic default for a real
+        reason, and that reason deserves a name and a comment.
+     2. A consumer needs a supported override point that does not require
+        re-declaring a semantic token (which would leak across the whole app).
+
+   IF A COMPONENT TOKEN JUST RE-STATES ITS SEMANTIC PARENT WITH NO DEVIATION
+   AND NO OVERRIDE NEED, DELETE IT. A 1:1 passthrough is not documentation,
+   it is a second place to be wrong.
+
+   NO RAW VALUES. NO TIER SKIPS.
+   ─────────────────────────────
+   Every declaration in this file resolves through a semantic token. It used to
+   carry sixteen raw literals (`420px`, `6000ms`, `36px`) and nineteen direct
+   reaches into `--lds-brand-*`. Both were symptoms of the same thing: the
+   scales those values belonged to did not exist in core, and the purposes they
+   answered to did not exist in semantic. `--lds-avatar-size: 36px` had nothing
+   to point at, so it pointed at nothing — and drifted to 38px in Figma while
+   the CSS stayed at 36.
+
+   THE ONE DOCUMENTED EXCEPTION: SPACE
+   Component padding and gaps reference `--lds-space-*` directly. This is
+   deliberate, not an oversight. "16px of padding inside a button" has no
+   meaningful purpose-name between the scale and the component — a semantic
+   `--lds-space-inline-md` would be the t-shirt scale wearing a hat, adding a
+   hop without adding a decision. Every OTHER axis (colour, radius, size,
+   measure, elevation, motion, layer, type) routes through semantic, because
+   every other axis has a real decision to name. See docs/01-foundations.md.
+
+   Naming: --lds-<component>-<element?>-<property>-<state?>
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-lds-brand],
+[data-lds-density] {
+
+  /* ═══ BUTTON ══════════════════════════════════════════════════════════
+     Shape carries meaning across the whole house: a button DOES something
+     and is always a rounded rectangle. The full-radius pill belongs to
+     controls that FILTER or DESCRIBE. Never round a button. Never square a
+     chip. `radius-input` on the small size is one step tighter, so a compact
+     button still reads as an object rather than a field. */
+  --lds-button-radius:    var(--lds-radius-control);
+  --lds-button-radius-sm: var(--lds-radius-input);
+  --lds-button-font-size:    var(--lds-text-action-size);
+  --lds-button-font-size-sm: var(--lds-text-action-size-sm);
+  --lds-button-font-size-lg: var(--lds-text-action-size-lg);
+  --lds-button-font-weight:  var(--lds-text-action-weight);
+  --lds-button-tracking:     var(--lds-text-action-tracking);
+  --lds-button-padding-x:    var(--lds-space-900);
+  --lds-button-padding-x-sm: var(--lds-space-600);
+  --lds-button-padding-x-lg: var(--lds-space-1000);
+  --lds-button-gap:          var(--lds-space-400);
+  --lds-button-gap-sm:       var(--lds-space-300);
+
+  /* ═══ CHIP / PILL / BADGE ═════════════════════════════════════════════
+     Always full radius. Always carries a dot or a glyph in addition to
+     colour — status is never encoded by hue alone. */
+  --lds-chip-radius:      var(--lds-radius-pill);
+  --lds-chip-padding:     var(--lds-space-200) var(--lds-space-500);
+  --lds-chip-padding-sm:  var(--lds-inset-pill) var(--lds-space-300);
+  --lds-chip-font-size:    var(--lds-text-action-size-sm);
+  --lds-chip-font-size-sm: var(--lds-text-label-size);
+  --lds-chip-font-weight:  var(--lds-text-action-weight);
+  --lds-chip-gap:          var(--lds-space-300);
+  --lds-chip-dot-size:     var(--lds-space-300);
+
+  /* ═══ FIELD (input · textarea · select) ═══════════════════════════════
+     Shares `--lds-control-height` with buttons so a filter row lines up.
+     Radius is one step TIGHTER than a button: a field is a container, a
+     button is an object, and the tighter corner reads as "type here". */
+  --lds-field-height:     var(--lds-control-height);
+  --lds-field-radius:     var(--lds-radius-input);
+  --lds-field-padding-x:  var(--lds-space-600);
+  --lds-field-font-size:  var(--lds-text-body-size);
+  --lds-field-bg:         var(--lds-bg-surface);
+  --lds-field-bg-disabled:var(--lds-bg-surface-sunken);
+  --lds-field-fg:         var(--lds-fg-default);
+  --lds-field-placeholder:var(--lds-fg-faint);   /* 3.78:1 — a placeholder is a hint, never a requirement */
+  --lds-field-border:     var(--lds-border-default);
+  --lds-field-border-hover: var(--lds-border-strong);
+  --lds-field-border-focus: var(--lds-border-brand);
+  --lds-field-shadow:     var(--lds-elevation-hairline);
+  --lds-field-label-size: var(--lds-text-action-size);
+  --lds-field-label-weight: var(--lds-text-action-weight);
+  --lds-field-label-gap:  var(--lds-space-300);
+  --lds-field-required-fg: var(--lds-status-below-accent);
+  /* Help and error text sit BELOW the field, never as a placeholder. A
+     placeholder that carries the requirement disappears the moment the user
+     starts typing — exactly when they need it. */
+  --lds-field-help-size:  var(--lds-text-caption-size);
+  --lds-field-help-fg:    var(--lds-fg-muted);
+  --lds-field-error-fg:   var(--lds-feedback-danger-fg);
+
+  /* ═══ CARD ════════════════════════════════════════════════════════════
+     The widest radius in the system. Cards are the only surface allowed
+     `--lds-radius-surface`; nesting one inside another reads as a mistake. */
+  --lds-card-radius:    var(--lds-radius-surface);
+  --lds-card-bg:        var(--lds-bg-surface);
+  --lds-card-border:    var(--lds-border-default);
+  --lds-card-shadow:    var(--lds-elevation-card);
+  --lds-card-padding:   var(--lds-space-900) var(--lds-space-1000);
+  --lds-card-padding-lg:var(--lds-space-1000) var(--lds-space-1200);
+  --lds-card-gap:       var(--lds-space-800);
+  /* KPI cards carry a status rule inset from the corners rather than a
+     full-bleed top border — a full-bleed rule fights the surface radius. */
+  --lds-card-rule-inset: var(--lds-space-1000);
+  --lds-card-rule-size:  var(--lds-border-width-marker);
+
+  /* ═══ TABLE ═══════════════════════════════════════════════════════════ */
+  --lds-table-header-bg:       var(--lds-bg-surface-sunken);
+  --lds-table-header-fg:       var(--lds-fg-muted);   /* NOT fg-faint: a column head is text a user must read */
+  --lds-table-header-size:     var(--lds-text-label-size);
+  --lds-table-header-weight:   var(--lds-text-label-weight);
+  --lds-table-header-tracking: var(--lds-text-label-tracking);
+  --lds-table-cell-fg:         var(--lds-fg-subtle);
+  --lds-table-cell-size:       var(--lds-text-body-size);
+  --lds-table-cell-padding:    var(--lds-inset-cell) var(--lds-space-800);
+  --lds-table-row-border:      var(--lds-border-subtle);
+  --lds-table-row-bg-hover:    var(--lds-bg-surface-hover);
+  /* The row height is the WCAG 2.2 pointer-target floor, not a taste call —
+     which is why `inset-cell` above is derived from it and not chosen. */
+  --lds-table-row-height-min:  var(--lds-size-target-min);
+  --lds-table-min-width-scroll:var(--lds-measure-table-scroll);
+
+  /* ═══ NAV (sidebar) ═══════════════════════════════════════════════════ */
+  --lds-nav-item-height:   var(--lds-size-nav-item);
+  --lds-nav-item-radius:   var(--lds-radius-control);
+  --lds-nav-item-padding:  var(--lds-space-500) var(--lds-space-700);
+  --lds-nav-item-gap:      var(--lds-space-500);
+  --lds-nav-item-fg:       var(--lds-fg-muted);
+  --lds-nav-item-fg-hover: var(--lds-fg-subtle);
+  --lds-nav-item-bg-hover: var(--lds-bg-surface-hover);
+  --lds-nav-item-bg-active:var(--lds-action-selected-bg);
+  --lds-nav-item-fg-active:var(--lds-action-selected-fg);
+  --lds-nav-item-font-size:var(--lds-text-body-size);
+  --lds-nav-marker-width:  var(--lds-border-width-marker);
+  --lds-nav-marker-color:  var(--lds-action-marker);
+
+  /* ═══ TABS ════════════════════════════════════════════════════════════
+     Two shapes, two jobs, never interchangeable:
+       underline   navigates BETWEEN views      (persistent, page-level)
+       segmented   switches a LENS on one view  (transient, card-level) */
+  --lds-tab-underline-fg:          var(--lds-fg-muted);
+  --lds-tab-underline-fg-active:   var(--lds-action-selected-fg);
+  --lds-tab-underline-marker:      var(--lds-action-marker);
+  --lds-tab-underline-marker-size: var(--lds-border-width-emphasis);
+  --lds-tab-underline-padding:     var(--lds-space-500) var(--lds-space-200);
+
+  --lds-segmented-bg:          var(--lds-bg-surface-sunken);
+  --lds-segmented-radius:      var(--lds-radius-control);
+  --lds-segmented-padding:     var(--lds-space-200);
+  --lds-segmented-item-radius: var(--lds-radius-input);
+  --lds-segmented-item-padding:var(--lds-inset-segment) var(--lds-space-800);
+  --lds-segmented-item-fg:     var(--lds-fg-muted);
+  --lds-segmented-item-bg-active: var(--lds-bg-surface-raised);
+  --lds-segmented-item-fg-active: var(--lds-action-selected-fg);
+  --lds-segmented-item-shadow-active: var(--lds-elevation-hairline);
+
+  /* ═══ MODAL ═══════════════════════════════════════════════════════════ */
+  --lds-modal-radius:   var(--lds-radius-surface);
+  --lds-modal-bg:       var(--lds-bg-surface);
+  --lds-modal-shadow:   var(--lds-elevation-modal);
+  --lds-modal-padding:  var(--lds-space-1200);
+  --lds-modal-width-sm: var(--lds-measure-dialog-sm);   /* one decision, ≤4 fields */
+  --lds-modal-width-md: var(--lds-measure-dialog-md);   /* a form with grouped sections */
+  --lds-modal-width-lg: var(--lds-measure-dialog-lg);   /* form + docked roster (assign panel) */
+  --lds-modal-scrim:    var(--lds-bg-scrim);
+  --lds-modal-scrim-blur: var(--lds-bg-scrim-blur);
+  --lds-modal-title-size: var(--lds-text-section-size);
+  --lds-modal-gutter:   var(--lds-space-1000);  /* viewport inset — never 0 */
+
+  /* ═══ DRAWER / SIDE PANEL ═════════════════════════════════════════════ */
+  --lds-drawer-width:  var(--lds-measure-panel);
+  --lds-drawer-radius: var(--lds-radius-surface);
+  --lds-drawer-shadow: var(--lds-elevation-modal);
+
+  /* ═══ MENU / DROPDOWN / POPOVER ═══════════════════════════════════════ */
+  --lds-menu-radius:      var(--lds-radius-overlay);
+  --lds-menu-bg:          var(--lds-bg-surface);
+  --lds-menu-border:      var(--lds-border-default);
+  --lds-menu-shadow:      var(--lds-elevation-overlay);
+  --lds-menu-max-height:  var(--lds-measure-overlay-max-h);
+  --lds-menu-offset:      var(--lds-space-300);
+  --lds-menu-item-padding:var(--lds-inset-option) var(--lds-space-800);
+  --lds-menu-item-fg:     var(--lds-fg-subtle);
+  --lds-menu-item-bg-hover: var(--lds-bg-surface-hover);
+  --lds-menu-item-bg-selected: var(--lds-action-selected-bg);
+  --lds-menu-item-fg-selected: var(--lds-action-selected-fg);
+
+  /* ═══ TOAST ═══════════════════════════════════════════════════════════
+     Bottom-right, stacked. The left rule carries the type so the toast reads
+     before it is read. */
+  --lds-toast-radius:  var(--lds-radius-control);
+  --lds-toast-bg:      var(--lds-bg-surface);
+  --lds-toast-border:  var(--lds-border-subtle);
+  --lds-toast-shadow:  var(--lds-elevation-overlay);
+  --lds-toast-padding: var(--lds-space-600) var(--lds-space-700);
+  --lds-toast-max-width: var(--lds-measure-overlay-md);
+  --lds-toast-offset:  var(--lds-space-1200);
+  --lds-toast-gap:     var(--lds-space-500);
+  --lds-toast-rule:    var(--lds-border-width-marker);
+  --lds-toast-icon-size: var(--lds-icon-size-inline);
+  /* 6s is long enough to read 12 words twice and short enough not to stack.
+     Error toasts do NOT auto-dismiss — see accessibility.md §Live regions. */
+  --lds-toast-duration: var(--lds-motion-dismiss-delay);
+
+  /* ═══ TOOLTIP ═════════════════════════════════════════════════════════
+     Tooltips are supplementary ONLY. Never the sole carrier of a label, a
+     requirement, or an error — they are unreachable by touch and by many
+     assistive paths. */
+  --lds-tooltip-bg:        var(--lds-bg-inverse);
+  --lds-tooltip-fg:        var(--lds-fg-knockout);
+  --lds-tooltip-radius:    var(--lds-radius-inset);
+  --lds-tooltip-padding:   var(--lds-space-200) var(--lds-space-400);
+  --lds-tooltip-font-size: var(--lds-text-caption-size);
+  --lds-tooltip-max-width: var(--lds-measure-overlay-sm);
+
+  /* ═══ AVATAR ══════════════════════════════════════════════════════════
+     `bg-identity`, NOT `action-primary-bg`. An avatar is brand-coloured
+     because it identifies a person, not because it is clickable. */
+  --lds-avatar-size:    var(--lds-size-avatar);
+  --lds-avatar-size-sm: var(--lds-size-avatar-sm);
+  --lds-avatar-radius:  var(--lds-radius-pill);
+  --lds-avatar-bg:      var(--lds-bg-identity);
+  --lds-avatar-fg:      var(--lds-fg-knockout);
+  --lds-avatar-font-size: var(--lds-text-caption-size);
+
+  /* ═══ PROGRESS / RATE BAR ═════════════════════════════════════════════
+     The fill is a flat status colour, NOT a red→amber→green gradient. A
+     gradient implies the whole bar is a scale and makes the same rate read
+     differently depending on where the goal marker sits. */
+  --lds-progress-height: var(--lds-space-400);
+  --lds-progress-track:  var(--lds-bg-track);
+  --lds-progress-radius: var(--lds-radius-pill);
+  --lds-progress-marker-width: var(--lds-border-width-emphasis);
+  --lds-progress-marker-color: var(--lds-fg-default);
+
+  /* ═══ SKELETON ════════════════════════════════════════════════════════ */
+  --lds-skeleton-radius:   var(--lds-radius-inset);
+  --lds-skeleton-duration: var(--lds-motion-skeleton-cycle);
+
+  /* ═══ EMPTY / ERROR STATE ═════════════════════════════════════════════ */
+  --lds-state-padding:    var(--lds-space-1600) var(--lds-space-1200);
+  --lds-state-icon-size:  var(--lds-icon-size-default);
+  --lds-state-title-size: var(--lds-text-body-size);
+  --lds-state-hint-size:  var(--lds-text-body-sm-size);
+  --lds-state-hint-max-width: var(--lds-measure-prose);
+
+  /* ═══ PAGINATION ══════════════════════════════════════════════════════ */
+  --lds-pagination-padding: var(--lds-space-600) var(--lds-space-800);
+  --lds-pagination-fg:      var(--lds-fg-muted);
+  --lds-pagination-size:    var(--lds-text-body-sm-size);
+
+  /* ═══ BREADCRUMB ══════════════════════════════════════════════════════
+     Uppercase micro-type, brand on hover. A crumb that can SWITCH its
+     sibling carries a chevron; a plain crumb never does — the chevron is the
+     only thing distinguishing them, so it must be spent honestly. */
+  --lds-breadcrumb-size:      var(--lds-text-label-size);
+  --lds-breadcrumb-tracking:  var(--lds-text-label-tracking);
+  --lds-breadcrumb-fg:        var(--lds-fg-muted);
+  --lds-breadcrumb-fg-hover:  var(--lds-fg-link);
+  --lds-breadcrumb-fg-current:var(--lds-fg-default);
+  --lds-breadcrumb-sep-fg:    var(--lds-fg-decorative);
+  --lds-breadcrumb-sep-gap:   var(--lds-space-400);
+}

@@ -1,0 +1,96 @@
+/* ═══ LDS · BASE · RESET ════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--lds-family-sans);
+  font-size: var(--lds-text-body-size);
+  line-height: var(--lds-text-body-leading);
+  color: var(--lds-fg-default);
+  background: var(--lds-bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img, svg, video, canvas { display: block; max-width: 100%; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+
+/* ── Focus ────────────────────────────────────────────────────────────
+   ONE ring for the whole house, implemented as box-shadow so it inherits
+   each element's own border-radius. Forcing a radius here squares off round
+   pills and bubbles on keyboard focus — do not "fix" that by adding one. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role='tab']:focus-visible,
+[role='button']:focus-visible,
+[role='option']:focus-visible {
+  outline: none;
+  box-shadow: var(--lds-focus-ring);
+}
+
+/* :focus-visible only — a mouse click must not paint a ring. But NEVER
+   remove focus styling wholesale; there is no `outline: none` without a
+   replacement anywhere in this system. */
+
+/* ── Scrollbar ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--lds-border-default); border-radius: var(--lds-radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--lds-fg-faint); }
+
+::selection { background: var(--lds-brand-subtle); color: var(--lds-brand-strong); }
+
+/* ── Reduced motion ───────────────────────────────────────────────────
+   Not "less motion" — effectively none. These are long analytical sessions;
+   for a vestibular-sensitive user a 400ms panel slide repeated 200 times a
+   day is a working condition, not a delight. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Forced colors (Windows High Contrast) ────────────────────────────
+   Tinted backgrounds vanish in forced-colors mode, so anything whose meaning
+   rides on a fill needs a border to survive. */
+@media (forced-colors: active) {
+  .lds-chip, .lds-badge, .lds-card, .lds-toast { border: 1px solid CanvasText; }
+  :focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+}
+
+/* ── Skip link — first focusable element on every page ────────────── */
+.lds-skip-link {
+  position: absolute;
+  left: var(--lds-space-400);
+  top: var(--lds-space-400);
+  z-index: var(--lds-layer-tooltip);
+  padding: var(--lds-space-400) var(--lds-space-800);
+  border-radius: var(--lds-radius-300);
+  background: var(--lds-bg-surface);
+  box-shadow: var(--lds-elevation-overlay);
+  font-weight: var(--lds-font-weight-600);
+  transform: translateY(-200%);
+}
+.lds-skip-link:focus { transform: none; }
+
+/* Visually hidden but announced. Use for the label a sighted user gets from
+   layout and a screen-reader user does not. */
+.lds-sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

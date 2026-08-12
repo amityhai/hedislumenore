@@ -1,0 +1,72 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND TEMPLATE — copy this file to start a new product in the house
+   ───────────────────────────────────────────────────────────────────────────
+   Fill in the hooks below. That is the whole job. If your brand needs anything
+   beyond them, it is not a brand — it is a fork, and it needs a council
+   decision before a line of CSS is written (governance.md §3).
+
+   WHAT A BRAND OWNS          WHAT IT DOES NOT
+   colour (6)                 status hues — `below/at/above/caution` are fixed
+   font family (2)            spacing & control height — that is DENSITY, a
+   radius xs–xl (5)             separate axis; see density/*.css
+   elevation (6)              `radius-full` / `radius-none` — a pill is a pill
+                                in every product (principles.md §3)
+                              the ORDER of the elevation ramp — see below
+
+   DENSITY IS NOT BRAND. Two products can share a hue and differ in density;
+   two can share a density and differ in hue. Provider Portal and Funding are
+   different brands on the same density. Keeping the axes separate is what
+   makes "Clinical Suite, presentation mode" expressible for a board readout.
+
+   CHECKLIST BEFORE YOU SHIP A NEW BRAND
+   [ ] `base` scores ≥ 4.5:1 against `--lds-fg-knockout` (white) — it fills
+       primary buttons, so its label must be legible.
+   [ ] `strong` scores ≥ 4.5:1 on `subtle` — that pair is the tonal button.
+   [ ] `base` is visually distinguishable from BOTH `--lds-status-at-accent`
+       (blue) and `--lds-workflow-assign-accent` (indigo) at pill size, or you
+       have re-created the collision the system exists to prevent.
+   [ ] `rgb` matches `base` — the focus ring is derived from it, and a
+       mismatched ring is the single most common brand bug.
+   [ ] If you diverge on font family, you have RE-TUNED the size ramp. The
+       ramp is tuned to Hanken Grotesk's x-height; swapping family without
+       retuning breaks vertical rhythm on every screen.
+   [ ] If you diverge on radius, all five steps shift TOGETHER. Flattening the
+       gaps between steps makes a pill read as a button.
+   [ ] If you diverge on elevation, the ORDERING still holds:
+       hairline < control < card < raised < overlay < modal. Elevation encodes
+       layering — a shared signal like status. Restyle it; never reorder it.
+       Two ramps ship today: the house ramp and `--lds-shadow-*-soft`.
+   [ ] Ship a screenshot of the button row, the status row and the assign row
+       side by side in the brand review.
+
+   ADD THE FILE TO index.css — between 1-core/0-fallback and 2-semantic.
+   Load order is load-bearing: a brand loaded after the semantic tier resolves
+   too late and you get the neutral fallback.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-brand='your-brand'] {
+  --lds-brand-name:     'Your Brand';
+
+  --lds-brand-subtlest: var(--lds-neutral-50);   /* faintest wash — hover on tinted ground */
+  --lds-brand-subtle:   var(--lds-neutral-100);  /* tonal button fill, selected nav, eyebrow bg */
+  --lds-brand-muted:    var(--lds-neutral-200);  /* tonal button border */
+  --lds-brand-base:     var(--lds-neutral-700);  /* THE brand colour: primary fill, marker, eyebrow, links */
+  --lds-brand-strong:   var(--lds-neutral-800);  /* primary hover, text on `subtle` */
+  --lds-brand-rgb:      var(--lds-rgb-ink);      /* space-separated RGB of `base`, for the focus ring */
+
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  --lds-brand-radius-100: var(--lds-radius-200);
+  --lds-brand-radius-200: var(--lds-radius-300);
+  --lds-brand-radius-300: var(--lds-radius-400);
+  --lds-brand-radius-400: var(--lds-radius-500);
+  --lds-brand-radius-500: var(--lds-radius-600);
+
+  --lds-brand-elevation-100: var(--lds-elevation-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-600);
+}

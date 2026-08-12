@@ -1,0 +1,54 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND · FUNDING (eligibility & reimbursement)
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   Finance managers and benefit specialists — the only non-clinical
+              internal users in the house. Transactional tables, currency,
+              category-transition history.
+   Voice      Precise and unhurried. A member sliding from HAB to HMP is a
+              revenue event, not an emergency, and the UI must not borrow
+              clinical urgency to describe it.
+   Signature  Plum.
+
+   WHY NOT THE OBVIOUS HUES
+   Green and amber are the two colours a finance tool reaches for first, and
+   both are reserved house-wide — green is "above goal", amber is "caution".
+   Funding's core screen flags revenue leakage; a leakage row tinted with a
+   status hue would read as a clinical result to anyone who also uses the
+   Clinical Suite. Plum is owned by nothing else in the system.
+
+   Funding's domain badges (leakage / recovery) map onto `critical` /
+   `positive` per the suite guidelines — they are statuses, not brand, and
+   must not be tinted plum.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-brand='funding'] {
+  --lds-brand-name:     'Funding';
+  --lds-brand-subtlest: var(--lds-plum-50);
+  --lds-brand-subtle:   var(--lds-plum-100);
+  --lds-brand-muted:    var(--lds-plum-200);
+  --lds-brand-base:     var(--lds-plum-600);
+  --lds-brand-strong:   var(--lds-plum-700);
+  --lds-brand-rgb:      var(--lds-rgb-plum);
+
+  /* Type: house family. A brand MAY diverge here, but the size ramp is
+     tuned to this family's x-height — diverging means re-tuning it. */
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  /* Radius: house scale. */
+  --lds-brand-radius-100: var(--lds-radius-200);
+  --lds-brand-radius-200: var(--lds-radius-300);
+  --lds-brand-radius-300: var(--lds-radius-400);
+  --lds-brand-radius-400: var(--lds-radius-500);
+  --lds-brand-radius-500: var(--lds-radius-600);
+
+  /* Elevation: the house ramp. A brand may restyle the shadows but must NOT
+     reorder them — hairline < control < card < raised < overlay < modal
+     encodes layering, and layering is a shared signal like status. */
+  --lds-brand-elevation-100: var(--lds-elevation-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-600);
+}

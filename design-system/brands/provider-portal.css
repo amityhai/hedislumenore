@@ -1,0 +1,53 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND · PROVIDER PORTAL (external clinician app)
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   Contracted providers (CRSPs) looking at their own panel from
+              outside the plan. Lower frequency, lower training, higher stakes
+              per visit.
+   Voice      Same clarity, warmer distance. This is someone else's data about
+              them, so the app must feel like a report, not a console.
+   Signature  Blue — because the staff app's teal signals "you are inside the
+              plan's tooling". A provider must be able to tell at a glance
+              which surface they are on.
+
+   NOTE ON THE COLLISION
+   Provider blue is the SAME family as the "At Goal" status blue. That is
+   tolerable only because this brand, like every other, is forbidden from
+   filling a button with a status colour and forbidden from tinting a status
+   pill with brand. Enforced by the linter (governance.md §5).
+
+   Scoped, not :root — so the staff app can render a provider preview inline
+   without the brand leaking.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-brand='provider-portal'] {
+  --lds-brand-name:     'Provider Portal';
+  --lds-brand-subtlest: var(--lds-blue-50);
+  --lds-brand-subtle:   var(--lds-blue-100);
+  --lds-brand-muted:    var(--lds-blue-200);
+  --lds-brand-base:     var(--lds-blue-500);
+  --lds-brand-strong:   var(--lds-blue-600);
+  --lds-brand-rgb:      var(--lds-rgb-blue);
+
+  /* Type: house family. A brand MAY diverge here, but the size ramp is
+     tuned to this family's x-height — diverging means re-tuning it. */
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  /* Radius: one step softer than the house scale, all five steps shifted
+     together so the pill-vs-button distinction survives (principle 3). */
+  --lds-brand-radius-100: var(--lds-radius-300);
+  --lds-brand-radius-200: var(--lds-radius-400);
+  --lds-brand-radius-300: var(--lds-radius-500);
+  --lds-brand-radius-400: var(--lds-radius-600);
+  --lds-brand-radius-500: var(--lds-radius-700);
+
+  /* Elevation: the SOFT ramp — this surface should read as a report, not a
+     console. Shallower and lower-contrast, same ordering. */
+  --lds-brand-elevation-100: var(--lds-elevation-soft-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-soft-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-soft-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-soft-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-soft-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-soft-600);
+}

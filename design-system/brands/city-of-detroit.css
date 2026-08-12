@@ -1,0 +1,54 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND · CITY OF DETROIT (crisis-response outcomes)
+   ───────────────────────────────────────────────────────────────────────────
+   Audience   The mayor's office and other city departments. External,
+              non-clinical, non-financial, view-only — the only audience in
+              the house that does not work a queue.
+   Voice      Civic and declarative. This surface answers one question: how
+              many people did DWIHN reach before another department had to.
+   Signature  Royal. Deeper and more formal than the working products;
+              presentation-grade rather than console-grade.
+   Density    Dashboard-first, large numbers, no bulk actions. If incident
+              drilldown is added, revisit against the finance density profile.
+
+   NOTE ON THE COLLISION
+   Royal is the same family as the "At Goal" status blue, separated by
+   luminance (1.76:1) rather than hue. That margin would be too thin in a
+   dense clinical grid — it is acceptable here only because this surface is
+   aggregate and renders essentially no status pills. Adding member-level
+   status to a City view invalidates this brand's hue, not the status token.
+
+   Scoped, not :root — City views can be previewed from inside staff tooling.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-lds-brand='city-of-detroit'] {
+  --lds-brand-name:     'City of Detroit';
+  --lds-brand-subtlest: var(--lds-royal-50);
+  --lds-brand-subtle:   var(--lds-royal-100);
+  --lds-brand-muted:    var(--lds-royal-200);
+  --lds-brand-base:     var(--lds-royal-600);
+  --lds-brand-strong:   var(--lds-royal-700);
+  --lds-brand-rgb:      var(--lds-rgb-royal);
+
+  /* Type: house family. A brand MAY diverge here, but the size ramp is
+     tuned to this family's x-height — diverging means re-tuning it. */
+  --lds-brand-font-ui:   var(--lds-family-sans);
+  --lds-brand-font-mono: var(--lds-family-mono);
+
+  /* Radius: one step softer than the house scale, all five steps shifted
+     together so the pill-vs-button distinction survives (principle 3). */
+  --lds-brand-radius-100: var(--lds-radius-300);
+  --lds-brand-radius-200: var(--lds-radius-400);
+  --lds-brand-radius-300: var(--lds-radius-500);
+  --lds-brand-radius-400: var(--lds-radius-600);
+  --lds-brand-radius-500: var(--lds-radius-700);
+
+  /* Elevation: the SOFT ramp — this surface should read as a report, not a
+     console. Shallower and lower-contrast, same ordering. */
+  --lds-brand-elevation-100: var(--lds-elevation-soft-100);
+  --lds-brand-elevation-200:  var(--lds-elevation-soft-200);
+  --lds-brand-elevation-300:     var(--lds-elevation-soft-300);
+  --lds-brand-elevation-400:   var(--lds-elevation-soft-400);
+  --lds-brand-elevation-500:  var(--lds-elevation-soft-500);
+  --lds-brand-elevation-600:    var(--lds-elevation-soft-600);
+}

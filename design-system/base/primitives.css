@@ -1,0 +1,417 @@
+/* ═══ LDS · BASE · PRIMITIVES ═══════════════════════════════════════════
+   The components that are pure CSS. Anything with state, focus management,
+   or ARIA wiring ships as a React component instead — see docs/07-components.md.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════
+   BUTTON
+   Compose: one variant + (optional) one size + (optional) .lds-btn--icon
+       .lds-btn .lds-btn--primary .lds-btn--lg     the single next action
+       .lds-btn .lds-btn--tonal   .lds-btn--sm     a repeated row action
+       .lds-btn .lds-btn--secondary .lds-btn--icon .lds-btn--sm
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lds-button-gap);
+  height: var(--lds-control-height);
+  padding: 0 var(--lds-button-padding-x);
+  border: var(--lds-border-width-hairline) solid transparent;
+  border-radius: var(--lds-button-radius);
+  font-family: var(--lds-family-sans);
+  font-size: var(--lds-button-font-size);
+  font-weight: var(--lds-button-font-weight);
+  letter-spacing: var(--lds-button-tracking);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--lds-motion-control), border-color var(--lds-motion-control),
+              color var(--lds-motion-control), box-shadow var(--lds-motion-control);
+}
+.lds-btn:focus-visible { outline: none; box-shadow: var(--lds-focus-ring); }
+.lds-btn:active:not(:disabled) { transform: scale(var(--lds-motion-press-scale)); }
+.lds-btn:disabled { opacity: var(--lds-action-disabled-opacity); cursor: not-allowed; }
+
+.lds-btn--primary   { background: var(--lds-action-primary-bg); color: var(--lds-action-primary-fg); }
+.lds-btn--primary:hover:not(:disabled) { background: var(--lds-action-primary-bg-hover); }
+
+.lds-btn--tonal     { background: var(--lds-action-tonal-bg); color: var(--lds-action-tonal-fg); border-color: var(--lds-action-tonal-border); }
+.lds-btn--tonal:hover:not(:disabled) { background: var(--lds-action-tonal-bg-hover); color: var(--lds-action-tonal-fg-hover); border-color: var(--lds-action-tonal-bg-hover); }
+
+.lds-btn--secondary { background: var(--lds-action-secondary-bg); color: var(--lds-action-secondary-fg); border-color: var(--lds-action-secondary-border); }
+.lds-btn--secondary:hover:not(:disabled) { background: var(--lds-action-secondary-bg-hover); border-color: var(--lds-border-strong); }
+
+.lds-btn--ghost     { background: var(--lds-action-ghost-bg); color: var(--lds-action-ghost-fg); }
+.lds-btn--ghost:hover:not(:disabled) { background: var(--lds-action-ghost-bg-hover); color: var(--lds-action-ghost-fg-hover); }
+
+/* Assign — the workflow verb. One variant, one hue, one shape, everywhere it
+   appears, so "assign" is recognisable before the label is read. It has no
+   tonal sibling on purpose: a second assign style defeats the point. */
+.lds-btn--assign    { background: var(--lds-workflow-assign-bg); color: var(--lds-workflow-assign-fg); border-color: var(--lds-workflow-assign-border); }
+.lds-btn--assign:hover:not(:disabled) { background: var(--lds-workflow-assign-bg-hover); border-color: var(--lds-workflow-assign-border-hover); }
+.lds-btn--assign:focus-visible { box-shadow: var(--lds-workflow-assign-ring); }
+
+/* Destructive — text-only red on a secondary shell. A solid red button is
+   reserved for the confirmation step, never the trigger. */
+.lds-btn--danger    { background: var(--lds-bg-surface); color: var(--lds-feedback-danger-fg); border-color: var(--lds-feedback-danger-border); }
+.lds-btn--danger:hover:not(:disabled) { background: var(--lds-feedback-danger-bg); }
+.lds-btn--danger:focus-visible { box-shadow: var(--lds-focus-ring-danger); }
+
+.lds-btn--sm { height: var(--lds-control-height-sm); padding: 0 var(--lds-button-padding-x-sm); gap: var(--lds-button-gap-sm); font-size: var(--lds-button-font-size-sm); border-radius: var(--lds-button-radius-sm); }
+.lds-btn--lg { height: var(--lds-control-height-lg); padding: 0 var(--lds-button-padding-x-lg); font-size: var(--lds-button-font-size-lg); }
+
+/* Icon-only. The label lives in aria-label — never omit it. */
+.lds-btn--icon { width: var(--lds-control-height); padding: 0; }
+.lds-btn--icon.lds-btn--sm { width: var(--lds-control-height-sm); }
+.lds-btn--icon.lds-btn--lg { width: var(--lds-control-height-lg); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CHIP / STATUS BADGE — always full-radius, always dot + label
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lds-chip-gap);
+  padding: var(--lds-chip-padding);
+  border-radius: var(--lds-chip-radius);
+  font-size: var(--lds-chip-font-size);
+  font-weight: var(--lds-chip-font-weight);
+  line-height: var(--lds-line-height-100);
+  letter-spacing: var(--lds-tracking-300);
+  white-space: nowrap;
+}
+.lds-chip--sm { font-size: var(--lds-chip-font-size-sm); padding: var(--lds-chip-padding-sm); }
+
+.lds-chip__dot { width: var(--lds-chip-dot-size); height: var(--lds-chip-dot-size); border-radius: var(--lds-radius-full); flex-shrink: 0; }
+
+.lds-chip--above   { background: var(--lds-status-above-bg);   color: var(--lds-status-above-fg); }
+.lds-chip--above   .lds-chip__dot { background: var(--lds-status-above-accent); }
+.lds-chip--at      { background: var(--lds-status-at-bg);      color: var(--lds-status-at-fg); }
+.lds-chip--at      .lds-chip__dot { background: var(--lds-status-at-accent); }
+.lds-chip--below   { background: var(--lds-status-below-bg);   color: var(--lds-status-below-fg); }
+.lds-chip--below   .lds-chip__dot { background: var(--lds-status-below-accent); }
+.lds-chip--caution { background: var(--lds-status-caution-bg); color: var(--lds-status-caution-fg); }
+.lds-chip--caution .lds-chip__dot { background: var(--lds-status-caution-accent); }
+.lds-chip--neutral { background: var(--lds-status-neutral-bg); color: var(--lds-status-neutral-fg); }
+.lds-chip--neutral .lds-chip__dot { background: var(--lds-status-neutral-accent); }
+
+/* Lifecycle chips — where the work is, not how it scored. */
+.lds-chip--unassigned { background: var(--lds-lifecycle-unassigned-bg); color: var(--lds-lifecycle-unassigned-fg); }
+.lds-chip--assigned   { background: var(--lds-lifecycle-assigned-bg);   color: var(--lds-lifecycle-assigned-fg); }
+.lds-chip--progress   { background: var(--lds-lifecycle-progress-bg);   color: var(--lds-lifecycle-progress-fg); }
+.lds-chip--done       { background: var(--lds-lifecycle-done-bg);       color: var(--lds-lifecycle-done-fg); }
+.lds-chip--closed     { background: var(--lds-lifecycle-closed-bg);     color: var(--lds-lifecycle-closed-fg); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   FILTER PILL — a chip that is also a button. Full radius, because it
+   filters/describes rather than acts.
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lds-chip-gap);
+  padding: 7px var(--lds-space-800);
+  border: var(--lds-border-width-hairline) solid var(--lds-border-default);
+  border-radius: var(--lds-radius-full);
+  background: var(--lds-bg-surface);
+  font-family: var(--lds-family-sans);
+  font-size: var(--lds-font-size-400);
+  font-weight: var(--lds-font-weight-600);
+  color: var(--lds-fg-muted);
+  cursor: pointer;
+  transition: background var(--lds-motion-control), color var(--lds-motion-control),
+              border-color var(--lds-motion-control), transform var(--lds-duration-100) var(--lds-ease-standard);
+}
+.lds-pill:hover { border-color: var(--lds-border-strong); }
+.lds-pill:active { transform: scale(0.96); }
+.lds-pill[aria-pressed='true'].lds-pill--below { background: var(--lds-status-below-bg); color: var(--lds-status-below-fg); border-color: var(--lds-status-below-accent); }
+.lds-pill[aria-pressed='true'].lds-pill--at    { background: var(--lds-status-at-bg);    color: var(--lds-status-at-fg);    border-color: var(--lds-status-at-accent); }
+.lds-pill[aria-pressed='true'].lds-pill--above { background: var(--lds-status-above-bg); color: var(--lds-status-above-fg); border-color: var(--lds-status-above-accent); }
+.lds-pill[aria-pressed='true'].lds-pill--brand { background: var(--lds-action-selected-bg); color: var(--lds-action-selected-fg); border-color: var(--lds-brand-base); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SEGMENTED CONTROL — switches a LENS on the current view
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-segmented { display: inline-flex; gap: var(--lds-space-200); padding: var(--lds-segmented-padding); background: var(--lds-segmented-bg); border-radius: var(--lds-segmented-radius); }
+.lds-segmented__item {
+  border: none; background: transparent;
+  padding: var(--lds-segmented-item-padding);
+  border-radius: var(--lds-segmented-item-radius);
+  font-family: var(--lds-family-sans);
+  font-size: var(--lds-font-size-400);
+  font-weight: var(--lds-font-weight-600);
+  color: var(--lds-segmented-item-fg);
+  cursor: pointer;
+  transition: background var(--lds-motion-control), color var(--lds-motion-control), box-shadow var(--lds-motion-control);
+}
+.lds-segmented__item:hover { color: var(--lds-fg-subtle); }
+.lds-segmented__item[aria-selected='true'],
+.lds-segmented__item[aria-pressed='true'] {
+  background: var(--lds-segmented-item-bg-active);
+  color: var(--lds-segmented-item-fg-active);
+  box-shadow: var(--lds-segmented-item-shadow-active);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FIELD
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-field { display: flex; flex-direction: column; gap: var(--lds-field-label-gap); }
+.lds-field__label { font-size: var(--lds-field-label-size); font-weight: var(--lds-field-label-weight); color: var(--lds-fg-subtle); }
+.lds-field__label .lds-required { color: var(--lds-field-required-fg); margin-left: 2px; }
+.lds-field__control,
+.lds-input, .lds-select, .lds-textarea {
+  width: 100%;
+  min-height: var(--lds-field-height);
+  padding: 9px var(--lds-field-padding-x);
+  border: var(--lds-border-width-hairline) solid var(--lds-field-border);
+  border-radius: var(--lds-field-radius);
+  background: var(--lds-field-bg);
+  color: var(--lds-field-fg);
+  font-family: var(--lds-family-sans);
+  font-size: var(--lds-field-font-size);
+  transition: border-color var(--lds-motion-hover), box-shadow var(--lds-motion-hover);
+}
+.lds-input::placeholder, .lds-textarea::placeholder { color: var(--lds-field-placeholder); }
+.lds-input:hover, .lds-select:hover, .lds-textarea:hover { border-color: var(--lds-field-border-hover); }
+.lds-input:focus, .lds-select:focus, .lds-textarea:focus {
+  outline: none;
+  border-color: var(--lds-field-border-focus);
+  box-shadow: var(--lds-focus-ring);
+}
+.lds-input:disabled, .lds-select:disabled, .lds-textarea:disabled {
+  background: var(--lds-field-bg-disabled); color: var(--lds-fg-disabled); cursor: not-allowed;
+}
+.lds-textarea { resize: vertical; min-height: 84px; }
+.lds-field__help  { font-size: var(--lds-field-help-size); color: var(--lds-field-help-fg); }
+.lds-field__error { font-size: var(--lds-field-help-size); color: var(--lds-field-error-fg); font-weight: var(--lds-font-weight-500); }
+.lds-field[data-invalid='true'] .lds-input,
+.lds-field[data-invalid='true'] .lds-select,
+.lds-field[data-invalid='true'] .lds-textarea { border-color: var(--lds-feedback-danger-icon); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CARD
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-card {
+  background: var(--lds-card-bg);
+  border: var(--lds-border-width-hairline) solid var(--lds-card-border);
+  border-radius: var(--lds-card-radius);
+  box-shadow: var(--lds-card-shadow);
+  padding: var(--lds-card-padding);
+}
+.lds-card--flush { padding: 0; overflow: hidden; }
+
+/* KPI card with a status rule inset from the corners. */
+.lds-kpi { position: relative; }
+.lds-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: var(--lds-card-rule-inset); right: var(--lds-card-rule-inset);
+  height: var(--lds-card-rule-size);
+  border-radius: 0 0 var(--lds-radius-100) var(--lds-radius-100);
+  background: var(--lds-border-subtle);
+}
+.lds-kpi--below::before   { background: var(--lds-status-below-accent); }
+.lds-kpi--at::before      { background: var(--lds-status-at-accent); }
+.lds-kpi--above::before   { background: var(--lds-status-above-accent); }
+.lds-kpi--caution::before { background: var(--lds-status-caution-accent); }
+.lds-kpi__label { font-size: var(--lds-font-size-300); font-weight: var(--lds-font-weight-600); text-transform: uppercase; letter-spacing: var(--lds-tracking-500); color: var(--lds-fg-muted); }
+.lds-kpi__value { font-size: var(--lds-font-size-1200); font-weight: var(--lds-font-weight-700); letter-spacing: var(--lds-tracking-100); line-height: var(--lds-line-height-100); color: var(--lds-fg-default); margin-top: var(--lds-space-300); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TABLE
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-table { width: 100%; border-collapse: collapse; }
+.lds-table thead th {
+  text-align: left;
+  padding: var(--lds-table-cell-padding);
+  background: var(--lds-table-header-bg);
+  color: var(--lds-table-header-fg);
+  font-size: var(--lds-table-header-size);
+  font-weight: var(--lds-table-header-weight);
+  letter-spacing: var(--lds-table-header-tracking);
+  text-transform: uppercase;
+  border-bottom: var(--lds-border-width-hairline) solid var(--lds-table-row-border);
+  white-space: nowrap;
+}
+.lds-table tbody td {
+  padding: var(--lds-table-cell-padding);
+  font-size: var(--lds-table-cell-size);
+  color: var(--lds-table-cell-fg);
+  border-bottom: var(--lds-border-width-hairline) solid var(--lds-table-row-border);
+}
+.lds-table tbody tr:last-child td { border-bottom: none; }
+.lds-table__row--interactive { cursor: pointer; transition: background var(--lds-motion-hover); }
+.lds-table__row--interactive:hover { background: var(--lds-table-row-bg-hover); }
+.lds-table__row--interactive:focus-visible { outline: none; box-shadow: var(--lds-focus-ring-inset); }
+/* Numeric columns right-align. Always. A rate that drifts left of the rate
+   above it cannot be compared at a glance, which is the only reason the
+   column exists. */
+.lds-table .is-num { text-align: right; font-variant-numeric: tabular-nums lining-nums; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   OVERLAYS
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-scrim {
+  position: fixed; inset: 0;
+  z-index: var(--lds-layer-modal-scrim);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--lds-modal-gutter);
+  background: var(--lds-modal-scrim);
+  animation: lds-fade var(--lds-duration-100) ease both;
+}
+.lds-scrim--blur { backdrop-filter: blur(var(--lds-modal-scrim-blur)); }
+
+.lds-modal {
+  z-index: var(--lds-layer-modal);
+  width: 100%;
+  max-width: var(--lds-modal-width-sm);
+  max-height: calc(100vh - (2 * var(--lds-modal-gutter)));
+  display: flex; flex-direction: column;
+  background: var(--lds-modal-bg);
+  border-radius: var(--lds-modal-radius);
+  box-shadow: var(--lds-modal-shadow);
+  animation: lds-pop var(--lds-motion-overlay) both;
+}
+.lds-modal--md { max-width: var(--lds-modal-width-md); }
+.lds-modal--lg { max-width: var(--lds-modal-width-lg); }
+.lds-modal__header { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--lds-space-800); padding: var(--lds-space-1000) var(--lds-space-1100) var(--lds-space-700); border-bottom: var(--lds-border-width-hairline) solid var(--lds-border-subtle); }
+/* min-height:0 lets the body — not the whole dialog — be what scrolls.
+   Without it the dialog overflows its max-height and the centring scrim
+   clips the pinned header off the top of the viewport. */
+.lds-modal__body   { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--lds-space-900) var(--lds-space-1100); }
+.lds-modal__footer { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: var(--lds-space-500); padding: var(--lds-space-700) var(--lds-space-1100) var(--lds-space-1000); }
+/* Explains a disabled submit instead of letting it read as broken. */
+.lds-modal__hint   { margin-right: auto; font-size: var(--lds-font-size-300); color: var(--lds-fg-muted); }
+
+@keyframes lds-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lds-pop  { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MENU
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-menu {
+  position: absolute;
+  z-index: var(--lds-layer-dropdown);
+  min-width: 100%;
+  max-height: var(--lds-menu-max-height);
+  overflow-y: auto;
+  margin-top: var(--lds-menu-offset);
+  background: var(--lds-menu-bg);
+  border: var(--lds-border-width-hairline) solid var(--lds-menu-border);
+  border-radius: var(--lds-menu-radius);
+  box-shadow: var(--lds-menu-shadow);
+}
+.lds-menu__item {
+  display: block; width: 100%; text-align: left;
+  padding: var(--lds-menu-item-padding);
+  border: none; border-bottom: var(--lds-border-width-hairline) solid var(--lds-border-subtle);
+  background: transparent;
+  font-family: var(--lds-family-sans);
+  font-size: var(--lds-font-size-500);
+  color: var(--lds-menu-item-fg);
+  cursor: pointer;
+  transition: background var(--lds-motion-hover);
+}
+.lds-menu__item:last-child { border-bottom: none; }
+.lds-menu__item:hover, .lds-menu__item:focus-visible { background: var(--lds-menu-item-bg-hover); color: var(--lds-fg-default); }
+.lds-menu__item[aria-selected='true'] { background: var(--lds-menu-item-bg-selected); color: var(--lds-menu-item-fg-selected); font-weight: var(--lds-font-weight-600); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-toast-stack {
+  position: fixed;
+  right: var(--lds-toast-offset); bottom: var(--lds-toast-offset);
+  z-index: var(--lds-layer-toast);
+  display: flex; flex-direction: column; gap: var(--lds-toast-gap);
+  max-width: var(--lds-toast-max-width);
+}
+.lds-toast {
+  display: flex; align-items: center; gap: var(--lds-space-500);
+  padding: var(--lds-toast-padding);
+  border: var(--lds-border-width-hairline) solid var(--lds-toast-border);
+  border-radius: var(--lds-toast-radius);
+  background: var(--lds-toast-bg);
+  box-shadow: var(--lds-toast-shadow);
+  font-size: var(--lds-font-size-400);
+  color: var(--lds-fg-subtle);
+  animation: lds-toast-in var(--lds-motion-overlay) both;
+}
+@keyframes lds-toast-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+.lds-toast--success { border-left: var(--lds-toast-rule) solid var(--lds-feedback-success-icon); }
+.lds-toast--error   { border-left: var(--lds-toast-rule) solid var(--lds-feedback-danger-icon); }
+.lds-toast--info    { border-left: var(--lds-toast-rule) solid var(--lds-brand-base); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   FEEDBACK STATES
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-skeleton {
+  display: block;
+  border-radius: var(--lds-skeleton-radius);
+  background: linear-gradient(90deg, var(--lds-bg-skeleton) 25%, var(--lds-bg-skeleton-peak) 37%, var(--lds-bg-skeleton) 63%);
+  background-size: 400% 100%;
+  animation: lds-shimmer var(--lds-skeleton-duration) ease infinite;
+}
+@keyframes lds-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+.lds-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--lds-space-400); padding: var(--lds-state-padding); text-align: center; }
+.lds-state__title { font-size: var(--lds-state-title-size); font-weight: var(--lds-font-weight-600); color: var(--lds-fg-subtle); }
+.lds-state__hint  { font-size: var(--lds-state-hint-size); color: var(--lds-fg-muted); max-width: var(--lds-state-hint-max-width); line-height: var(--lds-line-height-400); }
+.lds-state--error .lds-state__title { color: var(--lds-feedback-danger-fg); }
+
+/* Sample-data notice. Never silently fake numbers — an amber banner with a
+   retry is the only sanctioned fallback. */
+.lds-notice {
+  display: flex; align-items: flex-start; gap: var(--lds-space-500);
+  padding: var(--lds-space-500) var(--lds-space-600);
+  border: var(--lds-border-width-hairline) solid var(--lds-feedback-warning-border);
+  border-radius: var(--lds-radius-400);
+  background: var(--lds-feedback-warning-bg);
+  color: var(--lds-feedback-warning-fg);
+  font-size: var(--lds-font-size-400);
+  line-height: var(--lds-line-height-300);
+}
+.lds-notice--info   { border-color: var(--lds-feedback-info-border);   background: var(--lds-feedback-info-bg);   color: var(--lds-feedback-info-fg); }
+.lds-notice--danger { border-color: var(--lds-feedback-danger-border); background: var(--lds-feedback-danger-bg); color: var(--lds-feedback-danger-fg); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PROGRESS / RATE BAR
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-progress { position: relative; height: var(--lds-progress-height); background: var(--lds-progress-track); border-radius: var(--lds-progress-radius); }
+.lds-progress__fill { height: 100%; border-radius: var(--lds-progress-radius); background: var(--lds-status-neutral-accent); transition: width var(--lds-motion-data-fill); }
+.lds-progress--below .lds-progress__fill { background: var(--lds-status-below-accent); }
+.lds-progress--at    .lds-progress__fill { background: var(--lds-status-at-accent); }
+.lds-progress--above .lds-progress__fill { background: var(--lds-status-above-accent); }
+/* The goal marker is a hairline, not a knob — it marks a threshold, it is not
+   a control. */
+.lds-progress__goal { position: absolute; top: -3px; bottom: -3px; width: var(--lds-progress-marker-width); background: var(--lds-progress-marker-color); border-radius: var(--lds-radius-full); transform: translateX(-50%); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   ICON — enforces the Lumenore keyline. See docs/06-iconography.md.
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-icon { width: var(--lds-icon-size-inline); height: var(--lds-icon-size-inline); flex-shrink: 0; color: var(--lds-icon-default); }
+.lds-icon--2xs { width: var(--lds-icon-size-dense); height: var(--lds-icon-size-dense); }
+.lds-icon--xs  { width: var(--lds-icon-size-compact);  height: var(--lds-icon-size-compact); }
+.lds-icon--sm  { width: var(--lds-icon-size-inline);  height: var(--lds-icon-size-inline); }
+.lds-icon--md  { width: var(--lds-icon-size-default);  height: var(--lds-icon-size-default); }
+.lds-icon--lg  { width: var(--lds-icon-size-feature);  height: var(--lds-icon-size-feature); }
+.lds-icon--xl  { width: var(--lds-icon-size-hero);  height: var(--lds-icon-size-hero); }
+.lds-icon--brand    { color: var(--lds-icon-brand); }
+.lds-icon--muted    { color: var(--lds-icon-muted); }
+.lds-icon--knockout { color: var(--lds-icon-knockout); }
+.lds-icon--inherit  { color: currentColor; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LAYOUT HELPERS
+   ══════════════════════════════════════════════════════════════════════ */
+.lds-page   { padding: var(--lds-page-padding); }
+.lds-stack  { display: flex; flex-direction: column; gap: var(--lds-gap-page-section); }
+.lds-row    { display: flex; align-items: center; gap: var(--lds-gap-inline); }
+.lds-row--wrap { flex-wrap: wrap; }
+.lds-spacer { flex: 1; }
+.lds-divider{ height: 1px; background: var(--lds-border-subtle); border: none; }
+
+@media (max-width: 768px) {
+  .lds-page { padding: var(--lds-page-padding-mobile); }
+}

@@ -1,0 +1,401 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMENORE DESIGN SYSTEM · SEMANTIC (SYSTEM) TOKENS
+   Figma collection: `3 · Semantic`.  (The `2-` filename prefix is LOAD ORDER,
+   not tier number — brand hooks load between core and this file.)
+   ───────────────────────────────────────────────────────────────────────────
+   The contract every product codes against. A semantic token names a
+   PURPOSE — where it is used and what it means — never a value and never a
+   component. `--lds-fg-muted` is legal; `--lds-neutral-500` and
+   `--lds-table-header-fg` are not.
+
+   THIS IS THE ONLY TIER PRODUCT CODE SHOULD NORMALLY TOUCH.
+
+   EVERY AXIS GETS A ROW HERE — NOT JUST COLOUR
+   ────────────────────────────────────────────
+   Colour had a full purpose vocabulary and the other axes had none, so
+   components reached past this file for radius, size, elevation, motion and
+   z-index. Radius had no row at all and thirteen components aliased brand
+   hooks directly. If an axis exists in core, it has purposes here, or it will
+   be skipped again.
+
+       core            brand hook       semantic            component
+       teal-600     →  brand-base    →  action-primary-bg → button-primary-bg
+       radius-400   →  brand-radius-300 → radius-control  → button-radius
+       size-700     →  —             →  size-avatar       → avatar-size
+
+   Load order: 1-core.css → brands/<brand>.css → 2-semantic.css → 3-component.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-lds-brand],
+[data-lds-density] {
+
+  /* ═══ 1. SURFACE — what things sit ON ═════════════════════════════════
+     The page ground is white. Cards do NOT rely on a grey canvas to
+     separate them; border + `--lds-elevation-card` do that work. Changing
+     `--lds-bg-canvas` to a grey therefore breaks card separation twice over. */
+  --lds-bg-canvas:        var(--lds-neutral-0);     /* the page itself */
+  --lds-bg-surface:       var(--lds-neutral-0);     /* cards, modals, menus */
+  --lds-bg-surface-sunken:var(--lds-neutral-50);    /* wells, table heads, hero blocks */
+  --lds-bg-surface-hover: var(--lds-neutral-50);    /* row & option hover */
+  --lds-bg-surface-raised:var(--lds-neutral-0);     /* the selected pip in a segmented control */
+  --lds-bg-inverse:       var(--lds-neutral-900);   /* tooltip, and any knockout surface */
+  --lds-bg-scrim:         rgb(var(--lds-rgb-ink) / 0.45);
+  --lds-bg-scrim-nav:     rgb(var(--lds-rgb-ink) / 0.42);
+  --lds-bg-scrim-blur:    var(--lds-blur-100);
+  --lds-bg-skeleton:      var(--lds-neutral-100);
+  --lds-bg-skeleton-peak: var(--lds-neutral-200);
+  --lds-bg-track:         var(--lds-neutral-100);   /* progress & slider troughs */
+  --lds-bg-identity:      var(--lds-brand-base);    /* avatar & initials fills.
+                             NOT an action token: an avatar is not clickable by
+                             virtue of being brand-coloured, and binding it to
+                             `action-primary-bg` would say that it is. */
+
+  /* ═══ 2. FOREGROUND — text and glyphs ═════════════════════════════════
+     Four steps, and the steps mean something:
+       default  headings, values, the number the user came for
+       subtle   body copy, secondary values
+       muted    labels, captions, supporting sentences
+       faint    axis ticks, column heads, disabled, decorative glyphs
+     Never use `faint` for anything a user must read to complete a task. */
+  --lds-fg-default:  var(--lds-neutral-900);
+  --lds-fg-subtle:   var(--lds-neutral-800);
+  --lds-fg-muted:    var(--lds-neutral-500);
+  /* `faint` is a NON-TEXT token. It clears the 3:1 minimum for icons, dividers
+     and control edges and NOTHING ELSE. Column heads, KPI labels and axis
+     labels are text a user must read — they take `--lds-fg-muted`. This was
+     the single most common contrast failure in the pre-system codebase. */
+  --lds-fg-faint:    var(--lds-neutral-450);
+  --lds-fg-decorative: var(--lds-neutral-400);   /* rules, dots, chevrons — never carries meaning */
+  --lds-fg-disabled: var(--lds-neutral-450);
+  --lds-fg-knockout: var(--lds-white);              /* on any filled action or inverse surface */
+  --lds-fg-link:     var(--lds-brand-base);
+
+  /* ═══ 3. BORDER ═══════════════════════════════════════════════════════ */
+  --lds-border-default: var(--lds-neutral-200);     /* card & control edges */
+  --lds-border-subtle:  var(--lds-neutral-100);     /* internal dividers, row rules */
+  --lds-border-strong:  var(--lds-neutral-400);     /* control hover */
+  --lds-border-brand:   var(--lds-brand-base);      /* focus edge, active field */
+
+  /* 3.1 BORDER WIDTH ROLES
+         `marker` and `halo` used to be core primitives named after the nav bar
+         and the bubble field. A primitive cannot know what a nav bar is. */
+  --lds-border-width-hairline: var(--lds-border-width-100);  /* 1px — every default edge */
+  --lds-border-width-emphasis: var(--lds-border-width-200);  /* 2px — tab underline, progress marker */
+  --lds-border-width-marker:   var(--lds-border-width-300);  /* 3px — active-nav bar, card top rule */
+  --lds-border-width-halo:     var(--lds-border-width-400);  /* 6px — bubble-field ring */
+
+  /* ═══ 4. RADIUS ROLES ═════════════════════════════════════════════════
+     The axis that proved the point: this section did not exist, so thirteen
+     component tokens aliased `--lds-brand-radius-*` directly and there was no
+     single answer to "how round is a control in this house".
+
+     Roles, not sizes. A field and a segmented pip share `input` because they
+     are the same kind of object; a card and a modal share `surface`. */
+  --lds-radius-inset:   var(--lds-brand-radius-100);  /* tooltip, skeleton, inline chip */
+  --lds-radius-input:   var(--lds-brand-radius-200);  /* fields, segmented items, small buttons */
+  --lds-radius-control: var(--lds-brand-radius-300);  /* buttons, nav items, toasts, segmented track */
+  --lds-radius-overlay: var(--lds-brand-radius-400);  /* menus, popovers */
+  --lds-radius-surface: var(--lds-brand-radius-500);  /* cards, modals, drawers */
+  --lds-radius-pill:    var(--lds-radius-full);       /* chips, avatars, progress tracks */
+  --lds-radius-none:    var(--lds-radius-0);
+
+  /* ═══ 5. SIZE ROLES — how big a thing is ══════════════════════════════
+     Also absent before, which is why `avatar-size: 36px` was a raw literal in
+     the component tier and drifted to 38px in Figma. */
+  --lds-size-avatar:     var(--lds-size-700);   /* 36 */
+  --lds-size-avatar-sm:  var(--lds-size-500);   /* 28 */
+  --lds-size-nav-item:   var(--lds-size-800);   /* 40 */
+  /* WCAG 2.2 AA (2.5.8) pointer-target floor. Anything a user clicks in a
+     dense grid must clear this, which is why the table row min is not free. */
+  --lds-size-target-min: var(--lds-size-900);   /* 44 */
+  --lds-size-header:     var(--lds-size-1200);  /* 60 */
+
+  /* 5.1 ICON SIZE — Lumenore standard (PLG Style Guide · Iconography)
+         Icons are drawn on a 24px keyline with a 20px live area. NEVER render
+         below 16px standalone; 14px, 15px and 17px are illegal. */
+  --lds-icon-size-dense:   var(--lds-size-100);   /* 12 — table affordance, WITH a text label */
+  --lds-icon-size-compact: var(--lds-size-200);   /* 16 — floor for a standalone icon */
+  --lds-icon-size-inline:  var(--lds-size-300);   /* 20 — beside body text */
+  --lds-icon-size-default: var(--lds-size-400);   /* 24 — baseline */
+  --lds-icon-size-feature: var(--lds-size-800);   /* 40 — empty states */
+  --lds-icon-size-hero:    var(--lds-size-1000);  /* 48 — illustration slots */
+  --lds-icon-stroke:       var(--lds-border-width-200);   /* on the 24px keyline; scales with the box */
+
+  /* 5.2 OPTICAL INSET ROLES — the vertical padding that holds a target height.
+         Each names the object it holds up, because that is the only reason the
+         value is what it is. Change the type ramp and these must be re-derived;
+         that is a deliberate coupling, not an accident. */
+  --lds-inset-pill:    var(--lds-space-optical-100);   /* 3  — small chip */
+  --lds-inset-segment: var(--lds-space-optical-200);   /* 7  — segmented item */
+  --lds-inset-option:  var(--lds-space-optical-300);   /* 11 — menu / listbox row */
+  --lds-inset-cell:    var(--lds-space-optical-400);   /* 13 — table cell, holds the 44px row */
+
+  /* ═══ 6. MEASURE ROLES — large layout dimensions ══════════════════════ */
+  --lds-measure-prose:        var(--lds-measure-600);   /* 360 — empty-state hint, help text */
+  --lds-measure-overlay-sm:   var(--lds-measure-400);   /* 260 — tooltip */
+  --lds-measure-overlay-md:   var(--lds-measure-700);   /* 380 — toast */
+  --lds-measure-overlay-max-h:var(--lds-measure-300);   /* 240 — menu scroll cap */
+  --lds-measure-panel:        var(--lds-measure-800);   /* 420 — drawer, assign panel */
+  --lds-measure-dialog-sm:    var(--lds-measure-900);   /* 460 */
+  --lds-measure-dialog-md:    var(--lds-measure-1000);  /* 620 */
+  --lds-measure-dialog-lg:    var(--lds-measure-1200);  /* 1160 */
+  --lds-measure-table-scroll: var(--lds-measure-1100);  /* 640 — below this a table scrolls */
+
+  /* ═══ 7. ACTION — brand-owned. Never a status colour. ═════════════════
+     Brand teal/blue means "act" or "navigate". The moment a status hue fills
+     a button, the user can no longer tell a result from a control. */
+  --lds-action-primary-bg:        var(--lds-brand-base);
+  --lds-action-primary-bg-hover:  var(--lds-brand-strong);
+  --lds-action-primary-fg:        var(--lds-fg-knockout);
+
+  --lds-action-tonal-bg:          var(--lds-brand-subtle);
+  --lds-action-tonal-bg-hover:    var(--lds-brand-base);
+  --lds-action-tonal-fg:          var(--lds-brand-strong);
+  --lds-action-tonal-fg-hover:    var(--lds-fg-knockout);
+  --lds-action-tonal-border:      var(--lds-brand-muted);
+
+  --lds-action-secondary-bg:       var(--lds-bg-surface);
+  --lds-action-secondary-bg-hover: var(--lds-bg-surface-hover);
+  --lds-action-secondary-fg:       var(--lds-fg-subtle);
+  --lds-action-secondary-border:   var(--lds-border-default);
+
+  --lds-action-ghost-bg:       transparent;
+  --lds-action-ghost-bg-hover: var(--lds-bg-surface-hover);
+  --lds-action-ghost-fg:       var(--lds-fg-muted);
+  --lds-action-ghost-fg-hover: var(--lds-fg-subtle);
+
+  --lds-action-selected-bg: var(--lds-brand-subtle);
+  --lds-action-selected-fg: var(--lds-brand-strong);
+  --lds-action-marker:      var(--lds-brand-base);   /* the active-nav bar, the tab underline */
+
+  --lds-action-disabled-opacity: 0.55;
+
+  /* ═══ 8. WORKFLOW — the verb hue ══════════════════════════════════════
+     "Assign" is the one workflow verb that repeats on every surface —
+     measure card, provider row, stratum read, member row, and the panel's own
+     submit. It gets a dedicated hue because brand already means "act
+     generally" and every status hue is spoken for.
+     It is the nearest neighbour to `--lds-status-at-*`, which is exactly why
+     that blue is only ever spent on dots and pills, never a button fill. */
+  --lds-workflow-assign-bg:        var(--lds-indigo-100);
+  --lds-workflow-assign-bg-hover:  var(--lds-indigo-200);
+  --lds-workflow-assign-fg:        var(--lds-indigo-700);
+  --lds-workflow-assign-border:    var(--lds-indigo-200);
+  --lds-workflow-assign-border-hover: var(--lds-indigo-600);
+  --lds-workflow-assign-accent:    var(--lds-indigo-600);
+  --lds-workflow-assign-ring:      0 0 0 var(--lds-border-width-300) rgb(var(--lds-rgb-indigo) / 0.24);
+
+  /* ═══ 9. FEEDBACK — reaction to something the user just did ═══════════
+     Distinct from §10 STATUS, which describes the world. A green toast means
+     "your save worked"; a green pill means "this measure beats its goal".
+     They share a hue but never a component. */
+  --lds-feedback-success-bg:     var(--lds-green-100);
+  --lds-feedback-success-fg:     var(--lds-green-600);
+  --lds-feedback-success-border: var(--lds-green-200);
+  --lds-feedback-success-icon:   var(--lds-green-500);
+
+  --lds-feedback-danger-bg:      var(--lds-red-100);
+  --lds-feedback-danger-fg:      var(--lds-red-700);
+  --lds-feedback-danger-border:  var(--lds-red-200);
+  --lds-feedback-danger-icon:    var(--lds-red-500);
+
+  --lds-feedback-warning-bg:     var(--lds-amber-100);
+  --lds-feedback-warning-fg:     var(--lds-amber-700);
+  --lds-feedback-warning-border: var(--lds-amber-200);
+  --lds-feedback-warning-icon:   var(--lds-amber-500);
+
+  --lds-feedback-info-bg:        var(--lds-blue-100);
+  --lds-feedback-info-fg:        var(--lds-blue-600);
+  --lds-feedback-info-border:    var(--lds-blue-200);
+  --lds-feedback-info-icon:      var(--lds-blue-500);
+
+  /* ═══ 10. STATUS — HEDIS performance semantics. FIXED FOREVER. ════════
+     red = below goal · blue = at goal · green = above goal · amber = caution
+     A brand may NOT remap these. The measure of a health plan's performance
+     must mean the same thing in every product in the house, or the numbers
+     stop being trustworthy — which is the whole product.
+     Status is always carried by shape + label + colour, never colour alone. */
+  --lds-status-below-bg:     var(--lds-red-100);
+  --lds-status-below-fg:     var(--lds-red-700);
+  --lds-status-below-border: var(--lds-red-200);
+  --lds-status-below-accent: var(--lds-red-500);
+
+  --lds-status-at-bg:        var(--lds-blue-100);
+  --lds-status-at-fg:        var(--lds-blue-600);
+  --lds-status-at-border:    var(--lds-blue-200);
+  --lds-status-at-accent:    var(--lds-blue-500);
+
+  --lds-status-above-bg:     var(--lds-green-100);
+  --lds-status-above-fg:     var(--lds-green-600);
+  --lds-status-above-border: var(--lds-green-200);
+  --lds-status-above-accent: var(--lds-green-500);
+
+  --lds-status-caution-bg:     var(--lds-amber-100);
+  --lds-status-caution-fg:     var(--lds-amber-700);
+  --lds-status-caution-border: var(--lds-amber-200);
+  --lds-status-caution-accent: var(--lds-amber-500);
+
+  --lds-status-neutral-bg:     var(--lds-neutral-100);
+  --lds-status-neutral-fg:     var(--lds-fg-muted);
+  --lds-status-neutral-border: var(--lds-border-default);
+  --lds-status-neutral-accent: var(--lds-fg-faint);
+
+  /* ═══ 11. LIFECYCLE — where an intervention is, not how it scored ═════
+     Deliberately NOT green until the work is actually done: "assigned" is a
+     promise, not an outcome. Assigned borrows the workflow hue so the verb
+     and its result read as one thing. */
+  --lds-lifecycle-unassigned-bg: var(--lds-status-caution-bg);
+  --lds-lifecycle-unassigned-fg: var(--lds-status-caution-fg);
+  --lds-lifecycle-assigned-bg:   var(--lds-workflow-assign-bg);
+  --lds-lifecycle-assigned-fg:   var(--lds-workflow-assign-fg);
+  --lds-lifecycle-progress-bg:   var(--lds-status-at-bg);
+  --lds-lifecycle-progress-fg:   var(--lds-status-at-fg);
+  --lds-lifecycle-done-bg:       var(--lds-status-above-bg);
+  --lds-lifecycle-done-fg:       var(--lds-status-above-fg);
+  --lds-lifecycle-closed-bg:     var(--lds-bg-surface-sunken);
+  --lds-lifecycle-closed-fg:     var(--lds-fg-muted);
+
+  /* ═══ 12. ICON COLOUR ═════════════════════════════════════════════════ */
+  --lds-icon-default:  var(--lds-neutral-600);
+  --lds-icon-muted:    var(--lds-fg-faint);
+  --lds-icon-brand:    var(--lds-brand-base);
+  --lds-icon-knockout: var(--lds-white);
+
+  /* ═══ 13. FOCUS — one ring, everywhere ════════════════════════════════
+     Implemented as box-shadow, NOT outline, so the ring inherits each
+     element's own border-radius for free. Forcing a radius here squared off
+     round pills and bubbles on keyboard focus. */
+  --lds-focus-ring:        0 0 0 var(--lds-border-width-300) rgb(var(--lds-brand-rgb) / 0.18);
+  --lds-focus-ring-danger: 0 0 0 var(--lds-border-width-300) rgb(var(--lds-rgb-red) / 0.28);
+  --lds-focus-ring-inset:  inset 0 0 0 var(--lds-border-width-200) var(--lds-brand-base);
+
+  /* ═══ 14. ELEVATION — by ROLE, not by number ══════════════════════════ */
+  --lds-elevation-flat:    none;
+  --lds-elevation-hairline:var(--lds-brand-elevation-100);   /* inputs, segmented pips */
+  --lds-elevation-control: var(--lds-brand-elevation-200);   /* a control resting on a card */
+  --lds-elevation-card:    var(--lds-brand-elevation-300);   /* a page-level card on white */
+  --lds-elevation-raised:  var(--lds-brand-elevation-400);   /* hover lift, sticky bars */
+  --lds-elevation-overlay: var(--lds-brand-elevation-500);   /* menus, toasts, drawers */
+  --lds-elevation-modal:   var(--lds-brand-elevation-600);   /* modals, assign panel */
+
+  /* ═══ 15. TYPOGRAPHY ROLES ════════════════════════════════════════════
+     The page pattern is fixed across the house:
+       mono brand eyebrow → 26px/700 title → one-line 14px muted subtitle */
+  --lds-text-display-size:     var(--lds-font-size-1200);
+  --lds-text-display-weight:   var(--lds-font-weight-700);
+  --lds-text-display-tracking: var(--lds-tracking-100);
+
+  --lds-text-page-title-size:     var(--lds-font-size-1100);
+  --lds-text-page-title-weight:   var(--lds-font-weight-700);
+  --lds-text-page-title-tracking: var(--lds-tracking-200);
+
+  --lds-text-section-size:     var(--lds-font-size-800);
+  --lds-text-section-weight:   var(--lds-font-weight-700);
+  --lds-text-section-tracking: var(--lds-tracking-300);
+
+  --lds-text-card-title-size:   var(--lds-font-size-600);
+  --lds-text-card-title-weight: var(--lds-font-weight-700);
+
+  --lds-text-body-size:    var(--lds-font-size-500);
+  --lds-text-body-weight:  var(--lds-font-weight-400);
+  --lds-text-body-leading: var(--lds-line-height-400);
+
+  --lds-text-body-sm-size: var(--lds-font-size-400);
+  --lds-text-caption-size: var(--lds-font-size-300);
+
+  /* Interactive label: buttons, chips, field labels, menu items. Heavier than
+     body at the same size — an actionable word has to win against the copy
+     around it without changing size and disturbing the row. */
+  --lds-text-action-size:     var(--lds-font-size-400);
+  --lds-text-action-size-sm:  var(--lds-font-size-300);
+  --lds-text-action-size-lg:  var(--lds-font-size-500);
+  --lds-text-action-weight:   var(--lds-font-weight-600);
+  --lds-text-action-tracking: var(--lds-tracking-300);
+
+  /* Uppercase micro-label: column heads, KPI labels, definition terms. */
+  --lds-text-label-size:     var(--lds-font-size-200);
+  --lds-text-label-weight:   var(--lds-font-weight-600);
+  --lds-text-label-tracking: var(--lds-tracking-500);
+  --lds-text-label-transform:uppercase;
+
+  /* Eyebrow: mono, uppercase, brand — the house signature above every title. */
+  --lds-text-eyebrow-family:   var(--lds-family-mono);
+  --lds-text-eyebrow-size:     var(--lds-font-size-200);
+  --lds-text-eyebrow-weight:   var(--lds-font-weight-500);
+  --lds-text-eyebrow-tracking: var(--lds-tracking-700);
+  --lds-text-eyebrow-color:    var(--lds-brand-base);
+
+  /* Numeric: every tabulated figure. Tabular lining figures only — proportional
+     digits make a column of rates impossible to scan. */
+  --lds-text-numeric-features: 'tnum' 1;
+
+  /* ═══ 16. LAYOUT ══════════════════════════════════════════════════════ */
+  /* One control height for buttons AND fields so they align on a shared row. */
+  --lds-control-height:    var(--lds-density-control-height);
+  --lds-control-height-sm: var(--lds-density-control-height-sm);
+  --lds-control-height-lg: var(--lds-density-control-height-lg);
+
+  --lds-sidebar-width:           var(--lds-measure-200);   /* 232 */
+  --lds-sidebar-width-collapsed: var(--lds-measure-100);   /* 80 */
+  --lds-sidebar-width-drawer:    min(var(--lds-measure-500), 82vw);
+  --lds-header-height:           var(--lds-size-header);
+
+  /* Single source of truth for every routed top-level page. Shorthand is
+     top · horizontal · bottom so the two side gutters can never drift apart. */
+  --lds-page-padding:        var(--lds-density-page-pad-top) var(--lds-density-page-pad-x) var(--lds-density-page-pad-bottom);
+  --lds-page-padding-mobile: var(--lds-density-page-pad-top-mobile) var(--lds-density-page-pad-x-mobile) var(--lds-density-page-pad-bottom);
+  --lds-page-max-width:      var(--lds-measure-1300);      /* 1280 */
+
+  --lds-gap-page-section: var(--lds-density-gap-page-section);
+  --lds-gap-card-grid:    var(--lds-density-gap-card-grid);
+  --lds-gap-inline:       var(--lds-density-gap-inline);
+  --lds-gap-inline-tight: var(--lds-density-gap-inline-tight);
+
+  /* ═══ 17. LAYER — z-index by role ═════════════════════════════════════
+     Never write a bare z-index in product CSS. The ORDER is the contract;
+     the numbers behind it are core's business. */
+  --lds-layer-below:       var(--lds-z-0);
+  --lds-layer-base:        var(--lds-z-100);
+  --lds-layer-raised:      var(--lds-z-200);
+  --lds-layer-overlap:     var(--lds-z-300);
+  --lds-layer-sticky:      var(--lds-z-400);
+  --lds-layer-nav-scrim:   var(--lds-z-500);
+  --lds-layer-nav:         var(--lds-z-600);
+  --lds-layer-dropdown:    var(--lds-z-700);
+  --lds-layer-modal-scrim: var(--lds-z-800);
+  --lds-layer-modal:       var(--lds-z-900);
+  --lds-layer-popover:     var(--lds-z-1000);
+  --lds-layer-toast:       var(--lds-z-1100);
+  --lds-layer-tooltip:     var(--lds-z-1200);
+
+  /* ═══ 18. MOTION ROLES ════════════════════════════════════════════════ */
+  --lds-motion-hover:    var(--lds-duration-100) var(--lds-ease-standard);
+  --lds-motion-control:  var(--lds-duration-200) var(--lds-ease-standard);
+  --lds-motion-enter:    var(--lds-duration-300) var(--lds-ease-entrance);
+  --lds-motion-overlay:  var(--lds-duration-200) var(--lds-ease-emphasis);
+  --lds-motion-layout:   var(--lds-duration-400) var(--lds-ease-entrance);
+  --lds-motion-data-fill:var(--lds-duration-500) var(--lds-ease-standard);
+  --lds-motion-press-scale: 0.98;
+
+  /* Durations consumed bare (not as a transition shorthand): a loop period and
+     an auto-dismiss delay. Both were raw ms literals in the component tier. */
+  --lds-motion-skeleton-cycle: var(--lds-duration-600);   /* 1400ms */
+  --lds-motion-dismiss-delay:  var(--lds-duration-700);   /* 6000ms */
+
+  /* ═══ 19. DATA VISUALISATION ══════════════════════════════════════════
+     Sequenced for maximum perceptual separation at the FIRST three, which is
+     what most series counts actually are. Do not reorder to "look nicer".
+     Charts encoding performance MUST use §10 STATUS, not this palette. */
+  --lds-viz-1: var(--lds-teal-600);
+  --lds-viz-2: var(--lds-expressive-orange);
+  --lds-viz-3: var(--lds-blue-500);
+  --lds-viz-4: var(--lds-expressive-purple);
+  --lds-viz-5: var(--lds-expressive-emerald);
+  --lds-viz-6: var(--lds-expressive-slate);
+  --lds-viz-7: var(--lds-expressive-yellow);
+  --lds-viz-8: var(--lds-expressive-sky);
+  --lds-viz-grid:  var(--lds-border-subtle);
+  --lds-viz-axis:  var(--lds-fg-faint);
+  --lds-viz-empty: var(--lds-neutral-100);
+}
