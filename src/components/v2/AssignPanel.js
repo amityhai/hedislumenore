@@ -96,7 +96,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   // Hand-picked members from the roster table. When any are checked they become
   // the target — an explicit set — and the panel's counts follow the selection
   // instead of the predicate. memberId -> member object.
-  const [picked, setPicked] = useState({});
+  const [picked, setPicked] = useState(() => Object.fromEntries((scope.members || []).map((m) => [m.memberId, m])));
   const pickedList = useMemo(() => Object.values(picked), [picked]);
   const hasPicked = pickedList.length > 0;
   const pickedKey = useMemo(() => Object.keys(picked).sort().join(','), [picked]);

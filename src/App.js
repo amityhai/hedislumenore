@@ -259,7 +259,7 @@ function App() {
         <div className="sidebar-header">
           <div className="logo">
             <svg className="logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="QualityPulse">
-              <rect width="28" height="28" rx="8" fill="#0e8a8c" />
+              <rect width="28" height="28" rx="8" fill="#7562e8" />
               <path d="M6 15 L9.5 15 L11.5 9 L14.5 19 L16.5 13 L22 13" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span className="logo-text">QualityPulse</span>

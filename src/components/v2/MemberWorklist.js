@@ -45,7 +45,7 @@ const normalize = (m, fallbackCrsp) => ({
   compliant: isCompliant(m),
 });
 
-const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnalyzeProvider }) => {
+const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnalyzeProvider, onOpenMember }) => {
   const toast = useToast();
   const [page, setPage] = useState(1);
   const [ncOnly, setNcOnly] = useState(false);     // show only non-compliant
@@ -378,10 +378,15 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                         <span className="mwl-unassigned">Unassigned</span>
                       )}
                     </span>
-                    <span className="ta-r">
+                    <span className="ta-r mwl-row-actions">
                       <button type="button" className="btn btn-assign btn-sm" onClick={() => setModalMembers([m])}>
                         {covered || who ? 'Reassign' : 'Assign'}
                       </button>
+                      {onOpenMember && (
+                        <button type="button" className="btn btn-tonal btn-sm" onClick={() => onOpenMember(m)}>
+                          Open 360
+                        </button>
+                      )}
                     </span>
                   </div>
                 );

@@ -5,12 +5,13 @@
   /* ── Direction A · Clarity ───────────────────────────────────
      Cooler, calmer clinical palette (teal + slate), light theme. */
 
-  /* Brand — Teal */
-  --c-primary:        #0e8a8c;
-  --c-primary-dark:   #0a6e70;
-  --c-primary-light:  #e6f3f3;
-  --c-primary-subtle: #cfe7e7;
-  --c-primary-ring:   rgba(14, 138, 140, 0.18);
+  /* Brand — deep violet. High contrast on white, with a restrained tint for
+     selection surfaces so status colors keep their separate meanings. */
+  --c-primary:        #7562e8;
+  --c-primary-dark:   #5f4bd6;
+  --c-primary-light:  #f0edff;
+  --c-primary-subtle: #ddd6ff;
+  --c-primary-ring:   rgba(117, 98, 232, 0.22);
 
   /* Assignment — Muted indigo. The one workflow verb that repeats on every
      surface (measure card, provider row, stratum read, member row, the panel

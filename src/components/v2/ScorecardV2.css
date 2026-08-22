@@ -1,9 +1,15 @@
 /* ── v2 flow shell ───────────────────────────────────────────── */
 .sc2 { padding: var(--page-pad); min-height: 100vh; display: flex; flex-direction: column; gap: 18px; }
 
+/* The redesigned Overview owns its internal gutters. Removing the flow shell's
+   second inset keeps the page flush to the application content area on all four
+   sides; drilled views retain the shared page padding above. */
+.sc2.sc2-overview { padding: 0; gap: 0; }
+
 /* Phone: trim the gutters, and clear the fixed drawer button (App.css). */
 @media (max-width: 768px) {
   .sc2 { padding: var(--page-pad-mobile); gap: 14px; }
+  .sc2.sc2-overview { padding: 0; gap: 0; }
 }
 
 /* Back + breadcrumb row */

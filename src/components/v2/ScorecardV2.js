@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import './ScorecardV2.css';
-import OverviewExplore from './OverviewExplore';
-import MeasureExplorer from './MeasureExplorer';
+import OverviewDashboard from './OverviewDashboard';
+import MeasureOverview from './MeasureOverview';
 import MemberWorklist from './MemberWorklist';
 import ProviderAnalysis from './ProviderAnalysis';
+import Member360 from './Member360';
 import useAsync from '../../hooks/useAsync';
 import MonthFilter from '../MonthFilter';
 import { useToast } from '../ui/Toast';
@@ -58,15 +59,12 @@ const CrumbMenu = ({ label, options, onSelect }) => {
 // stratum → members) in local state so we get rich breadcrumbs without bolting
 // multi-param routing onto the app's hash router. The flow lives under #/v2.
 const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onSidebar }) => {
-  const [view, setView] = useState('overview'); // overview | explore | worklist | provider
-  const [ctx, setCtx] = useState({ measure: null, provider: null, strat: null });
+  const [view, setView] = useState('overview'); // overview | explore | worklist | provider | member
+  const [ctx, setCtx] = useState({ measure: null, provider: null, strat: null, member: null });
   // Navigation history — a stack of prior {view, ctx} snapshots so a single Back
   // button returns to the LAST page (not just a breadcrumb ancestor). Breadcrumb
   // jumps push onto it too, so Back consistently undoes the previous move.
   const [history, setHistory] = useState([]);
-  // Category ("sub-category") filter — chosen on the Overview, carried into the
-  // Explorer. null = All categories, so nothing is hidden by default.
-  const [category, setCategory] = useState(null);
   const toast = useToast();
 
   // The whole v2 flow is data-dense — the Overview bubble field included — so keep
@@ -83,10 +81,11 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
     setView(nextView);
   }, [view, ctx]);
 
-  const goOverview = useCallback(() => navigate('overview', { measure: null, provider: null, strat: null }), [navigate]);
-  const goExplore = useCallback((measure) => navigate('explore', { measure, provider: null, strat: null }), [navigate]);
-  const goWorklist = useCallback((measure, provider, strat) => navigate('worklist', { measure, provider, strat }), [navigate]);
-  const goProvider = useCallback((measure, provider) => navigate('provider', { measure, provider, strat: null }), [navigate]);
+  const goOverview = useCallback(() => navigate('overview', { measure: null, provider: null, strat: null, member: null }), [navigate]);
+  const goExplore = useCallback((measure) => navigate('explore', { measure, provider: null, strat: null, member: null }), [navigate]);
+  const goWorklist = useCallback((measure, provider, strat) => navigate('worklist', { measure, provider, strat, member: null }), [navigate]);
+  const goProvider = useCallback((measure, provider) => navigate('provider', { measure, provider, strat: null, member: null }), [navigate]);
+  const goMember = useCallback((measure, provider, member) => navigate('member', { measure, provider, strat: null, member }), [navigate]);
 
   // Back pops the stack and restores that snapshot — the last page, whatever it was.
   const goBack = useCallback(() => {
@@ -194,7 +193,7 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
   // frame a whole-portfolio read as a slice of AAP. Back still returns to the
   // measure — that's the history stack's job, not the trail's.
   const crumbs = [{ label: 'Overview', onClick: goOverview }];
-  if (ctx.measure && view !== 'overview' && view !== 'provider') {
+  if (ctx.measure && view !== 'overview' && view !== 'provider' && view !== 'member') {
     crumbs.push({
       label: shortId(ctx.measure.measure_id),
       onClick: () => goExplore(ctx.measure),
@@ -220,6 +219,11 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
       });
     }
     if (ctx.strat) crumbs.push({ label: ctx.strat.group });
+  }
+  if (view === 'member' && ctx.member) {
+    if (ctx.measure) crumbs.push({ label: shortId(ctx.measure.measure_id), onClick: () => goExplore(ctx.measure) });
+    if (ctx.provider) crumbs.push({ label: ctx.provider.crsp, onClick: () => goWorklist(ctx.measure, ctx.provider, null) });
+    crumbs.push({ label: ctx.member.memberName || ctx.member.memberId });
   }
 
   // Breadcrumb element — rendered standalone on the worklist, but handed to the
@@ -262,44 +266,36 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
     <div className="sc2-topnav">
       {backBtn}
       {showCrumbs && crumbNav}
-      {/* The Explorer's nav row is shared with its category tabs, so it renders
-          its own month control at the far end of that row instead. */}
-      {view !== 'explore' && (
-        <div className="sc2-topnav-month">
-          <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
-        </div>
-      )}
+      <div className="sc2-topnav-month">
+        <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+      </div>
     </div>
   ) : null;
 
   return (
-    <div className="sc2">
-      {/* Explorer renders the nav inside its own toolbar; every other view shows
-          it here at the top. */}
+    <div className={`sc2 ${view === 'overview' ? 'sc2-overview' : ''}`}>
+      {/* The focused measure page renders this nav inside its own page header;
+          every other view shows it here at the top. */}
       {view !== 'explore' && flowNav}
 
       {view === 'overview' && (
-        <OverviewExplore
+        <OverviewDashboard
           token={token}
           selectedMonth={selectedMonth}
           onMonthChange={onMonthChange}
           availableMonths={availableMonths}
-          category={category}
-          onCategory={setCategory}
           onInvestigate={goExplore}
+          onOpenProvider={goWorklist}
+          onOpenMember={goMember}
         />
       )}
       {view === 'explore' && (
-        <MeasureExplorer
+        <MeasureOverview
           token={token}
           selectedMonth={selectedMonth}
           measure={ctx.measure}
-          category={category}
-          onCategory={setCategory}
           onOpenWorklist={goWorklist}
           breadcrumb={flowNav}
-          onMonthChange={onMonthChange}
-          availableMonths={availableMonths}
         />
       )}
       {view === 'worklist' && (
@@ -310,6 +306,7 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           provider={ctx.provider}
           strat={ctx.strat}
           onAnalyzeProvider={goProvider}
+          onOpenMember={(member) => goMember(ctx.measure, ctx.provider, member)}
         />
       )}
       {view === 'provider' && (
@@ -320,6 +317,9 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
           provider={ctx.provider}
           onOpenWorklist={goWorklist}
         />
+      )}
+      {view === 'member' && (
+        <Member360 member={ctx.member} measure={ctx.measure} provider={ctx.provider} token={token} selectedMonth={selectedMonth} />
       )}
     </div>
   );

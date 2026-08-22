@@ -154,7 +154,7 @@
 .mwl-table { display: flex; flex-direction: column; }
 .mwl-row {
   display: grid;
-  grid-template-columns: 1.1fr 1.4fr 0.5fr 1.9fr 1.2fr 1.2fr 0.9fr;
+  grid-template-columns: 1.1fr 1.4fr 0.5fr 1.7fr 1.1fr 1.1fr 1.45fr;
   align-items: center; gap: 12px; padding: 12px 16px;
 }
 .mwl-row-head {
@@ -168,6 +168,7 @@
 .mwl-row-data.is-picked { background: var(--c-assign-light); }
 .mwl-row-data.is-picked:hover { background: var(--c-assign-light); }
 .ta-r { text-align: right; justify-self: end; }
+.mwl-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; }
 
 /* Select column lives inside the first (Member ID) cell so the row grid and its
    responsive column-hiding stay untouched. */
