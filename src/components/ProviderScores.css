@@ -116,13 +116,13 @@
 }
 
 .crsp-meta {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-text-3);
   margin-top: 3px;
 }
 
 .crsp-gaps {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--c-text-4);
   margin-top: 2px;
   font-weight: 300;
@@ -165,7 +165,7 @@
 .provider-table th {
   text-align: left;
   padding: 12px 16px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -185,7 +185,7 @@
 .provider-table tbody tr:hover td { background: #F8FAFC; }
 
 .more-providers {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-primary);
   font-weight: 400;
   padding: 12px 0 2px;

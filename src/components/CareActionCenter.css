@@ -37,7 +37,7 @@
 .cac-kpi-done::before  { background: var(--c-success); }
 
 .cac-kpi-label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -61,7 +61,7 @@
 .cac-kpi-hint {
   display: block;
   margin-top: 8px;
-  font-size: 11.5px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--c-text-3);
 }
@@ -91,7 +91,7 @@
 .cac-table thead th {
   text-align: left;
   padding: 13px 16px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -118,7 +118,7 @@
   align-items: center;
   padding: 3px 10px;
   border-radius: var(--r-full);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 /* Lifecycle status, sourced from the shared v2 assignment store (the same
@@ -140,7 +140,7 @@
   padding: 12px 16px;
   border-top: 1px solid var(--c-border-light);
 }
-.cac-page-info { font-size: 13px; color: var(--c-text-4); }
+.cac-page-info { font-size: 14px; color: var(--c-text-4); }
 .cac-page-controls { display: flex; align-items: center; gap: 8px; }
 
 .cac-page-size {
@@ -150,12 +150,12 @@
   border-radius: var(--r-sm);
   background: var(--c-surface);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-text-2);
   cursor: pointer;
 }
 
-.cac-page-current { font-size: 13px; color: var(--c-text-3); padding: 0 4px; }
+.cac-page-current { font-size: 14px; color: var(--c-text-3); padding: 0 4px; }
 
 /* Nav arrows are `.btn .btn-secondary .btn-icon .btn-sm`; the chevron glyph
    needs more size than the 12px small-button type gives it. */
@@ -210,15 +210,15 @@
   border-radius: var(--r-md);
   margin-bottom: 18px;
 }
-.cac-modal-meta > div { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--c-text-2); }
+.cac-modal-meta > div { display: flex; flex-direction: column; gap: 3px; font-size: 14px; color: var(--c-text-2); }
 .cac-modal-meta > div:first-child { grid-column: 1 / -1; }
-.cac-modal-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-text-4); font-weight: 600; }
+.cac-modal-meta-label { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-text-4); font-weight: 600; }
 
 /* Shown when the row being edited is covered by a population/stratum play
    rather than one created just for this member — the status/remove controls
    below it act on that whole play, not just this row. */
 .cac-broad-notice {
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.4;
   color: var(--c-text-2);
   background: var(--c-info-bg);
@@ -229,7 +229,7 @@
 }
 
 .cac-form-group { margin-bottom: 14px; }
-.cac-form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--c-text-2); margin-bottom: 6px; }
+.cac-form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--c-text-2); margin-bottom: 6px; }
 .cac-form-group .req { color: var(--c-error); }
 .cac-form-group input,
 .cac-form-group select,
@@ -261,7 +261,7 @@
   margin-top: 20px;
 }
 /* Explains the disabled Save button instead of letting it read as broken. */
-.cac-modal-hint { margin-right: auto; font-size: 12px; color: var(--c-text-3); }
+.cac-modal-hint { margin-right: auto; font-size: 14px; color: var(--c-text-3); }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {

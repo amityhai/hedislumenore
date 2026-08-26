@@ -15,13 +15,13 @@
 }
 .pva-head-left { min-width: 0; }
 .pva-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 4px; }
-.pva-sub { margin-top: 8px; font-size: 13px; color: var(--c-text-3); }
+.pva-sub { margin-top: 8px; font-size: 14px; color: var(--c-text-3); }
 .pva-sub strong { color: var(--c-text-2); font-weight: 600; }
 .pva-kpis { display: flex; align-items: stretch; flex-wrap: wrap; }
 .pva-kpi { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 2px 24px; border-left: 1px solid var(--c-border); }
 .pva-kpi:first-child { border-left: none; padding-left: 0; }
 .pva-kpi:last-child { padding-right: 0; }
-.pva-kpi-k { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap; }
+.pva-kpi-k { font-family: var(--font-mono); font-size: 14px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap; }
 .pva-kpi-v { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
 .pva-kpi-v.is-neg { color: var(--c-error-text); }
 .pva-kpi-v.is-pos { color: var(--c-success-text); }
@@ -30,8 +30,8 @@
 .pva-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-xl); box-shadow: var(--sh-card); padding: 18px 20px; }
 .pva-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .pva-card-title { font-size: 15px; font-weight: 700; color: var(--c-text); }
-.pva-card-sub { font-size: 12px; color: var(--c-text-3); }
-.pva-note { margin-top: 12px; font-size: 11px; color: var(--c-text-4); }
+.pva-card-sub { font-size: 14px; color: var(--c-text-3); }
+.pva-note { margin-top: 12px; font-size: 14px; color: var(--c-text-4); }
 
 /* Status dots (shared) */
 .pva-dot { width: 8px; height: 8px; border-radius: var(--r-full); flex-shrink: 0; display: inline-block; }
@@ -45,7 +45,7 @@
 .pva-dist-seg {
   display: flex; align-items: center; justify-content: center; min-width: 26px;
   border-radius: var(--r-xs);
-  font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: var(--c-surface);
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--c-surface);
   transition: width 0.4s ease;
 }
 .pva-dist-seg:first-child { border-top-left-radius: var(--r-full); border-bottom-left-radius: var(--r-full); }
@@ -54,7 +54,7 @@
 .pva-dist-at    { background: var(--c-info); }
 .pva-dist-above { background: var(--c-success); }
 .pva-dist-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; }
-.pva-dist-key { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--c-text-3); }
+.pva-dist-key { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; color: var(--c-text-3); }
 /* Rolled-up intelligence read below the distribution — reuses the Overview's
    ov2-intel / Stage / Signals styling (globally loaded via OverviewExplore.css). */
 .pva-intel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--c-border-light); }
@@ -72,9 +72,9 @@
 .pva-mrow-at    { border-left-color: var(--c-info); }
 .pva-mrow-above { border-left-color: var(--c-success); }
 .pva-mrow-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-.pva-mrow-id { font-size: 11.5px; font-weight: 600; color: var(--c-primary-dark); flex-shrink: 0; }
+.pva-mrow-id { font-size: 14px; font-weight: 600; color: var(--c-primary-dark); flex-shrink: 0; }
 .pva-mrow-name {
-  font-size: 12.5px; font-weight: 500; color: var(--c-text-2); line-height: 1.3;
+  font-size: 14px; font-weight: 500; color: var(--c-text-2); line-height: 1.3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
 .pva-mrow-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
@@ -87,15 +87,15 @@
 .pva-bar-at    { background: var(--c-info); }
 .pva-bar-above { background: var(--c-success); }
 
-.pva-mrow-rate { font-size: 13px; font-weight: 700; min-width: 40px; text-align: right; }
+.pva-mrow-rate { font-size: 14px; font-weight: 700; min-width: 40px; text-align: right; }
 .pva-mrow-rate-below { color: var(--c-error-text); }
 .pva-mrow-rate-at    { color: var(--c-info-text); }
 .pva-mrow-rate-above { color: var(--c-success-text); }
-.pva-mrow-gap { font-size: 12px; font-weight: 700; min-width: 48px; text-align: right; color: var(--c-text-3); }
+.pva-mrow-gap { font-size: 14px; font-weight: 700; min-width: 48px; text-align: right; color: var(--c-text-3); }
 .pva-mrow-gap.is-neg { color: var(--c-error-text); }
 .pva-mrow-gap.is-pos { color: var(--c-success-text); }
 .pva-mrow-open {
-  font-size: 11.5px; font-weight: 500; color: var(--c-text-3);
+  font-size: 14px; font-weight: 500; color: var(--c-text-3);
   background: var(--c-bg-subtle); border: 1px solid var(--c-border-light);
   padding: 3px 10px; border-radius: var(--r-full); min-width: 82px; text-align: center;
 }
@@ -105,11 +105,11 @@
   display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   margin-top: 10px; padding: 9px 14px; cursor: pointer;
   background: var(--c-bg-subtle); border: 1px solid var(--c-border); border-radius: var(--r-md);
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; font-weight: 600;
+  font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.04em; font-weight: 600;
   color: var(--c-text-2); text-transform: uppercase; transition: background 0.14s ease, border-color 0.14s ease;
 }
 .pva-showall:hover { background: var(--c-surface); border-color: var(--c-text-4); }
-.pva-showall-chev { font-size: 13px; transition: transform 0.2s ease; }
+.pva-showall-chev { font-size: 14px; transition: transform 0.2s ease; }
 .pva-showall-chev.is-open { transform: rotate(180deg); }
 
 @media (max-width: 640px) {
@@ -121,7 +121,7 @@
 .pva-split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; }
 .pva-eq { display: flex; flex-direction: column; gap: 14px; }
 .pva-eq-dim { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: start; }
-.pva-eq-label { font-size: 10.5px; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 600; padding-top: 8px; }
+.pva-eq-label { font-size: 14px; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 600; padding-top: 8px; }
 .pva-eq-rows { display: flex; flex-direction: column; gap: 6px; }
 .pva-eq-row {
   display: grid; grid-template-columns: minmax(0, 230px) minmax(50px, 1fr) 44px;
@@ -131,13 +131,13 @@
 .pva-eq-row-below { background: var(--c-error-bg); border-color: var(--c-error-border); }
 .pva-eq-row-at    { background: var(--c-info-bg);  border-color: var(--c-info-border); }
 .pva-eq-row-above { background: var(--c-success-bg); border-color: var(--c-success-border); }
-.pva-eq-name { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; color: var(--c-text-2); min-width: 0; }
+.pva-eq-name { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--c-text-2); min-width: 0; }
 /* Inline rate-vs-goal track (goal tick included) so a stratum's distance from
    goal is visible without leaving a dead middle across the wide row. */
 .pva-eq-track { position: relative; height: 5px; border-radius: var(--r-full); background: var(--c-surface); }
 .pva-eq-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: var(--r-full); }
 .pva-eq-marker { position: absolute; top: -3px; width: 2px; height: 11px; background: var(--c-text-2); opacity: 0.55; border-radius: 1px; transform: translateX(-1px); }
-.pva-eq-rate { font-size: 12px; font-weight: 700; text-align: right; }
+.pva-eq-rate { font-size: 14px; font-weight: 700; text-align: right; }
 .pva-eq-rate-below { color: var(--c-error-text); }
 .pva-eq-rate-at    { color: var(--c-info-text); }
 .pva-eq-rate-above { color: var(--c-success-text); }
@@ -146,14 +146,14 @@
 .pva-members { display: flex; align-items: stretch; margin-bottom: 14px; }
 .pva-member-stat { display: flex; flex-direction: column; gap: 4px; padding: 2px 26px; border-left: 1px solid var(--c-border); }
 .pva-member-stat:first-child { border-left: none; padding-left: 0; }
-.pva-member-k { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); }
+.pva-member-k { font-family: var(--font-mono); font-size: 14px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); }
 .pva-member-v { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
 .pva-member-v.is-neg { color: var(--c-error-text); }
 /* Open-gap share — the two counts as one picture */
 .pva-member-viz { margin-bottom: 18px; }
 .pva-member-track { height: 8px; border-radius: var(--r-full); background: var(--c-bg-subtle); border: 1px solid var(--c-border-light); overflow: hidden; }
 .pva-member-fill { display: block; height: 100%; border-radius: var(--r-full); background: var(--c-error); transition: width 0.4s ease; }
-.pva-member-note { margin-top: 8px; font-size: 12px; color: var(--c-text-3); }
+.pva-member-note { margin-top: 8px; font-size: 14px; color: var(--c-text-3); }
 .pva-member-note b { color: var(--c-error-text); }
 /* The two next moves off this provider — Assign the recommended play, Open the
    worklist — share one row as equal halves of matched height. */

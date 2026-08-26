@@ -45,7 +45,7 @@
   cursor: pointer;
   font-family: var(--font);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   height: 34px;
   padding: 0 16px;
   display: inline-flex;
@@ -74,7 +74,7 @@
   cursor: pointer;
   font-family: var(--font-mono);
   font-weight: 500;
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.03em;
   height: 30px;
   padding: 0 14px;
@@ -111,7 +111,7 @@
 }
 
 .mp-code {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--c-primary-dark);
   background: var(--c-primary-light);
   padding: 5px 9px;
@@ -153,7 +153,7 @@
 .mp-ratebar-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--c-text-4);
   margin-top: 7px;
 }
@@ -200,7 +200,7 @@
 .kpi:last-child { border-right: none; }
 
 .kpi-label {
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1;
   color: var(--c-text-4);
   font-weight: 600;

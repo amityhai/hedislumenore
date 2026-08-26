@@ -109,13 +109,12 @@ accents read as deliberate.
 | `fg-default` | headings, values, the primary number | body paragraphs |
 | `fg-subtle` | body copy, table cells, secondary values | — |
 | `fg-muted` | labels, captions, column heads, help text | — |
-| `fg-faint` | icons, control edges, placeholders | **anything a user must read** |
+| `fg-faint` | legacy secondary text alias; resolves to `fg-muted` | primary copy |
 | `fg-decorative` | rules, dots, chevrons | anything carrying meaning |
 
-`fg-faint` at 3.78:1 clears the WCAG 3:1 non-text minimum and *fails* the 4.5:1
-text minimum. That is on purpose and it is enforced: routing a column head or a
-KPI label through `fg-faint` was the most common contrast failure in the
-pre-system codebase.
+`fg-faint` now resolves to the same AA-capable slate as `fg-muted`. The lighter
+neutral steps remain available only through `fg-decorative` and border tokens,
+never as readable text.
 
 ### Status · fixed forever
 
@@ -147,19 +146,18 @@ exist so illustration has a sanctioned palette instead of inventing hexes.
 
 ## Typography
 
-**Hanken Grotesk** for UI — a humanist grotesque whose open apertures survive
-11px, which matters because a lot of this interface lives at 11–13px.
+**Hanken Grotesk** for UI — a humanist grotesque with open apertures that remain
+clear in dense analytical screens.
 **Spline Sans Mono** (≤600 weight) for measure codes, member IDs, NPIs and
 eyebrows. Never for prose.
 
 ### Scale · 13 steps
 
-`10 · 11 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 26 · 30 · 36`
+`12 · 12 · 12 · 14 · 14 · 15 · 16 · 18 · 20 · 22 · 26 · 30 · 36`
 
-The ratio is deliberately tight (~1.09 through the body band). These are dense
-analytical screens: the steps must be *distinguishable* without a title
-wrapping to three lines. A wider scale would look better in a specimen and
-worse in the product.
+The first three token positions intentionally converge at 12px for compact
+labels; the next two converge at the 14px body minimum. The remaining display
+steps preserve the compact analytical hierarchy.
 
 > The pre-system codebase used **29 distinct sizes**, including `9.5px`,
 > `10.5px`, `11.5px`, `12.5px`, `13.5px` and `14.5px`. Half-pixel type does not
@@ -175,14 +173,14 @@ legibility at the sizes this product uses, 800 has no role the 700 doesn't fill.
 
 | Role | Spec | Where |
 |---|---|---|
-| Eyebrow | mono · 11px · 500 · `0.12em` · uppercase · **brand** | above every page title |
+| Eyebrow | mono · 12px · 500 · `0.12em` · uppercase · **brand** | above every page title |
 | Page title | 26px · 700 · `-0.02em` | one per page |
 | Section | 18px · 700 · `-0.01em` | card group headings |
 | Card title | 15px · 700 | inside a card |
 | Body | 14px · 400 · 1.55 | default |
-| Body small | 13px · 400 | dense rows, drawers |
-| Caption | 12px · 400 · 1.35 | help text, meta |
-| Label | 11px · 600 · `0.04em` · uppercase | column heads, KPI labels, `<dt>` |
+| Body small | 14px · 400 | dense rows, drawers |
+| Caption | 14px · 400 · 1.35 | help text, meta |
+| Label | 12px · 600 · `0.04em` · uppercase | selected compact labels only |
 
 **The page pattern is fixed across the house:**
 
@@ -195,7 +193,7 @@ Open care gaps for the …      ← 14px · muted · ONE line
 One line. If the subtitle needs two, the title is not doing its job.
 
 Uppercase labels cap at about three words — uppercase destroys word-shape, and
-a sentence in caps is unreadable at 11px. If your label needs a sentence, it is
+a sentence in caps is hard to scan even at 12px. If your label needs a sentence, it is
 help text, not a label.
 
 ---

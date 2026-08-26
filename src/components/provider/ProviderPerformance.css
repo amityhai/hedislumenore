@@ -6,7 +6,7 @@
 }
 .pv-perf-kpi { padding: 16px 18px; text-align: center; }
 .pv-perf-kpi-value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.pv-perf-kpi-label { font-size: 12px; color: var(--c-text-3); margin-top: 4px; }
+.pv-perf-kpi-label { font-size: 14px; color: var(--c-text-3); margin-top: 4px; }
 .pv-perf-kpi.tone-below .pv-perf-kpi-value { color: var(--c-error-text); }
 .pv-perf-kpi.tone-at .pv-perf-kpi-value { color: var(--c-info-text); }
 .pv-perf-kpi.tone-above .pv-perf-kpi-value { color: var(--c-success-text); }
@@ -15,13 +15,13 @@
 
 .pv-perf-table td { vertical-align: middle; }
 .pv-perf-name { font-weight: 600; color: var(--c-text); }
-.pv-perf-def { font-size: 11.5px; color: var(--c-text-3); margin-top: 2px; max-width: 340px; }
+.pv-perf-def { font-size: 14px; color: var(--c-text-3); margin-top: 2px; max-width: 340px; }
 .pv-perf-rate-cell { display: flex; align-items: center; gap: 8px; }
 .pv-perf-bar { width: 70px; height: 6px; border-radius: var(--r-full); background: var(--c-border-light); overflow: hidden; flex-shrink: 0; }
 .pv-perf-bar-fill { height: 100%; border-radius: var(--r-full); }
 .pv-perf-bar-fill.is-below { background: var(--c-error); }
 .pv-perf-bar-fill.is-at { background: var(--c-info); }
 .pv-perf-bar-fill.is-above { background: var(--c-success); }
-.pv-perf-gap { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+.pv-perf-gap { font-family: var(--font-mono); font-size: 14px; white-space: nowrap; }
 .pv-perf-gap.is-neg { color: var(--c-error-text); }
 .pv-perf-gap.is-pos { color: var(--c-success-text); }

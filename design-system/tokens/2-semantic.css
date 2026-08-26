@@ -61,13 +61,11 @@
   --lds-fg-default:  var(--lds-neutral-900);
   --lds-fg-subtle:   var(--lds-neutral-800);
   --lds-fg-muted:    var(--lds-neutral-500);
-  /* `faint` is a NON-TEXT token. It clears the 3:1 minimum for icons, dividers
-     and control edges and NOTHING ELSE. Column heads, KPI labels and axis
-     labels are text a user must read — they take `--lds-fg-muted`. This was
-     the single most common contrast failure in the pre-system codebase. */
-  --lds-fg-faint:    var(--lds-neutral-450);
+  /* Legacy `faint` usages now resolve to the readable muted slate. Decorative
+     glyphs keep their own non-text token below. */
+  --lds-fg-faint:    var(--lds-neutral-500);
   --lds-fg-decorative: var(--lds-neutral-400);   /* rules, dots, chevrons — never carries meaning */
-  --lds-fg-disabled: var(--lds-neutral-450);
+  --lds-fg-disabled: var(--lds-neutral-500);
   --lds-fg-knockout: var(--lds-white);              /* on any filled action or inverse surface */
   --lds-fg-link:     var(--lds-brand-base);
 
@@ -302,13 +300,13 @@
   --lds-text-body-leading: var(--lds-line-height-400);
 
   --lds-text-body-sm-size: var(--lds-font-size-400);
-  --lds-text-caption-size: var(--lds-font-size-300);
+  --lds-text-caption-size: var(--lds-font-size-400);
 
   /* Interactive label: buttons, chips, field labels, menu items. Heavier than
      body at the same size — an actionable word has to win against the copy
      around it without changing size and disturbing the row. */
   --lds-text-action-size:     var(--lds-font-size-400);
-  --lds-text-action-size-sm:  var(--lds-font-size-300);
+  --lds-text-action-size-sm:  var(--lds-font-size-400);
   --lds-text-action-size-lg:  var(--lds-font-size-500);
   --lds-text-action-weight:   var(--lds-font-weight-600);
   --lds-text-action-tracking: var(--lds-tracking-300);

@@ -15,7 +15,7 @@
   border: 1px solid var(--c-border);
   background: var(--c-surface);
   color: var(--c-text-3);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -29,7 +29,7 @@
   border: 1px solid var(--c-border);
   border-radius: var(--r-sm);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--c-text);
   background: var(--c-surface);
@@ -40,7 +40,7 @@
 .pv-table { width: 100%; border-collapse: collapse; }
 .pv-table thead th {
   text-align: left;
-  font-size: 11.5px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -54,8 +54,8 @@
 }
 .pv-table tbody tr:hover { background: var(--c-bg-subtle); }
 .pv-table tbody tr:last-child { border-bottom: none; }
-.pv-table td { padding: 13px 16px; font-size: 13.5px; color: var(--c-text-2); vertical-align: middle; }
+.pv-table td { padding: 13px 16px; font-size: 14px; color: var(--c-text-2); vertical-align: middle; }
 .pv-td-measure { font-weight: 600; color: var(--c-text); }
-.pv-td-meta { font-size: 12px; color: var(--c-text-3); margin-top: 2px; }
-.pv-td-due { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+.pv-td-meta { font-size: 14px; color: var(--c-text-3); margin-top: 2px; }
+.pv-td-due { font-family: var(--font-mono); font-size: 14px; white-space: nowrap; }
 .pv-td-due.is-overdue { color: var(--c-error-text); font-weight: 600; }

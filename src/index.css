@@ -67,8 +67,11 @@
   --c-border-light:   #eef2f3;
   --c-text:           #16212b;
   --c-text-2:         #1f2a33;
-  --c-text-3:         #6b7785;
-  --c-text-4:         #9aa6ad;
+  /* Supporting text must remain comfortably readable on white and on the
+     subtle page surfaces. Keep both legacy secondary-text aliases on the
+     same AA-capable slate; the old #9aa6ad treatment was too faint. */
+  --c-text-3:         #596674;
+  --c-text-4:         #596674;
 
   /* Sidebar — light */
   --sidebar-bg:       #ffffff;
@@ -135,7 +138,8 @@ body {
 /* Eyebrow label — mono, uppercase, teal (Direction A signature) */
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 11px;
+  /* One of the few intentionally compact labels in the product. */
+  font-size: 12px;
   letter-spacing: 0.12em;
   font-weight: 500;
   color: var(--c-primary);
@@ -152,7 +156,7 @@ body {
   background: var(--c-warn-bg);
   color: var(--c-warn-text);
   border: 1px solid var(--c-warn-border);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
@@ -182,7 +186,7 @@ body {
   padding: 0 18px;
   border-radius: var(--r-md);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
@@ -220,8 +224,8 @@ body {
 .btn-ghost:hover { background: var(--c-bg-subtle); color: var(--c-text-2); }
 
 /* ── Sizes — radius steps with the box so corners stay optically equal ── */
-.btn-sm { height: 30px; padding: 0 12px; gap: 6px; font-size: 12px; border-radius: var(--r-sm); }
-.btn-lg { height: 42px; padding: 0 20px; font-size: 13.5px; }
+.btn-sm { height: 30px; padding: 0 12px; gap: 6px; font-size: 14px; border-radius: var(--r-sm); }
+.btn-lg { height: 42px; padding: 0 20px; font-size: 14px; }
 
 /* ── Icon-only — square, label lives in aria-label/title ── */
 .btn-icon { width: var(--h-control); padding: 0; }

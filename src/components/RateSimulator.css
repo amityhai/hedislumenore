@@ -95,7 +95,7 @@
 
 .form-group label {
   font-family: var(--font);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -170,7 +170,7 @@
 .calc-arrow { display: none; }
 
 .calc-label {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -277,7 +277,7 @@
 .slider-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 300;
   color: var(--c-text-4);
 }
@@ -317,7 +317,7 @@
 }
 
 .result-label {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -336,7 +336,7 @@
 .sim-result.goal-met .result-value { color: var(--c-success-text); }
 
 .result-delta {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 300;
   color: var(--c-text-3);
   margin-top: 6px;
@@ -345,7 +345,7 @@
 .sim-result.goal-met .result-delta { color: var(--c-primary-dark); }
 
 .result-status {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 300;
   margin-top: 8px;
   color: var(--c-text-4);
@@ -395,7 +395,7 @@
 .cross-table th {
   text-align: left;
   padding: 13px 18px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.06em;

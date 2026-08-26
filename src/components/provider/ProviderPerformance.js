@@ -76,7 +76,7 @@ const ProviderPerformance = ({ identity }) => {
                       <div className="pv-perf-bar">
                         <div className={`pv-perf-bar-fill is-${tone}`} style={{ width: `${Math.max(4, Math.min(100, m.rate))}%` }} />
                       </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5 }}>{m.rate}% / {m.goal_50th}%</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>{m.rate}% / {m.goal_50th}%</span>
                     </div>
                   </td>
                   <td>

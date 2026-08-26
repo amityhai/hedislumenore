@@ -75,7 +75,7 @@
 .kpi2-below .kpi2-dot { background: var(--c-error); }
 
 .kpi2-label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -136,9 +136,9 @@
   letter-spacing: -0.01em;
 }
 
-.panel-count { font-size: 13px; color: var(--c-text-4); }
+.panel-count { font-size: 14px; color: var(--c-text-4); }
 
-.panel-legend { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--c-text-4); }
+.panel-legend { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--c-text-4); }
 .legend-swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--c-primary); display: inline-block; }
 
 /* ── Measure table ───────────────────────────────────────────── */
@@ -157,7 +157,7 @@
   min-height: 40px;
   background: var(--c-bg-subtle);
   border-bottom: 1px solid var(--c-border-light);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -188,7 +188,7 @@
 
 .m-id {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.03em;
   font-weight: 500;
   color: var(--c-primary-dark);
@@ -214,7 +214,7 @@
 .rvg { padding-left: 24px; min-width: 0; }
 .rvg-top { display: flex; align-items: baseline; gap: 8px; }
 .rvg-rate { font-size: 15px; font-weight: 700; color: var(--c-text); }
-.rvg-gap { font-size: 12px; font-weight: 500; white-space: nowrap; }
+.rvg-gap { font-size: 14px; font-weight: 500; white-space: nowrap; }
 .rvg-gap.pos { color: var(--c-success-text); }
 .rvg-gap.neg { color: var(--c-error-text); }
 
@@ -247,7 +247,7 @@
   background: transparent;
   border: none;
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--c-primary-dark);
   cursor: pointer;
@@ -275,7 +275,7 @@
   background: transparent;
   color: var(--c-text-2);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
@@ -287,8 +287,8 @@
 /* ── Trend chart ─────────────────────────────────────────────── */
 .trend-wrap { padding: 20px 22px; }
 .trend-svg { width: 100%; height: 160px; display: block; }
-.trend-x { font-size: 11px; fill: var(--c-text-4); font-family: var(--font); }
-.trend-last { font-size: 13px; font-weight: 700; fill: var(--c-primary); font-family: var(--font); }
+.trend-x { font-size: 14px; fill: var(--c-text-4); font-family: var(--font); }
+.trend-last { font-size: 14px; font-weight: 700; fill: var(--c-primary); font-family: var(--font); }
 
 /* ── Insights ────────────────────────────────────────────────── */
 .insights-grid {
@@ -319,7 +319,7 @@
 }
 
 .insight-badge {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--c-warn-text);
   background: var(--c-warn-bg);
@@ -351,11 +351,11 @@
 .insight-row:hover .insight-label { color: var(--c-primary); }
 
 .insight-label { font-size: 14px; color: var(--c-text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.insight-label.small { font-size: 12px; }
+.insight-label.small { font-size: 14px; }
 
 .pill-bad {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--c-error-text);
   background: var(--c-error-bg);
@@ -366,7 +366,7 @@
 /* Severity-colored value pills (Direction A) */
 .pill-sev {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: var(--r-xs);

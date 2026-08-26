@@ -22,18 +22,18 @@
 .mwl-head-titlerow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .mwl-head-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); }
 .mwl-head-flag {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.06em;
   color: var(--c-error-text); background: var(--c-error-bg); border: 1px solid var(--c-error-border);
   padding: 3px 10px; border-radius: var(--r-full); white-space: nowrap;
 }
-.mwl-head-provider { font-size: 12.5px; color: var(--c-text-3); }
+.mwl-head-provider { font-size: 14px; color: var(--c-text-3); }
 .mwl-head-provider strong { color: var(--c-text-2); font-weight: 600; }
 /* Which measure these members are open on — the title names the provider or the
    stratum, so without this the page never states it. */
-.mwl-head-measure { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--c-text-3); }
+.mwl-head-measure { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; color: var(--c-text-3); }
 .mwl-head-measure strong { color: var(--c-text-2); font-weight: 600; }
 .mwl-head-mid {
-  padding: 2px 7px; border-radius: var(--r-xs); font-size: 11px; font-weight: 600;
+  padding: 2px 7px; border-radius: var(--r-xs); font-size: 14px; font-weight: 600;
   background: var(--c-surface-2, rgba(0,0,0,0.04)); color: var(--c-text-3);
 }
 .mwl-head-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
@@ -50,7 +50,7 @@
 .mwl-read-top { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
 .mwl-read-top .eyebrow { margin: 0; }
 .mwl-read-top .ov2-st-tag { margin-left: auto; }
-.mwl-read-lead { font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--c-text); margin-bottom: 8px; }
+.mwl-read-lead { font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--c-text); margin-bottom: 8px; }
 /* Basis and CTA share the last line — the note explains what the button commits to. */
 .mwl-read-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .mwl-read-foot .ov2-read-why { flex: 1; margin-top: 12px; }
@@ -76,26 +76,26 @@
   display: inline-flex; align-items: center; gap: 8px; padding: 0; margin: 0;
   background: none; border: none; cursor: pointer; font-family: var(--font);
 }
-.mwl-segment-chev { font-size: 13px; line-height: 1; color: var(--c-text-3); transition: transform 0.18s ease; }
+.mwl-segment-chev { font-size: 14px; line-height: 1; color: var(--c-text-3); transition: transform 0.18s ease; }
 .mwl-segment-chev.is-open { transform: rotate(180deg); }
 .mwl-segment-title { font-size: 14px; font-weight: 700; color: var(--c-text); }
-.mwl-segment-sub { font-size: 12px; color: var(--c-text-3); }
+.mwl-segment-sub { font-size: 14px; color: var(--c-text-3); }
 .mwl-segment-sub strong { color: var(--c-primary-dark); font-weight: 700; }
 .mwl-segment-clear {
   margin-left: auto; border: none; background: none; cursor: pointer;
-  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--c-text-3);
+  font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--c-text-3);
   padding: 2px 4px; border-radius: var(--r-xs); transition: color 0.14s ease;
 }
 .mwl-segment-clear:hover { color: var(--c-error-text); }
 .mwl-segment-loading { display: flex; gap: 8px; }
-.mwl-segment-empty { font-size: 12.5px; color: var(--c-text-4); }
+.mwl-segment-empty { font-size: 14px; color: var(--c-text-4); }
 .mwl-segment-dim { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: start; }
-.mwl-segment-dimlabel { font-size: 10.5px; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 600; padding-top: 8px; }
+.mwl-segment-dimlabel { font-size: 14px; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 600; padding-top: 8px; }
 .mwl-segment-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .mwl-segment-chip {
   display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px;
   border-radius: var(--r-full); border: 1px solid var(--c-border); background: var(--c-surface);
-  font-family: var(--font); font-size: 12.5px; font-weight: 500; color: var(--c-text-2);
+  font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--c-text-2);
   cursor: pointer; transition: filter 0.14s ease, transform 0.1s ease, border-color 0.14s ease;
 }
 .mwl-segment-chip:hover { filter: brightness(0.98); border-color: var(--c-text-4); }
@@ -128,7 +128,7 @@
 .mwl-head-metrics { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .mwl-head-metrics > div { display: flex; flex-direction: column; gap: 4px; }
 .mwl-msep { width: 1px; align-self: stretch; background: var(--c-border); margin: 2px 0; }
-.mwl-mk { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap; }
+.mwl-mk { font-family: var(--font-mono); font-size: 14px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--c-text-4); white-space: nowrap; }
 .mwl-mv { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
 .mwl-mv.is-neg { color: var(--c-error-text); }
 .mwl-mv.is-pos { color: var(--c-success-text); }
@@ -140,16 +140,16 @@
 /* Filter toolbar */
 .mwl-toolbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px 12px; border-bottom: 1px solid var(--c-border-light); }
 .mwl-filter {
-  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font); font-size: 12.5px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font); font-size: 14px; font-weight: 600;
   color: var(--c-text-2); background: var(--c-surface); border: 1px solid var(--c-border);
   padding: 7px 12px; border-radius: var(--r-full); cursor: pointer; transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
 .mwl-filter:hover { border-color: var(--c-text-4); }
 .mwl-filter-dot { width: 9px; height: 9px; border-radius: var(--r-full); background: var(--c-error); }
-.mwl-filter-count { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: var(--r-full); background: var(--c-bg-subtle); color: var(--c-text-3); }
+.mwl-filter-count { font-size: 14px; font-weight: 700; padding: 1px 7px; border-radius: var(--r-full); background: var(--c-bg-subtle); color: var(--c-text-3); }
 .mwl-filter.is-active { background: var(--c-error-bg); color: var(--c-error-text); border-color: var(--c-error); }
 .mwl-filter.is-active .mwl-filter-count { background: var(--c-error); color: #fff; }
-.mwl-toolbar-count { margin-left: auto; font-size: 12px; color: var(--c-text-4); font-weight: 500; }
+.mwl-toolbar-count { margin-left: auto; font-size: 14px; color: var(--c-text-4); font-weight: 500; }
 
 .mwl-table { display: flex; flex-direction: column; }
 .mwl-row {
@@ -158,7 +158,7 @@
   align-items: center; gap: 12px; padding: 12px 16px;
 }
 .mwl-row-head {
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--c-text-3); border-bottom: 1px solid var(--c-border);
 }
 .mwl-row-data { border-bottom: 1px solid var(--c-border-light); animation: ov2-rise 0.3s ease both; transition: background 0.14s ease; }
@@ -181,19 +181,19 @@
   margin: 0 0 10px; padding: 9px 14px; border-radius: var(--r-md);
   background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
 }
-.mwl-bulk-count { font-size: 13px; color: var(--c-text); }
+.mwl-bulk-count { font-size: 14px; color: var(--c-text); }
 .mwl-bulk-actions { display: inline-flex; align-items: center; gap: 8px; }
 
-.mwl-id { font-size: 12.5px; color: var(--c-primary-dark); font-weight: 500; }
-.mwl-name { font-size: 13px; font-weight: 600; color: var(--c-text); }
-.mwl-crsp { font-size: 12.5px; color: var(--c-text-2); line-height: 1.3; }
+.mwl-id { font-size: 14px; color: var(--c-primary-dark); font-weight: 500; }
+.mwl-name { font-size: 14px; font-weight: 600; color: var(--c-text); }
+.mwl-crsp { font-size: 14px; color: var(--c-text-2); line-height: 1.3; }
 
-.mwl-status { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; }
+.mwl-status { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; }
 .mwl-status.is-gap { color: var(--c-error-text); }
 .mwl-status.is-ok { color: var(--c-success-text); }
 
-.mwl-assigned { font-size: 12px; font-weight: 600; color: var(--c-text-2); background: var(--c-primary-light); border: 1px solid var(--c-primary-subtle); padding: 3px 9px; border-radius: var(--r-full); }
-.mwl-unassigned { font-size: 12px; font-weight: 600; color: var(--c-warn-text); background: var(--c-warn-bg); padding: 3px 9px; border-radius: var(--r-full); }
+.mwl-assigned { font-size: 14px; font-weight: 600; color: var(--c-text-2); background: var(--c-primary-light); border: 1px solid var(--c-primary-subtle); padding: 3px 9px; border-radius: var(--r-full); }
+.mwl-unassigned { font-size: 14px; font-weight: 600; color: var(--c-warn-text); background: var(--c-warn-bg); padding: 3px 9px; border-radius: var(--r-full); }
 
 /* Already covered by an active play — the row-level echo of the assign panel's
    "will be skipped" count. Assign hue (indigo), so it reads as an intervention
@@ -206,8 +206,8 @@
 }
 .mwl-play-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-assign); flex-shrink: 0; }
 .mwl-play-text { display: inline-flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.mwl-play-tag { font-size: 11.5px; font-weight: 700; color: var(--c-assign-dark); letter-spacing: -0.01em; }
-.mwl-play-sub { font-size: 10.5px; font-weight: 500; color: var(--c-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mwl-play-tag { font-size: 14px; font-weight: 700; color: var(--c-assign-dark); letter-spacing: -0.01em; }
+.mwl-play-sub { font-size: 14px; font-weight: 500; color: var(--c-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mwl-row-data.is-covered { box-shadow: inset 3px 0 0 var(--c-assign-subtle); }
 .mwl-row-data.is-covered.is-gap { box-shadow: inset 3px 0 0 var(--c-error); }
 
@@ -215,9 +215,9 @@
    glyph needs more size than the 12px small-button type gives it. */
 .mwl-pager { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 14px; }
 .mwl-pager .btn-icon { font-size: 16px; line-height: 1; }
-.mwl-pg-info { font-size: 13px; color: var(--c-text-3); font-weight: 600; }
+.mwl-pg-info { font-size: 14px; color: var(--c-text-3); font-weight: 600; }
 
-.mwl-sample { font-size: 12px; color: var(--c-text-3); text-align: center; }
+.mwl-sample { font-size: 14px; color: var(--c-text-3); text-align: center; }
 
 /* Toasts come from the app-wide ToastProvider (ui/Toast). */
 
@@ -241,20 +241,20 @@
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 10px 12px; background: var(--c-bg-subtle); border-radius: var(--r-md); margin-bottom: 16px;
 }
-.mwl-modal-prov { font-size: 12px; color: var(--c-text-3); }
+.mwl-modal-prov { font-size: 14px; color: var(--c-text-3); }
 
 /* Multi-member preview inside the assign modal */
 .mwl-modal-set { padding: 10px 12px; background: var(--c-bg-subtle); border-radius: var(--r-md); margin-bottom: 16px; }
-.mwl-modal-set-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--c-text); margin-bottom: 8px; }
+.mwl-modal-set-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--c-text); margin-bottom: 8px; }
 .mwl-modal-set-list { display: flex; flex-direction: column; gap: 4px; max-height: 148px; overflow-y: auto; }
-.mwl-modal-set-list li { font-size: 12px; color: var(--c-text-2); }
+.mwl-modal-set-list li { font-size: 14px; color: var(--c-text-2); }
 .mwl-modal-set-more { color: var(--c-text-4); }
 
 .mwl-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.mwl-field > span { font-size: 12.5px; font-weight: 600; color: var(--c-text-2); }
+.mwl-field > span { font-size: 14px; font-weight: 600; color: var(--c-text-2); }
 .mwl-field > span em { color: var(--c-text-4); font-weight: 400; font-style: normal; }
 .mwl-field select, .mwl-field textarea {
-  font-family: var(--font); font-size: 13px; color: var(--c-text); background: var(--c-surface);
+  font-family: var(--font); font-size: 14px; color: var(--c-text); background: var(--c-surface);
   border: 1px solid var(--c-border); border-radius: var(--r-sm); padding: 9px 11px; width: 100%; resize: vertical;
 }
 .mwl-field select:focus, .mwl-field textarea:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-ring); }

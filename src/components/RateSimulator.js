@@ -175,7 +175,7 @@ const RateSimulator = ({ onBack }) => {
                     <td style={{ color: 'var(--c-error)' }}>{(m.rate - m.goal).toFixed(1)}%</td>
                     <td>{m.gaps}</td>
                     <td>{gn}</td>
-                    <td style={{ color: effortColor, fontWeight: 700, fontSize: '11px' }}>{effort}</td>
+                    <td style={{ color: effortColor, fontWeight: 700, fontSize: '14px' }}>{effort}</td>
                   </tr>
                 );
               })}

@@ -48,7 +48,7 @@
   position: relative;
 }
 .login-hero-eyebrow {
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.75);
   margin-bottom: 14px;
@@ -82,7 +82,7 @@
   font-variant-numeric: tabular-nums;
 }
 .login-hero-stat-label {
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.72);
   margin-top: 2px;
 }
@@ -127,7 +127,7 @@
 }
 .login-error-icon { flex-shrink: 0; margin-top: 1px; }
 .login-error span:last-child {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-error-text);
   line-height: 1.45;
 }
@@ -144,7 +144,7 @@
   gap: 6px;
 }
 .login-field-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--c-text-2);
 }
@@ -153,7 +153,7 @@
   justify-content: space-between;
   align-items: baseline;
 }
-.login-field-row a { font-size: 12.5px; font-weight: 500; }
+.login-field-row a { font-size: 14px; font-weight: 500; }
 
 .login-field input[type="email"],
 .login-field input[type="password"],
@@ -208,7 +208,7 @@
   accent-color: var(--c-primary);
   margin: 0;
 }
-.login-remember span { font-size: 13px; color: var(--c-text-3); }
+.login-remember span { font-size: 14px; color: var(--c-text-3); }
 
 .login-submit {
   width: 100%;
@@ -237,7 +237,7 @@
   margin: 22px 0;
 }
 .login-divider-line { flex: 1; height: 1px; background: var(--c-border); }
-.login-divider-label { font-size: 12px; color: var(--c-text-4); }
+.login-divider-label { font-size: 14px; color: var(--c-text-4); }
 
 .login-sso {
   width: 100%;
@@ -259,7 +259,7 @@
 
 .login-footnote {
   margin: 28px 0 0;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--c-text-4);
   line-height: 1.5;
   text-align: center;

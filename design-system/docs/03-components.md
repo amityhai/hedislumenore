@@ -150,7 +150,7 @@ number that looks like a static number is a trap.
 
 ### Table · CSS
 
-- Header: sunken background, 11px uppercase `fg-muted`, sticky where the table
+- Header: sunken background, 14px uppercase `fg-muted`, sticky where the table
   is long.
 - Rows: 44px minimum (cell padding is 13px, not 12px, precisely to hold that
   pointer-target floor).
@@ -175,7 +175,7 @@ because the tint alone is unambiguous at that width.
 
 ### Breadcrumb · React
 
-Uppercase 11px micro-type. A crumb that can **switch** its sibling (jump to a
+Uppercase 14px type. A crumb that can **switch** its sibling (jump to a
 different provider at the same level) carries a chevron and opens a menu; a
 plain crumb never does.
 

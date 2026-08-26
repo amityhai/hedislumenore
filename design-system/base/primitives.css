@@ -282,7 +282,7 @@
 .lds-modal__body   { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--lds-space-900) var(--lds-space-1100); }
 .lds-modal__footer { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: var(--lds-space-500); padding: var(--lds-space-700) var(--lds-space-1100) var(--lds-space-1000); }
 /* Explains a disabled submit instead of letting it read as broken. */
-.lds-modal__hint   { margin-right: auto; font-size: var(--lds-font-size-300); color: var(--lds-fg-muted); }
+.lds-modal__hint   { margin-right: auto; font-size: var(--lds-font-size-400); color: var(--lds-fg-muted); }
 
 @keyframes lds-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes lds-pop  { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }

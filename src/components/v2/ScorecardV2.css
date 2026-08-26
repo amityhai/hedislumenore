@@ -24,7 +24,7 @@
   display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
   height: 30px; padding: 0 13px 0 11px; border-radius: var(--r-full);
   background: var(--c-surface); border: 1px solid var(--c-border); cursor: pointer;
-  font-family: var(--font); font-size: 12.5px; font-weight: 600; color: var(--c-text-2);
+  font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--c-text-2);
   transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
 .sc2-back:hover { background: var(--c-bg-subtle); border-color: var(--c-text-4); color: var(--c-text); }
@@ -34,10 +34,10 @@
 /* Breadcrumb */
 .sc2-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; animation: ov2-fade 0.3s ease both; }
 .sc2-crumb-wrap { display: inline-flex; align-items: center; }
-.sc2-crumb-sep { color: var(--c-text-4); margin: 0 8px; font-size: 13px; }
+.sc2-crumb-sep { color: var(--c-text-4); margin: 0 8px; font-size: 14px; }
 .sc2-crumb {
   background: transparent; border: none; cursor: pointer; font-family: var(--font);
-  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
   color: var(--c-text-3); padding: 2px 0; transition: color 0.14s ease;
 }
 .sc2-crumb:hover { color: var(--c-primary); }
@@ -74,19 +74,19 @@
 .sc2-crumb-opt {
   display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
   padding: 7px 9px; border: none; border-radius: var(--r-sm); background: transparent;
-  font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0;
+  font: inherit; font-size: 14px; text-transform: none; letter-spacing: 0;
   color: var(--c-text-2); cursor: pointer; transition: background 0.12s ease;
 }
 .sc2-crumb-opt:hover { background: var(--c-primary-light); }
 .sc2-crumb-opt.is-current { background: var(--c-primary-light); color: var(--c-primary-dark); font-weight: 600; cursor: default; }
 .sc2-crumb-opt-tag {
   flex: none; min-width: 58px; padding: 2px 6px; border-radius: var(--r-xs);
-  font-size: 10.5px; font-weight: 700; text-align: center;
+  font-size: 14px; font-weight: 700; text-align: center;
   background: var(--c-bg-subtle, rgba(0,0,0,0.04)); color: var(--c-text-3);
 }
 .sc2-crumb-opt-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sc2-crumb-opt-rate { flex: none; font-weight: 600; font-size: 12px; color: var(--c-text-3); }
-.sc2-crumb-empty { padding: 10px; font-size: 12.5px; color: var(--c-text-3); text-transform: none; letter-spacing: 0; }
+.sc2-crumb-opt-rate { flex: none; font-weight: 600; font-size: 14px; color: var(--c-text-3); }
+.sc2-crumb-empty { padding: 10px; font-size: 14px; color: var(--c-text-3); text-transform: none; letter-spacing: 0; }
 
 /* ── Category ("sub-category") tabs — shared Overview + Explorer ───── */
 .sc2-cats { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -94,7 +94,7 @@
   display: inline-flex; align-items: center; gap: 6px;
   height: 30px; padding: 0 14px; border-radius: var(--r-full);
   background: var(--c-surface); border: 1px solid var(--c-border);
-  color: var(--c-text-3); font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--c-text-3); font-size: 14px; font-weight: 600; letter-spacing: 0.04em;
   cursor: pointer; transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
 .sc2-cat:hover { border-color: var(--c-text-4); color: var(--c-text-2); }
@@ -105,7 +105,7 @@
   border-color: var(--c-primary-subtle);
 }
 .sc2-cat-count {
-  font-size: 11px; line-height: 1; padding: 2px 6px; border-radius: var(--r-full);
+  font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: var(--r-full);
   background: var(--c-bg-subtle); color: var(--c-text-3);
 }
 .sc2-cat.is-active .sc2-cat-count { background: var(--c-surface); color: var(--c-primary-dark); }

@@ -35,7 +35,7 @@
   padding: 20px 22px 14px; border-bottom: 1px solid var(--c-border-light);
 }
 .apx-head h3 { font-size: 17px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
-.apx-sub { margin-top: 3px; font-size: 12.5px; color: var(--c-text-3); }
+.apx-sub { margin-top: 3px; font-size: 14px; color: var(--c-text-3); }
 .apx-sub strong { color: var(--c-text-2); font-weight: 600; }
 /* Outdented so the 30px hit area's glyph sits on the header's optical margin
    rather than being pushed a full button-width off the corner. */
@@ -55,12 +55,12 @@
 .apx-hero-rate { font-size: 26px; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; }
 .apx-hero-arrow { color: var(--c-text-4); font-size: 14px; }
 .apx-hero-goal { font-size: 14px; font-weight: 600; color: var(--c-text-3); }
-.apx-hero-need { margin-top: 6px; font-size: 13px; color: var(--c-text-2); }
+.apx-hero-need { margin-top: 6px; font-size: 14px; color: var(--c-text-2); }
 .apx-hero-need strong { color: var(--c-primary-dark); font-weight: 700; }
 
 .apx-target {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 9px 12px; margin-bottom: 16px; font-size: 12.5px;
+  padding: 9px 12px; margin-bottom: 16px; font-size: 14px;
   background: var(--c-primary-light); border: 1px solid var(--c-primary-subtle);
   border-radius: var(--r-sm); color: var(--c-primary-dark);
 }
@@ -75,20 +75,20 @@
 .apx-block { margin-bottom: 16px; }
 .apx-block-title {
   display: flex; align-items: baseline; gap: 8px;
-  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-4); margin-bottom: 8px;
 }
-.apx-block-note { text-transform: none; letter-spacing: 0; font-family: var(--font); font-size: 11px; color: var(--c-text-4); }
+.apx-block-note { text-transform: none; letter-spacing: 0; font-family: var(--font); font-size: 14px; color: var(--c-text-4); }
 
-.apx-line { font-size: 13px; color: var(--c-text-2); }
+.apx-line { font-size: 14px; color: var(--c-text-2); }
 .apx-line strong { color: var(--c-text); font-weight: 700; }
 .apx-line.is-muted, .apx-block .is-muted { color: var(--c-text-3); }
 
-.apx-stack { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--c-text-2); }
+.apx-stack { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--c-text-2); }
 .apx-stack span { font-weight: 700; color: var(--c-text); }
-.apx-stack em { font-style: normal; color: var(--c-text-4); font-size: 12px; }
+.apx-stack em { font-style: normal; color: var(--c-text-4); font-size: 14px; }
 .apx-stack .is-muted span { color: var(--c-text-3); }
-.apx-linkbtn { background: none; border: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--c-assign-dark); cursor: pointer; }
+.apx-linkbtn { background: none; border: none; padding: 0; font: inherit; font-size: 14px; font-weight: 600; color: var(--c-assign-dark); cursor: pointer; }
 .apx-linkbtn:hover { text-decoration: underline; }
 .apx-stack .is-strong { color: var(--c-primary-dark); font-weight: 600; }
 .apx-stack .is-strong span { color: var(--c-primary-dark); }
@@ -101,9 +101,9 @@
 .apx-fig { display: flex; flex-direction: column; gap: 2px; }
 .apx-fig-v { font-size: 21px; font-weight: 700; line-height: 1.05; color: var(--c-text-3); letter-spacing: -0.02em; }
 .apx-fig.is-lead .apx-fig-v { font-size: 30px; color: var(--c-primary-dark); }
-.apx-fig-k { font-size: 11.5px; font-weight: 600; color: var(--c-text-4); }
+.apx-fig-k { font-size: 14px; font-weight: 600; color: var(--c-text-4); }
 .apx-fig-sep { width: 1px; align-self: stretch; margin: 4px 0; background: var(--c-border-light); }
-.apx-fig-note { font-size: 12px; color: var(--c-text-3); margin-bottom: 8px; }
+.apx-fig-note { font-size: 14px; color: var(--c-text-3); margin-bottom: 8px; }
 .apx-fig-note strong { color: var(--c-text-2); font-weight: 700; }
 
 /* Interventions — a multi-select chip set plus a custom entry, replacing the
@@ -111,7 +111,7 @@
 .apx-ivs { display: flex; flex-wrap: wrap; gap: 8px; }
 .apx-iv {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; text-align: left;
+  padding: 7px 12px; font: inherit; font-size: 14px; cursor: pointer; text-align: left;
   color: var(--c-text-2); background: var(--c-surface);
   border: 1px solid var(--c-border); border-radius: var(--r-full);
   transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
@@ -124,7 +124,7 @@
 .apx-iv-add button { flex: none; }
 
 /* Provider pool — what the scope auto-selected, and a way to see it. */
-.apx-pool { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--c-text-2); }
+.apx-pool { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--c-text-2); }
 .apx-pool-count strong { color: var(--c-text); font-weight: 700; }
 /* The pool itself opens as a docked table beside the panel — see ProvidersPanel,
    which reuses the member roster's .apxm chrome. */
@@ -132,7 +132,7 @@
 /* Clickable targeting affordances */
 .apx-pick {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
-  margin-top: 8px; padding: 10px 12px; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  margin-top: 8px; padding: 10px 12px; font: inherit; font-size: 14px; text-align: left; cursor: pointer;
   color: var(--c-text-2); background: var(--c-surface);
   border: 1px dashed var(--c-border); border-radius: var(--r-sm);
   transition: border-color 0.14s ease, background 0.14s ease;
@@ -141,7 +141,7 @@
 .apx-pick.is-on { border-style: solid; border-color: var(--c-primary); background: var(--c-primary-light); }
 .apx-pick strong { color: var(--c-text); font-weight: 700; }
 .apx-pick > span:nth-child(2) { margin-right: auto; }
-.apx-pick-cta { flex: none; font-size: 12px; font-weight: 600; color: var(--c-primary-dark); }
+.apx-pick-cta { flex: none; font-size: 14px; font-weight: 600; color: var(--c-primary-dark); }
 
 /* Both targeting lists accept more than one pick at a time, so each row wears a
    checkbox rather than a radio — the CTA text alone read as single-select. */
@@ -167,7 +167,7 @@
 .apx-eq { display: flex; flex-direction: column; gap: 6px; }
 .apx-eqrow {
   display: grid; grid-template-columns: auto 1fr auto auto auto auto; align-items: center; gap: 12px;
-  padding: 9px 12px; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  padding: 9px 12px; font: inherit; font-size: 14px; text-align: left; cursor: pointer;
   background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-sm);
   transition: border-color 0.14s ease, background 0.14s ease;
 }
@@ -181,15 +181,15 @@
 .apx-eq-group { color: var(--c-text); font-weight: 600; }
 /* Per-group roster peek — an assign-hued affordance so it reads as "look", not
    "target" (the teal CTA on the right is the targeting action). */
-.apx-eq-view { font-size: 11.5px; font-weight: 600; color: var(--c-assign-dark); white-space: nowrap; cursor: pointer; }
+.apx-eq-view { font-size: 14px; font-weight: 600; color: var(--c-assign-dark); white-space: nowrap; cursor: pointer; }
 .apx-eq-view:hover { text-decoration: underline; }
 .apx-eq-view:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--c-assign-ring); border-radius: var(--r-xs); }
 .apx-eq-view.is-viewing { color: var(--c-assign-dark); font-weight: 700; }
 .apx-eq-rate { color: var(--c-text-2); font-weight: 700; }
-.apx-eq-delta { color: var(--c-error-text); font-size: 12px; font-weight: 600; }
-.apx-eq-cta { font-size: 11.5px; font-weight: 600; color: var(--c-primary-dark); min-width: 62px; text-align: right; }
+.apx-eq-delta { color: var(--c-error-text); font-size: 14px; font-weight: 600; }
+.apx-eq-cta { font-size: 14px; font-weight: 600; color: var(--c-primary-dark); min-width: 62px; text-align: right; }
 
-.apx-hidden { margin-top: 7px; font-size: 11.5px; color: var(--c-text-4); }
+.apx-hidden { margin-top: 7px; font-size: 14px; color: var(--c-text-4); }
 
 .apx-form {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px;
@@ -197,17 +197,17 @@
 }
 .apx-field { display: flex; flex-direction: column; gap: 6px; }
 .apx-field-wide { grid-column: 1 / -1; }
-.apx-field > span { font-size: 12.5px; font-weight: 600; color: var(--c-text-2); }
+.apx-field > span { font-size: 14px; font-weight: 600; color: var(--c-text-2); }
 .apx-field > span em { color: var(--c-text-4); font-weight: 400; font-style: normal; }
 /* Height is pinned rather than derived from padding: a date input's inner
    editor has its own font metrics, so equal padding left it taller than the
    selects on the row above it. */
 .apx-field select, .apx-field input {
-  font-family: var(--font); font-size: 13px; color: var(--c-text); background: var(--c-surface);
+  font-family: var(--font); font-size: 14px; color: var(--c-text); background: var(--c-surface);
   border: 1px solid var(--c-border); border-radius: var(--r-sm);
   height: var(--h-control); padding: 0 11px; width: 100%;
 }
-.apx-field input[type="date"]::-webkit-datetime-edit { font-size: 13px; line-height: normal; padding: 0; }
+.apx-field input[type="date"]::-webkit-datetime-edit { font-size: 14px; line-height: normal; padding: 0; }
 .apx-field input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
 .apx-field input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 0.9; }
 .apx-field select:focus, .apx-field input:focus {
@@ -221,7 +221,7 @@
   border-top: 1px solid var(--c-border-light); background: var(--c-bg-subtle);
   border-radius: 0 0 var(--r-xl) var(--r-xl);
 }
-.apx-summary { font-size: 12.5px; color: var(--c-text-3); max-width: 60ch; }
+.apx-summary { font-size: 14px; color: var(--c-text-3); max-width: 60ch; }
 .apx-summary strong { color: var(--c-text); font-weight: 700; }
 .apx-summary.is-short strong { color: var(--c-warn-text); }
 .apx-actions { display: flex; gap: 10px; margin-left: auto; }
@@ -259,16 +259,16 @@
 .apxm-head-id { display: flex; align-items: baseline; gap: 9px; min-width: 0; flex-wrap: wrap; }
 .apxm-head-id h3 { font-size: 15px; font-weight: 700; color: var(--c-text); letter-spacing: -0.01em; }
 .apxm-scope {
-  font-size: 11.5px; font-weight: 600; color: var(--c-assign-dark);
+  font-size: 14px; font-weight: 600; color: var(--c-assign-dark);
   background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
   padding: 3px 10px; border-radius: var(--r-full);
 }
 .apxm-scope em { font-style: normal; color: var(--c-text-4); font-weight: 500; }
-.apxm-scope-sub { font-size: 12px; color: var(--c-text-3); }
+.apxm-scope-sub { font-size: 14px; color: var(--c-text-3); }
 
 .apxm-tabs { display: flex; align-items: center; gap: 6px; }
 .apxm-tab {
-  font-size: 11.5px; font-weight: 600; color: var(--c-text-3);
+  font-size: 14px; font-weight: 600; color: var(--c-text-3);
   background: var(--c-bg-subtle); border: 1px solid var(--c-border-light);
   padding: 4px 11px; border-radius: var(--r-full); cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -279,12 +279,12 @@
 .apxm-x { margin-left: 2px; font-size: 18px; }
 
 .apxm-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
-.apxm-note { padding: 40px 18px; text-align: center; font-size: 12.5px; color: var(--c-text-3); }
+.apxm-note { padding: 40px 18px; text-align: center; font-size: 14px; color: var(--c-text-3); }
 
-.apxm-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.apxm-table { border-collapse: collapse; width: 100%; font-size: 14px; }
 .apxm-table thead th {
   position: sticky; top: 0; z-index: 1; text-align: left; background: var(--c-surface);
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--c-text-4); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--c-border);
   white-space: nowrap;
 }
@@ -314,32 +314,32 @@
 .apxm-table .apxm-pick input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--c-assign); vertical-align: middle; }
 
 .apxm-selected {
-  font-size: 11.5px; font-weight: 700; color: var(--c-assign-dark);
+  font-size: 14px; font-weight: 700; color: var(--c-assign-dark);
   background: var(--c-assign-light); border: 1px solid var(--c-assign-subtle);
   padding: 4px 10px; border-radius: var(--r-full);
 }
 .apxm-selected .num { color: inherit; }
-.apxm-id { font-family: var(--font-mono); font-size: 11.5px; color: var(--c-primary-dark); }
+.apxm-id { font-family: var(--font-mono); font-size: 14px; color: var(--c-primary-dark); }
 .apxm-name { color: var(--c-text); font-weight: 600; }
 .apxm-dim { color: var(--c-text-3); }
 
-.apxm-prio { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; }
+.apxm-prio { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
 .apxm-prio-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .apxm-prio.is-ok { color: var(--c-success-text); }
 .apxm-prio.is-gap { color: var(--c-error-text); }
 
-.apxm-unassigned { font-size: 11.5px; font-weight: 600; color: var(--c-warn-text); }
+.apxm-unassigned { font-size: 14px; font-weight: 600; color: var(--c-warn-text); }
 .apxm-play { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .apxm-play-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-assign); flex-shrink: 0; }
-.apxm-play-tag { font-size: 11.5px; font-weight: 700; color: var(--c-assign-dark); }
-.apxm-play-sub { font-size: 11.5px; color: var(--c-text-3); }
+.apxm-play-tag { font-size: 14px; font-weight: 700; color: var(--c-assign-dark); }
+.apxm-play-sub { font-size: 14px; color: var(--c-text-3); }
 
 .apxm-foot {
   flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 11px 18px; border-top: 1px solid var(--c-border-light); background: var(--c-bg-subtle);
   border-radius: 0 0 var(--r-xl) 0;
 }
-.apxm-foot-note { font-size: 11px; color: var(--c-text-4); max-width: 62ch; line-height: 1.4; }
+.apxm-foot-note { font-size: 14px; color: var(--c-text-4); max-width: 62ch; line-height: 1.4; }
 
 @media (max-width: 620px) {
   .apx-form { grid-template-columns: 1fr; }

@@ -18,7 +18,7 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border-light);
   box-shadow: var(--sh-lg);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-text-2);
   animation: toast-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
@@ -36,7 +36,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
 }
@@ -56,7 +56,7 @@
   border: none;
   color: var(--c-text-4);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   padding: 2px 4px;
   border-radius: var(--r-xs);
 }

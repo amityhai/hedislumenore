@@ -50,8 +50,8 @@ Measured, not estimated. All four are fixed in Tier 1.
 
 Plus a structural one: **`--c-text-4` (`#9aa6ad`, 2.49:1) was used for readable
 text** — column heads, KPI labels, pagination counts, empty-state hints. The
-system splits this into `fg-faint` (non-text, 3.78:1) and `fg-muted` (text), and
-routes every text role off the former.
+system now routes both legacy `fg-faint` and `fg-muted` text roles to the same
+AA-capable slate, while decorative glyphs use a separate non-text token.
 
 ### P1 — scale drift
 

@@ -59,7 +59,7 @@
 
 .lds-body    { font-size: var(--lds-font-size-500); color: var(--lds-fg-subtle); }
 .lds-body-sm { font-size: var(--lds-font-size-400); color: var(--lds-fg-subtle); }
-.lds-caption { font-size: var(--lds-font-size-300); color: var(--lds-fg-muted); line-height: var(--lds-line-height-300); }
+.lds-caption { font-size: var(--lds-font-size-400); color: var(--lds-fg-muted); line-height: var(--lds-line-height-300); }
 
 /* Uppercase micro-label — KPI labels, column heads, definition terms.
    Uppercase kills word-shape, so it is capped at ~3 words. If your label

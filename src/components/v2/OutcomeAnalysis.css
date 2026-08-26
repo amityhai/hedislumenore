@@ -11,11 +11,11 @@
 /* Header */
 .oa-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .oa-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 2px; }
-.oa-sub { font-size: 13.5px; color: var(--c-text-3); margin-top: 4px; max-width: 62ch; }
+.oa-sub { font-size: 14px; color: var(--c-text-3); margin-top: 4px; max-width: 62ch; }
 .oa-refresh {
   display: inline-flex; align-items: center; gap: 8px; height: var(--h-control); padding: 0 16px;
   background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-md);
-  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--c-text-2); cursor: pointer;
+  font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--c-text-2); cursor: pointer;
   transition: border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
 }
 .oa-refresh:hover { border-color: var(--c-primary-subtle); color: var(--c-primary-dark); box-shadow: var(--sh-xs); }
@@ -24,7 +24,7 @@
 .oa-notice {
   display: flex; align-items: center; gap: 12px; padding: 9px 14px;
   background: var(--c-warn-bg); color: var(--c-warn-text); border: 1px solid var(--c-warn-border);
-  border-radius: var(--r-md); font-size: 12.5px; font-weight: 500;
+  border-radius: var(--r-md); font-size: 14px; font-weight: 500;
 }
 
 /* KPI band */
@@ -34,7 +34,7 @@
   box-shadow: var(--sh-card); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px;
 }
 .oa-kpi.is-big { background: linear-gradient(160deg, #ffffff, var(--c-primary-light)); border-color: var(--c-primary-subtle); }
-.oa-kpi-k { font-size: 12px; font-weight: 600; color: var(--c-text-3); letter-spacing: 0.005em; }
+.oa-kpi-k { font-size: 14px; font-weight: 600; color: var(--c-text-3); letter-spacing: 0.005em; }
 .oa-kpi-v { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; color: var(--c-text); }
 .oa-kpi.is-big .oa-kpi-v { font-size: 32px; }
 .oa-kpi-v.tone-pos { color: var(--c-success-text); }
@@ -42,8 +42,8 @@
 .oa-kpi-v.tone-brand { color: var(--c-primary-dark); }
 .oa-kpi-v.tone-warn { color: var(--c-warn-text); }
 .oa-kpi-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.oa-kpi-sub { font-size: 11.5px; color: var(--c-text-4); }
-.oa-kpi-delta { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: var(--r-full); }
+.oa-kpi-sub { font-size: 14px; color: var(--c-text-4); }
+.oa-kpi-delta { font-size: 14px; font-weight: 700; padding: 1px 8px; border-radius: var(--r-full); }
 .oa-kpi-delta.tone-pos { color: var(--c-success-text); background: var(--c-success-bg); }
 .oa-kpi-delta.tone-neg { color: var(--c-error-text); background: var(--c-error-bg); }
 
@@ -57,14 +57,14 @@
    a div in this row too, and a bare child selector stacked its buttons. */
 .oa-card-heading { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .oa-card-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: var(--c-text); }
-.oa-card-sub { font-size: 12px; color: var(--c-text-4); max-width: 78ch; }
+.oa-card-sub { font-size: 14px; color: var(--c-text-4); max-width: 78ch; }
 
 /* Segmented sort — a filter/describe control, so it keeps the pill shape */
 .oa-seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--c-bg-subtle); border: 1px solid var(--c-border); border-radius: var(--r-full); flex-shrink: 0; }
 .oa-seg-btn {
   border: none; background: transparent; cursor: pointer; white-space: nowrap;
   padding: 5px 12px; border-radius: var(--r-full);
-  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--c-text-3);
+  font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--c-text-3);
   transition: background 0.14s ease, color 0.14s ease;
 }
 .oa-seg-btn:hover { color: var(--c-text); }
@@ -73,7 +73,7 @@
 /* ── Measure progress rows ──────────────────────────────────────────
    The page's lead. A grid, so the head and every row share one set of
    column edges and the progress tracks stack into a single readable axis. */
-.oa-legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 11.5px; color: var(--c-text-3); }
+.oa-legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 14px; color: var(--c-text-3); }
 .oa-legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .oa-key { width: 14px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 .oa-key-base { background: var(--c-text-4); }
@@ -89,7 +89,7 @@
 }
 .oa-mrow-head {
   min-height: 32px; border-bottom: 1px solid var(--c-border);
-  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-4);
 }
 .oa-mrow:not(.oa-mrow-head) {
@@ -97,16 +97,16 @@
   animation: ov2-rise 0.3s ease both;
 }
 .oa-mrow.is-met { background: var(--c-success-bg); border-color: var(--c-success-border); }
-.oa-mrow-id { font-size: 11.5px; font-weight: 600; color: var(--c-text-3); }
-.oa-mrow-name { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oa-mrow-play { font-size: 12px; color: var(--c-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oa-mrow-rates { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; white-space: nowrap; }
+.oa-mrow-id { font-size: 14px; font-weight: 600; color: var(--c-text-3); }
+.oa-mrow-name { font-size: 14px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-mrow-play { font-size: 14px; color: var(--c-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-mrow-rates { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 14px; white-space: nowrap; }
 .oa-mrow-from { color: var(--c-text-4); font-weight: 600; }
 .oa-mrow-arrow { color: var(--c-text-4); }
 .oa-mrow-to { color: var(--c-text); font-weight: 700; }
 .oa-mrow-track { min-width: 0; }
-.oa-mrow-lift { text-align: right; font-size: 13px; font-weight: 700; color: var(--c-primary-dark); }
-.oa-mrow-done { text-align: right; font-size: 12.5px; font-weight: 600; color: var(--c-text-3); }
+.oa-mrow-lift { text-align: right; font-size: 14px; font-weight: 700; color: var(--c-primary-dark); }
+.oa-mrow-done { text-align: right; font-size: 14px; font-weight: 600; color: var(--c-text-3); }
 .oa-mrow-status { text-align: right; }
 
 /* Progress track — baseline, the gain on top of it, the miss beyond the tip,
@@ -123,7 +123,7 @@
 .oa-track-goal { position: absolute; top: -2px; width: 2px; height: 14px; background: var(--c-text); border-radius: 1px; }
 
 /* Tags */
-.oa-tag { display: inline-block; padding: 3px 9px; border-radius: var(--r-full); font-size: 11px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.oa-tag { display: inline-block; padding: 3px 9px; border-radius: var(--r-full); font-size: 14px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
 .oa-tag-met { color: var(--c-success-text); background: var(--c-success-bg); border-color: var(--c-success-border); }
 .oa-tag-short { color: var(--c-error-text); background: var(--c-error-bg); border-color: var(--c-error-border); }
 .oa-tag-would { color: var(--c-warn-text); background: var(--c-warn-bg); border-color: var(--c-warn-border); }
@@ -132,7 +132,7 @@
 .oa-showall {
   margin-top: 12px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 9px; border: 1px dashed var(--c-border); border-radius: var(--r-sm); background: transparent;
-  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--c-text-3); cursor: pointer;
   transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
 }
@@ -145,7 +145,7 @@
    and can still be reached next cycle. Red is reserved for below-goal. */
 .oa-scope { border-color: var(--c-warn-border); }
 .oa-scope-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0 18px; }
-.oa-scope-empty { margin-top: 14px; font-size: 13px; color: var(--c-success-text); }
+.oa-scope-empty { margin-top: 14px; font-size: 14px; color: var(--c-success-text); }
 
 .oa-orow {
   display: grid;
@@ -154,21 +154,21 @@
 }
 .oa-orow-head {
   min-height: 32px; border-bottom: 1px solid var(--c-border);
-  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-4);
 }
 .oa-orow-data { border-radius: var(--r-sm); border: 1px solid var(--c-border-light); animation: ov2-rise 0.3s ease both; }
 .oa-orow-data.is-flag { background: var(--c-warn-bg); border-color: var(--c-warn-border); }
 .oa-orow-m { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.oa-orow-name { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oa-why { display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; color: var(--c-text-3); }
+.oa-orow-name { font-size: 14px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-why { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--c-text-3); }
 .oa-why-part { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .oa-why-part b { color: var(--c-text-2); }
 .oa-why-dot { width: 6px; height: 6px; border-radius: var(--r-full); flex-shrink: 0; }
 .oa-why-never { background: var(--c-error); }
 .oa-why-late { background: var(--c-warn); }
-.oa-orow-members { font-size: 12.5px; font-weight: 600; color: var(--c-text-2); }
-.oa-orow-pts { font-size: 13px; font-weight: 700; color: var(--c-warn-text); }
+.oa-orow-members { font-size: 14px; font-weight: 600; color: var(--c-text-2); }
+.oa-orow-pts { font-size: 14px; font-weight: 700; color: var(--c-warn-text); }
 
 /* Program impact — demoted below the measure story, so its KPIs are a strip
    inside the card rather than the page's hero band. */
@@ -177,13 +177,13 @@
 /* Charts row */
 .oa-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 14px; }
 .oa-chart-wrap { min-width: 0; }
-.oa-chart-title { font-size: 13px; font-weight: 700; color: var(--c-text-2); margin-bottom: 12px; }
+.oa-chart-title { font-size: 14px; font-weight: 700; color: var(--c-text-2); margin-bottom: 12px; }
 
 /* Vertical bars */
 .oa-chart { display: flex; flex-direction: column; gap: 8px; }
 .oa-bars { display: flex; align-items: flex-end; gap: 22px; height: 200px; padding: 0 4px; }
 .oa-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; gap: 8px; }
-.oa-bar-val { font-size: 13px; font-weight: 700; color: var(--c-text); }
+.oa-bar-val { font-size: 14px; font-weight: 700; color: var(--c-text); }
 .oa-bar-track { flex: 1; width: 100%; max-width: 92px; display: flex; align-items: flex-end; }
 .oa-bar-fill {
   width: 100%; border-radius: 8px 8px 3px 3px; min-height: 4px;
@@ -192,8 +192,8 @@
 .oa-bars-brand .oa-bar-fill { background: linear-gradient(180deg, var(--c-primary), var(--c-primary-dark)); }
 .oa-bars-pos .oa-bar-fill { background: linear-gradient(180deg, #34b483, var(--c-success)); }
 .oa-bars-neg .oa-bar-fill { background: linear-gradient(180deg, #e77a74, var(--c-error)); }
-.oa-bar-x { font-size: 12px; font-weight: 600; color: var(--c-text-3); }
-.oa-chart-axis { font-size: 11px; color: var(--c-text-4); text-align: center; letter-spacing: 0.02em; }
+.oa-bar-x { font-size: 14px; font-weight: 600; color: var(--c-text-3); }
+.oa-chart-axis { font-size: 14px; color: var(--c-text-4); text-align: center; letter-spacing: 0.02em; }
 
 /* Tables */
 .oa-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -202,10 +202,10 @@
 .oa-tr {
   display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.4fr) 84px;
   align-items: center; gap: 14px; padding: 9px 8px; border-radius: var(--r-sm);
-  border-bottom: 1px solid var(--c-border-light); font-size: 13px;
+  border-bottom: 1px solid var(--c-border-light); font-size: 14px;
 }
 .oa-tr:last-child { border-bottom: none; }
-.oa-th { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-text-4); border-bottom: 1px solid var(--c-border); }
+.oa-th { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-text-4); border-bottom: 1px solid var(--c-border); }
 .oa-tr.is-flag { background: var(--c-error-bg); }
 .oa-td-name { color: var(--c-text-2); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oa-th .oa-td-name { font-weight: 700; }

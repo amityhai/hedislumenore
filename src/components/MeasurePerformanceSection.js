@@ -290,7 +290,7 @@ const MeasurePerformanceSection = ({
             );
           })
         ) : (
-          <div style={{ fontSize: '13px', color: '#9ca3af', padding: '8px 0' }}>
+          <div style={{ fontSize: '14px', color: 'var(--c-text-3)', padding: '8px 0' }}>
             No measures available in this category
           </div>
         )}

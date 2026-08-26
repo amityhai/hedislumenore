@@ -21,7 +21,7 @@ All values computed against the shipping tokens.
 | `fg-subtle` on canvas | **14.61** | ✅ AAA | |
 | `fg-muted` on canvas | **4.96** | ✅ | |
 | `fg-muted` on sunken | **4.66** | ✅ | the binding case |
-| `fg-faint` on canvas | **3.78** | ❌ text / ✅ non-text | **by design — see below** |
+| `fg-faint` on canvas | **4.96** | ✅ | legacy alias of `fg-muted` |
 | white on `brand-base` (teal) | **4.74** | ✅ | primary button label |
 | white on `brand-base` (blue) | **4.61** | ✅ | provider primary |
 | `brand-strong` on `brand-subtle` | 5.31 | ✅ | tonal button |
@@ -47,18 +47,18 @@ a visible change and each is deliberate.
 meta actually live.
 
 The teal one mattered most: **every primary button in the product had a white
-label at 4.17:1**, under AA at 13px/600. It is the most-pressed control in the
+label at 4.17:1**, under AA at 14px/600. It is the most-pressed control in the
 app and it was the least legible thing on the page.
 
 The green one mattered second: the *only* good-news status was the *only* one
 failing. Below-goal and At-goal both passed. A user with reduced contrast
 sensitivity could read every problem and not the successes.
 
-### `fg-faint` is a non-text token
+### Light neutrals are non-text only
 
-3.78:1 clears the WCAG 3:1 minimum for **non-text** contrast (icons, control
-boundaries, focus indicators) and fails the 4.5:1 text minimum. That split is
-enforced:
+The lighter neutral steps remain appropriate for **non-text** contrast (icons,
+control boundaries, focus indicators). Readable text uses `fg-muted`; the
+legacy `fg-faint` alias now resolves to that same AA-capable slate.
 
 - ✅ icons, dividers, chevrons, placeholders, disabled controls
 - ❌ column heads, KPI labels, axis labels, help text, captions, meta lines
@@ -71,7 +71,7 @@ failure in the codebase before the system. Column heads and KPI labels now take
 
 - Body text ≥ 4.5:1. Large text (≥18.66px bold or ≥24px) ≥ 3:1.
 - Non-text UI — control borders, icons, focus rings, chart marks ≥ 3:1.
-- **Buttons are not large text.** A 13px/600 label needs 4.5:1.
+- **Buttons are not large text.** A 14px/600 label needs 4.5:1.
 - Disabled controls are exempt from contrast minimums, and that is exactly why
   a disabled control must never be the only place information appears.
 

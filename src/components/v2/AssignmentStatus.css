@@ -10,11 +10,11 @@
   background: var(--c-info-bg); border: 1px solid var(--c-info-border);
 }
 .asx-chip.is-done { background: var(--c-success-bg); border-color: var(--c-success-border); }
-.asx-chip-mark { color: var(--c-info-text); font-size: 12px; line-height: 1; }
+.asx-chip-mark { color: var(--c-info-text); font-size: 14px; line-height: 1; }
 .asx-chip.is-done .asx-chip-mark { color: var(--c-success-text); }
 .asx-chip-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.asx-chip-lead { font-size: 12.5px; font-weight: 600; color: var(--c-text); line-height: 1.25; }
-.asx-chip-meta { font-size: 11px; color: var(--c-text-3); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asx-chip-lead { font-size: 14px; font-weight: 600; color: var(--c-text); line-height: 1.25; }
+.asx-chip-meta { font-size: 14px; color: var(--c-text-3); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .asx-manage { flex-shrink: 0; }
 
 @media (max-width: 480px) {

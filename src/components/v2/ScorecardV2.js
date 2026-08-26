@@ -197,10 +197,10 @@ const ScorecardV2 = ({ token, selectedMonth, onMonthChange, availableMonths, onS
     crumbs.push({
       label: shortId(ctx.measure.measure_id),
       onClick: () => goExplore(ctx.measure),
-      // The measure crumb doubles as a measure switcher on the pages below the
-      // Explorer — the trail is where the measure is named, so it's where it
-      // should be changeable.
-      options: view === 'worklist' ? measureOptions : null,
+      // The measure crumb doubles as a switcher on the focused measure page and
+      // every page below it, so changing measures never requires backing out to
+      // the Overview first.
+      options: measureOptions,
       onSelect: switchMeasure,
     });
   }
