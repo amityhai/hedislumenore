@@ -212,9 +212,42 @@ const OverviewDashboard = ({ token, selectedMonth, onMonthChange, availableMonth
 
   const chooseInsight = (item) => {
     const m = grid.find((x) => x.measure_id === item.measureId);
-    if (m) setSelectedMeasureId(m.measure_id);
-    if (item.kind === 'provider') setWorkTab('Providers');
-    else setWorkTab('Measures');
+    if (!m) return;
+
+    setSelectedMeasureId(m.measure_id);
+
+    if (item.kind === 'provider') {
+      const provider = {
+        ...item.source,
+        crsp: item.source?.crsp || item.source?.crsp_name,
+        goal: num(m.goal_50th),
+        overall: false,
+      };
+      setWorkTab('Providers');
+      onOpenProvider?.(m, provider);
+      return;
+    }
+
+    if (item.kind === 'equity') {
+      const strat = {
+        group: item.source?.race_strat,
+        type: 'race',
+        rate: num(item.source?.rate),
+        goal: num(m.goal_50th),
+      };
+      setWorkTab('Measures');
+      onOpenProvider?.(m, null, strat);
+      return;
+    }
+
+    setWorkTab('Measures');
+    onInvestigate?.(m);
+  };
+
+  const openMeasure = (m) => {
+    setSelectedMeasureId(m.measure_id);
+    setWorkTab('Measures');
+    onInvestigate?.(m);
   };
   const workRows = workTab === 'Measures' ? filtered : workTab === 'Providers' ? providers : members;
   const searchedRows = workRows.filter((row) => JSON.stringify(row).toLowerCase().includes(search.toLowerCase()));
@@ -240,7 +273,7 @@ const OverviewDashboard = ({ token, selectedMonth, onMonthChange, availableMonth
       </div>
 
       <div className="od-analysis-grid">
-        <PerformanceChart rows={filtered} loading={loading} filterLabel={activeDef.label} filterTone={activeDef.tone} onSelect={(m) => { setSelectedMeasureId(m.measure_id); setWorkTab('Measures'); }} />
+        <PerformanceChart rows={filtered} loading={loading} filterLabel={activeDef.label} filterTone={activeDef.tone} onSelect={openMeasure} />
         <InsightPanel activeTab={insightTab} onTab={setInsightTab} items={insightItems} loading={loading} onPick={chooseInsight} />
       </div>
 
