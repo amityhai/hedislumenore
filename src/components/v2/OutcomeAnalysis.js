@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import './OutcomeAnalysis.css';
 import { Skeleton } from '../ui/Feedback';
 import useAsync from '../../hooks/useAsync';
+import PageAnalysis from '../ui/PageAnalysis';
 import { shortId } from './v2utils';
 import {
   OUTCOME_QUARTERS, outcomeKpis,
@@ -179,12 +180,24 @@ const OutcomeAnalysis = () => {
             {k && <> · Data as of FY <strong>{k.currentQuarter}</strong></>}
           </p>
         </div>
-        <button type="button" className="oa-refresh" onClick={() => { setFlash((f) => f + 1); refetch(); }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          Refresh data
-        </button>
+        <div className="oa-head-actions">
+          <button type="button" className="oa-refresh" onClick={() => { setFlash((f) => f + 1); refetch(); }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Refresh data
+          </button>
+          <PageAnalysis
+            context="OUTCOME ANALYSIS"
+            title="Intervention performance"
+            summary={mk ? `${mk.improved} of ${mk.total} measures improved after intervention, while ${mk.ptsMissed.toFixed(1)} potential points remain unrealized.` : 'Intervention outcome data is loading.'}
+            signals={mk ? [
+              { label: 'Average lift', value: fmtPts(mk.avgLift), detail: 'Average movement since intervention.', tone: 'positive' },
+              { label: 'Reached goal', value: `${mk.reachedGoal} measures`, detail: `${mk.membersClosed.toLocaleString()} member gaps closed.` },
+              { label: 'Largest remaining opportunity', value: opportunities[0]?.name || 'Not available', detail: opportunities[0] ? `${opportunities[0].ptsMissed.toFixed(1)} potential points left.` : null, tone: 'critical' },
+            ] : []}
+          />
+        </div>
       </header>
 
       {data?.sample && !loading && (

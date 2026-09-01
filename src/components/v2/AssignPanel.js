@@ -92,7 +92,11 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
   // Providers and strata narrow the scope independently and compose: picking a
   // stratum shouldn't wipe a provider selection, or vice versa.
   const [provPick, setProvPick] = useState(null); // null | provider rows
-  const [strata, setStrata] = useState([]);       // stratum rows, multi-select
+  const [strata, setStrata] = useState(() => (scope.strata || []).map((row) => ({
+    ...row,
+    dim: row.dim || row.type,
+    dimLabel: row.dimLabel || DIMS.find((item) => item.key === (row.dim || row.type))?.label || row.dim || row.type,
+  })));       // stratum rows, multi-select
   // Hand-picked members from the roster table. When any are checked they become
   // the target — an explicit set — and the panel's counts follow the selection
   // instead of the predicate. memberId -> member object.

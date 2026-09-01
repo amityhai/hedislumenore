@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import './ProviderDirectory.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
+import PageAnalysis from '../ui/PageAnalysis';
 import useAsync from '../../hooks/useAsync';
 import ProviderAnalysis from './ProviderAnalysis';
 import {
@@ -8,7 +9,8 @@ import {
   fetchCRSPLevelData,
 } from '../../services/workflowService';
 import {
-  num, acronym, SAMPLE_MEASURES, sampleProviderNames, providerProfile, providerSummary, withCustomGoals,
+  num, acronym, SAMPLE_MEASURES, sampleProviderNames, providerProfile, providerSummary,
+  providerCriticalStratification, withCustomGoals,
 } from './v2utils';
 
 const PAGE_SIZE = 12;
@@ -63,7 +65,12 @@ const ProviderDirectory = ({ token, selectedMonth, onSidebar }) => {
       .filter((n) => n && n !== 'Overall')
       .map((name) => {
         const profile = providerProfile(name, false, grid);
-        return { name, profile, summary: providerSummary(profile) };
+        return {
+          name,
+          profile,
+          summary: providerSummary(profile),
+          criticalStrat: providerCriticalStratification(name, profile),
+        };
       })
       .sort(byNeed);
     return { grid, rows, sample: gridSample || rosterSample };
@@ -93,7 +100,11 @@ const ProviderDirectory = ({ token, selectedMonth, onSidebar }) => {
       .filter((m) => num(m.goal_50th) > 0)
       .sort((a, b) => (num(a.rate) / num(a.goal_50th)) - (num(b.rate) / num(b.goal_50th)))[0];
     const entry = (data?.grid || []).find((m) => m.measure_id === worst?.measure_id) || null;
-    setOpen({ provider: { crsp: row.name, rate: num(worst?.rate), goal: num(worst?.goal_50th) }, measure: entry });
+    setOpen({
+      provider: { crsp: row.name, rate: num(worst?.rate), goal: num(worst?.goal_50th) },
+      measure: entry,
+      criticalStrat: row.criticalStrat,
+    });
   }, [data]);
 
   if (open) {
@@ -117,7 +128,8 @@ const ProviderDirectory = ({ token, selectedMonth, onSidebar }) => {
           </nav>
         </div>
         <ProviderAnalysis token={token} selectedMonth={selectedMonth}
-          measure={open.measure} provider={open.provider} origin="directory" />
+          measure={open.measure} provider={open.provider} origin="directory"
+          criticalStratification={open.criticalStrat} />
       </div>
     );
   }
@@ -130,12 +142,24 @@ const ProviderDirectory = ({ token, selectedMonth, onSidebar }) => {
           <h1 className="pdir-title">Provider Directory</h1>
           <p className="pdir-sub">Every CRSP in the network, worst-first. Open one for its full quality profile.</p>
         </div>
-        <label className="pdir-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input type="text" placeholder="Search providers" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
+        <div className="pdir-head-actions">
+          <label className="pdir-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" placeholder="Search providers" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+          <PageAnalysis
+            context="PROVIDER DIRECTORY"
+            title="Network provider analysis"
+            summary={`${rows.length} providers are ranked worst-first so the largest portfolio and population risks are visible first.`}
+            signals={rows[0] ? [
+              { label: 'Highest need', value: rows[0].name, detail: `${rows[0].summary.below} measures below goal.`, tone: 'critical' },
+              rows[0].criticalStrat && { label: 'Critical stratification', value: `${rows[0].criticalStrat.dimLabel} · ${rows[0].criticalStrat.group}`, detail: `Signal repeats across ${rows[0].criticalStrat.affectedMeasures} below-goal measures.` },
+              { label: 'Action path', value: 'Open a provider profile', detail: 'Review the stratification detail and assign an intervention from the provider page.' },
+            ].filter(Boolean) : []}
+          />
+        </div>
       </header>
 
       <div className="pdir-card-wrap">
@@ -208,6 +232,13 @@ const ProviderCard = ({ row, index, onOpen }) => {
         <span className="pdir-key"><i className="pdir-dot pdir-dot-at" /><b className="num">{summary.at}</b> at</span>
         <span className="pdir-key"><i className="pdir-dot pdir-dot-above" /><b className="num">{summary.above}</b> above</span>
       </span>
+      {row.criticalStrat && (
+        <span className={`pdir-critical is-${row.criticalStrat.severity}`}>
+          <span className="pdir-critical-label">{row.criticalStrat.severity === 'critical' ? 'Critical stratification signal' : 'Stratification watch'}</span>
+          <strong>{row.criticalStrat.dimLabel} · {row.criticalStrat.group}</strong>
+          <small><b className="num">{row.criticalStrat.affectedMeasures}</b> below-goal measures affected</small>
+        </span>
+      )}
     </button>
   );
 };

@@ -274,3 +274,4 @@
   .cac-table { min-width: 640px; }
   .cac-modal-meta { grid-template-columns: 1fr; }
 }
+.cac-head { display:flex;align-items:flex-start;justify-content:space-between;gap:20px; }

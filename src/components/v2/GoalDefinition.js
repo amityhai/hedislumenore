@@ -3,6 +3,7 @@ import './GoalDefinition.css';
 import MonthFilter from '../MonthFilter';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import { useToast } from '../ui/Toast';
+import PageAnalysis from '../ui/PageAnalysis';
 import useAsync from '../../hooks/useAsync';
 import { fetchAllMeasuresGrid } from '../../services/workflowService';
 import {
@@ -85,6 +86,7 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
     const c = goals[m.measure_id];
     return typeof c === 'number' ? c : num(m.goal_50th);
   };
+  const belowGoal = rows.filter((m) => statusFor(num(m.rate), effGoal(m)) === 'Below Goal');
 
   return (
     <div className="gdf">
@@ -97,7 +99,19 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
             the working target across the app — status bands, colours and gaps all follow it.
           </p>
         </div>
-        <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+        <div className="gdf-head-actions">
+          <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+          <PageAnalysis
+            context="GOAL DEFINITION"
+            title="Goal-setting impact"
+            summary={`${customCount} custom goals are active. ${belowGoal.length} of ${rows.length} visible measures remain below their working target.`}
+            signals={[
+              belowGoal[0] && { label: 'Widest current target gap', value: belowGoal[0].display_name, detail: `${Math.round((num(belowGoal[0].rate) - effGoal(belowGoal[0])) * 10) / 10} points versus the working goal.`, tone: 'critical' },
+              { label: 'Custom targets', value: `${customCount} active`, detail: customCount ? 'Custom goals replace benchmark targets across the app.' : 'All measures currently use benchmark goals.' },
+              { label: 'Draft changes', value: `${Object.keys(drafts).length} in progress`, detail: 'Draft values do not affect standing until applied.' },
+            ].filter(Boolean)}
+          />
+        </div>
       </header>
 
       <div className="gdf-card">

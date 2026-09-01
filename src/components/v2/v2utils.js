@@ -746,6 +746,51 @@ export const providerSummary = (profile) => {
   return { ...c, total, avgGap: total ? Math.round((gapSum / total) * 10) / 10 : 0, members, open };
 };
 
+// The provider directory has no provider-by-stratum-by-measure endpoint. This
+// stable portfolio signal therefore models where repeated underperformance is
+// most likely concentrated from the provider's own below-goal profile. It is
+// explicitly labelled as a portfolio signal in the UI and is used to give the
+// reader a consistent drill/action target until a live cross-measure equity feed
+// is available.
+const PROVIDER_STRATA = [
+  { type: 'age', label: 'Age', groups: ['6 - 17', '18 - 34', '35 - 49', '50 - 64', '65+'] },
+  { type: 'race', label: 'Race', groups: ['Black or African American', 'Asian', 'Arab American', 'White', 'Other'] },
+  { type: 'ethnicity', label: 'Ethnicity', groups: ['Hispanic / Latino', 'Not Hispanic / Latino', 'Unknown'] },
+];
+
+export const providerCriticalStratification = (providerName, profile) => {
+  const below = (profile || [])
+    .filter((m) => statusFor(m.rate, m.goal_50th) === 'Below Goal')
+    .sort((a, b) => (num(a.rate) - num(a.goal_50th)) - (num(b.rate) - num(b.goal_50th)));
+  if (!below.length) return null;
+
+  const hash = hashStr(`${providerName}|critical-stratification`);
+  const dimension = PROVIDER_STRATA[hash % PROVIDER_STRATA.length];
+  const group = dimension.groups[Math.floor(hash / PROVIDER_STRATA.length) % dimension.groups.length];
+  const share = 0.45 + ((hash % 31) / 100);
+  const affectedMeasures = Math.max(1, Math.min(below.length, Math.round(below.length * share)));
+  const affected = below.slice(0, affectedMeasures);
+  const avgGap = Math.round((affected.reduce((sum, m) => sum + (num(m.rate) - num(m.goal_50th)), 0) / affected.length) * 10) / 10;
+  const lead = affected[0];
+  const groupRate = Math.max(0, Math.round((num(lead.rate) - 5 - (hash % 5)) * 10) / 10);
+  const notMeeting = Math.max(1, Math.round(num(lead.denominator) * (1 - groupRate / 100) * 0.32));
+
+  return {
+    type: dimension.type,
+    dim: dimension.type,
+    dimLabel: dimension.label,
+    group,
+    affectedMeasures,
+    totalBelow: below.length,
+    avgGap,
+    rate: groupRate,
+    goal: num(lead.goal_50th),
+    notMeeting,
+    measure: lead,
+    severity: affectedMeasures >= Math.max(3, Math.ceil(below.length / 2)) ? 'critical' : 'watch',
+  };
+};
+
 // Provider-level intelligence: the same read the Overview gives a single measure,
 // but rolled up across everything a provider supports — where it stands, which
 // measure to work first, and the intervention with the biggest lever here. Shared

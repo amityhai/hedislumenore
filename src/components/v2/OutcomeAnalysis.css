@@ -244,3 +244,4 @@
   .oa-seg { width: 100%; }
   .oa-seg-btn { flex: 1; }
 }
+.oa-head-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;padding-right:120px; }

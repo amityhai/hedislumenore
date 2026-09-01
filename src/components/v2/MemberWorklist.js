@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import './MemberWorklist.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import { useToast } from '../ui/Toast';
+import PageAnalysis from '../ui/PageAnalysis';
 import useAsync from '../../hooks/useAsync';
 import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import {
@@ -255,7 +256,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                 {provider && !provider.overall && onAnalyzeProvider && (
                   <button type="button" className="btn btn-tonal btn-sm"
                     onClick={() => onAnalyzeProvider(measure, provider)}>
-                    Analyze provider
+                    Open provider profile
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
                     </svg>
@@ -273,6 +274,15 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
             <div><span className="mwl-mk">Non-comp.</span><span className="mwl-mv num is-neg">{loading ? '—' : nonCompliant}</span></div>
             <div><span className="mwl-mk">Compliant</span><span className="mwl-mv num is-pos">{loading ? '—' : compliant}</span></div>
           </div>
+          <PageAnalysis
+            context="MEMBER WORKLIST"
+            title={`${title} · ${measure?.display_name || 'Selected measure'}`}
+            summary={insight?.read.synthesis || `${nonCompliant} of ${members.length} members in this view have an open care gap.`}
+            signals={[
+              ...(insight?.read.signals || []).map((signal) => ({ label: signal.k, value: signal.v })),
+              { label: 'Actionable members', value: `${nonCompliant} open gaps`, detail: `${selectedIds.size} members are currently selected for action.`, tone: nonCompliant ? 'critical' : 'positive' },
+            ]}
+          />
         </div>
 
         {/* The read — the active equity group's when one is filtering, otherwise

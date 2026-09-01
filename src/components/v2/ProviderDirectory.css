@@ -16,6 +16,7 @@
 }
 .pdir-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 4px; }
 .pdir-sub { margin-top: 8px; font-size: 14px; color: var(--c-text-3); }
+.pdir-head-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;padding-right:120px; }
 
 .pdir-search {
   display: flex; align-items: center; gap: 8px; height: var(--h-control);
@@ -90,6 +91,13 @@
 .pdir-dot-below { background: var(--c-error); }
 .pdir-dot-at    { background: var(--c-info); }
 .pdir-dot-above { background: var(--c-success); }
+.pdir-critical { display:grid;grid-template-columns:auto 1fr;align-items:center;gap:3px 8px;margin-top:-2px;padding:9px 10px;border:1px solid var(--c-error-border);border-radius:var(--r-md);background:var(--c-error-bg); }
+.pdir-critical-label { grid-column:1/-1;color:var(--c-error-text);font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase; }
+.pdir-critical strong { min-width:0;overflow:hidden;color:var(--c-text-2);font-size:13px;text-overflow:ellipsis;white-space:nowrap; }
+.pdir-critical small { color:var(--c-text-3);font-size:11px;text-align:right;white-space:nowrap; }
+.pdir-critical small b { color:var(--c-error-text); }
+.pdir-critical.is-watch { border-color:#f0d5aa;background:#fff8ed; }
+.pdir-critical.is-watch .pdir-critical-label,.pdir-critical.is-watch small b { color:#9a5b13; }
 
 
 /* Pager */

@@ -144,14 +144,6 @@ const MeasureAiInsightDrawer = ({ measure, rate, goal, gap, open, need, provider
             </div>
           </section>
 
-          <section className="mov-ai-section">
-            <span className="mov-ai-label">Recommended focus</span>
-            <ol className="mov-ai-actions">
-              <li><span>1</span><p><strong>Start with the largest provider opportunity.</strong>{largestOpportunity ? ` Review ${largestOpportunity.crsp} and prioritize its open members.` : ' Review the lowest-performing provider once data is available.'}</p></li>
-              <li><span>2</span><p><strong>Target the lowest-performing demographic group.</strong>{lowestEquity ? ` Focus outreach on ${lowestEquity.group} while monitoring for disparity.` : ' Revisit when stratification data is reported.'}</p></li>
-              <li><span>3</span><p><strong>Bundle outreach around care gaps.</strong> Select members in the workspace and assign the appropriate intervention without leaving this page.</p></li>
-            </ol>
-          </section>
         </div>
 
         <footer className="mov-ai-drawer-foot">
@@ -185,7 +177,7 @@ const TrendChart = ({ rows, goal }) => {
 };
 
 const ProviderMemberWorkspace = ({
-  token, selectedMonth, measure, provider, initialStrat, openCount, equity, onClose, onAssign,
+  token, selectedMonth, measure, provider, providers, initialStrat, openCount, equity, onProviderChange, onClose, onAssign,
 }) => {
   const [dimension, setDimension] = useState(initialStrat?.type || 'age');
   const [group, setGroup] = useState(initialStrat?.group || 'all');
@@ -199,7 +191,7 @@ const ProviderMemberWorkspace = ({
   const activeGroup = group === 'all' ? null : dimensionGroups.find((item) => item.group === group) || null;
   const measureId = measure?.measure_id;
   const providerCrsp = provider?.crsp;
-  const workspaceTitle = providerCrsp || measure?.display_name || 'All providers';
+  const workspaceTitle = providerCrsp || 'Overall';
   const workspaceSubtitle = providerCrsp ? 'open members' : `open members across all providers`;
 
   const { data, loading, error, refetch } = useAsync(async () => {
@@ -214,7 +206,7 @@ const ProviderMemberWorkspace = ({
       } else if (providerCrsp) {
         rows = await fetchCRSPMemberDetails({ measureId, crsp: providerCrsp }, token);
       } else {
-        throw new Error('Choose a demographic group to load members across all providers.');
+        rows = await fetchMemberDetails({ measureId }, token);
       }
       if (!rows?.length) throw new Error('empty');
       return { rows: rows.map((member) => normalizeMember(member, providerCrsp)), sample: false };
@@ -272,8 +264,16 @@ const ProviderMemberWorkspace = ({
     >
       <div className="mov-member-handle" aria-hidden="true" />
       <header className="mov-member-head">
-        <div>
-          <h3>{workspaceTitle}</h3>
+        <div className="mov-member-context">
+          <label className="mov-member-provider-switch">
+            <span className="sr-only">Change provider</span>
+            <select value={providerCrsp || ''} onChange={(event) => onProviderChange(event.target.value)}>
+              <option value="">Overall</option>
+              {(providers || []).filter((item) => item?.crsp && item.crsp !== 'Overall').map((item, index) => (
+                <option key={`${item.crsp}-${index}`} value={item.crsp}>{item.crsp}</option>
+              ))}
+            </select>
+          </label>
           <span><strong className="num">{fmt(openCount)}</strong> {workspaceSubtitle}</span>
         </div>
         <div className="mov-member-head-actions">
@@ -517,10 +517,19 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
     const below = providers.filter((p) => toneOf(p.rate, goal) === 'below').length;
     const at = providers.filter((p) => toneOf(p.rate, goal) === 'at').length;
     const above = providers.length - below - at;
-    const totalEligible = providers.reduce((s, p) => s + num(p.denominator), 0);
-    const totalOpen = providers.reduce((s, p) => s + Math.max(0, num(p.denominator) - num(p.numerator)), 0);
-    return { below, at, above, totalEligible, totalOpen };
+    return { below, at, above, meetingGoal: at + above };
   }, [providers, goal]);
+
+  const providerInsights = useMemo(() => {
+    const ranked = [...providers].sort((a, b) => num(a.rate) - num(b.rate));
+    const priority = ranked[0];
+    const success = ranked[ranked.length - 1];
+    return {
+      priority,
+      priorityOpen: priority ? Math.max(0, num(priority.denominator) - num(priority.numerator)) : 0,
+      success,
+    };
+  }, [providers]);
 
   const equityRows = useMemo(() => ['age', 'race', 'ethnicity'].flatMap((type) => (data?.equity?.[type] || []).map((x) => ({ ...x, type }))), [data?.equity]);
   const lowestEquity = [...equityRows].sort((a, b) => num(a.rate) - num(b.rate))[0];
@@ -536,17 +545,19 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
     <div className={`mov ${memberWorkspace ? 'has-member-workspace' : ''}`}>
       <div className="mov-topnav">
         {breadcrumb}
-        <button type="button" className="mov-ai-trigger" onClick={() => setAiOpen(true)} aria-haspopup="dialog">
-          <AiIcon id="mov-ai-trigger-gradient" />
-          <span>Analyze</span>
-        </button>
+        {createPortal(
+          <button type="button" className="mov-ai-trigger" onClick={() => setAiOpen(true)} aria-haspopup="dialog">
+            <AiIcon id="mov-ai-trigger-gradient" />
+            <span>Analyze</span>
+          </button>,
+          document.body
+        )}
       </div>
 
       <section className="mov-hero">
         <div className="mov-hero-copy">
           <div className="mov-identity"><span className={`mov-code is-${tone} mono`}>{shortId(measure?.measure_id)}</span><span className={`mov-status is-${tone}`}><i />{measure?.kpi_status || statusFor(rate, goal)}</span></div>
           <h1>{measure?.display_name}</h1>
-          <p>{measure?.measure_definition || 'Performance and provider-level opportunity for this HEDIS measure.'}</p>
         </div>
         <div className="mov-score">
           <div><small>ACHIEVED RATE</small><strong className="num">{rate}%</strong></div>
@@ -557,8 +568,8 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
       </section>
 
       <div className="mov-stats">
-        <article><span className="mov-stat-icon is-purple"><Icon name="users" /></span><div><small>Eligible members</small><strong className="num">{fmt(eligible)}</strong><em>Current denominator</em></div></article>
-        <article><span className="mov-stat-icon is-green"><Icon name="target" /></span><div><small>Compliant members</small><strong className="num">{fmt(compliant)}</strong><em>{eligible ? Math.round((compliant/eligible)*100) : 0}% of eligible</em></div></article>
+        <article><span className="mov-stat-icon is-purple"><Icon name="users" /></span><div><small>Denominator</small><strong className="num">{fmt(eligible)}</strong><em>Eligible members</em></div></article>
+        <article><span className="mov-stat-icon is-green"><Icon name="target" /></span><div><small>Numerator</small><strong className="num">{fmt(compliant)}</strong><em>Members meeting measure</em></div></article>
         <article><span className="mov-stat-icon is-red"><Icon name="gaps" /></span><div><small>Open member gaps</small><strong className="num">{fmt(open)}</strong><em>Available to work</em></div></article>
         <article><span className="mov-stat-icon is-blue"><Icon name="trend" /></span><div><small>Closures to goal</small><strong className="num">{fmt(need)}</strong><em>To reach {goal}%</em></div></article>
       </div>
@@ -571,13 +582,30 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
         <aside className="mov-card mov-opportunity">
           <div className="mov-card-head"><div><span className="mov-kicker">MEASURE OPPORTUNITY</span><h2>Where to focus</h2></div></div>
           {loading ? <div className="mov-loading"><Skeleton height={190} radius={12} /></div> : <div className="mov-opportunity-body">
-            <div className="mov-callout"><strong>{providerStats.below} providers</strong><span>are below the {goal}% goal</span></div>
-            <dl>
-              <div><dt>Provider population</dt><dd className="num">{fmt(providerStats.totalEligible)}</dd></div>
-              <div><dt>Provider-level open gaps</dt><dd className="num">{fmt(providerStats.totalOpen)}</dd></div>
-              <div><dt>Lowest equity group</dt><dd>{lowestEquity ? `${lowestEquity.group} · ${num(lowestEquity.rate)}%` : 'Not available'}</dd></div>
-              <div><dt>Data confidence</dt><dd>Claims + eligibility</dd></div>
-            </dl>
+            <div className="mov-callout">
+              <strong>{providerStats.below} providers need attention</strong>
+              <span>Close {fmt(need)} of {fmt(open)} open member gaps to reach the {goal}% goal.</span>
+            </div>
+            <div className="mov-focus-list">
+              <article>
+                <span className="mov-focus-icon is-provider"><Icon name="users" /></span>
+                <div><small>Priority provider</small>{providerInsights.priority
+                  ? <p><strong>{providerInsights.priority.crsp}</strong> has the lowest achieved rate at <strong className="num">{num(providerInsights.priority.rate)}%</strong>, with <strong className="num">{fmt(providerInsights.priorityOpen)}</strong> open member gaps.</p>
+                  : <p>Provider-level performance is not available for this period.</p>}</div>
+              </article>
+              <article>
+                <span className="mov-focus-icon is-equity"><Icon name="target" /></span>
+                <div><small>Equity opportunity</small>{lowestEquity
+                  ? <p><strong>{lowestEquity.group}</strong> has the lowest achieved rate at <strong className="num">{num(lowestEquity.rate)}%</strong>{num(lowestEquity.notMeeting) > 0 ? <>, with <strong className="num">{fmt(lowestEquity.notMeeting)}</strong> members not meeting.</> : '.'}</p>
+                  : <p>No demographic opportunity is reported for this period.</p>}</div>
+              </article>
+              <article>
+                <span className="mov-focus-icon is-success"><Icon name="trend" /></span>
+                <div><small>Provider success</small>{providerInsights.success
+                  ? <p><strong>{providerInsights.success.crsp}</strong> leads at <strong className="num">{num(providerInsights.success.rate)}%</strong>. <strong className="num">{providerStats.meetingGoal}</strong> providers are currently at or above goal.</p>
+                  : <p>No provider success signal is available for this period.</p>}</div>
+              </article>
+            </div>
             <button type="button" className="btn btn-assign" onClick={() => setAssignScope({ level: 'measure' })}>Assign measure intervention</button>
           </div>}
         </aside>
@@ -638,11 +666,16 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
           selectedMonth={selectedMonth}
           measure={measure}
           provider={memberWorkspace.provider}
+          providers={providers}
           initialStrat={memberWorkspace.strat}
           openCount={memberWorkspace.provider
             ? Math.max(0, num(memberWorkspace.provider.denominator) - num(memberWorkspace.provider.numerator))
-            : num(memberWorkspace.strat?.notMeeting)}
+            : num(memberWorkspace.strat?.notMeeting ?? open)}
           equity={data?.equity || { age: [], race: [], ethnicity: [] }}
+          onProviderChange={(crsp) => setMemberWorkspace((current) => ({
+            ...current,
+            provider: crsp ? providers.find((item) => item.crsp === crsp) || null : null,
+          }))}
           onClose={() => setMemberWorkspace(null)}
           onAssign={(members) => setAssignScope(memberWorkspace.provider
             ? { level: 'provider', provider: memberWorkspace.provider, members }

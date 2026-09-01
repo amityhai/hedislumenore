@@ -4,6 +4,7 @@ import './Member360.css';
 import { num, shortId } from './v2utils';
 import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import { useToast } from '../ui/Toast';
+import PageAnalysis from '../ui/PageAnalysis';
 
 const Icon = ({ type }) => {
   const p = type === 'user' ? <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></> : type === 'heart' ? <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5a5.5 5.5 0 0 0 1.1-8.9Z"/> : type === 'calendar' ? <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></> : <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>;
@@ -36,7 +37,19 @@ const Member360 = ({ member, measure, provider, token, selectedMonth }) => {
           <h1>{name}</h1>
           <div className="m360-tags"><span>Member ID · {member?.memberId || '—'}</span><span>Age · {member?.age || '—'}</span><span>Race · {member?.race || 'Not available'}</span><span>Living · Community</span></div>
         </div>
-        <div className="m360-provider"><small>Assigned CRSP</small><strong>{provider?.crsp || member?.crsp || 'Not assigned'}</strong><span className="m360-live"><i /> Active</span></div>
+        <div className="m360-hero-actions">
+          <div className="m360-provider"><small>Assigned CRSP</small><strong>{provider?.crsp || member?.crsp || 'Not assigned'}</strong><span className="m360-live"><i /> Active</span></div>
+          <PageAnalysis
+            context="MEMBER 360"
+            title={name}
+            summary={open ? `${name} has an open ${shortId(measure?.measure_id)} care gap and is ready for an intervention.` : `${name} currently meets the selected measure.`}
+            signals={[
+              { label: 'Care-gap status', value: open ? 'Open · action needed' : 'Closed', detail: measure?.display_name, tone: open ? 'critical' : 'positive' },
+              { label: 'Assigned provider', value: provider?.crsp || member?.crsp || 'Not assigned', detail: 'Current attribution for this member.' },
+              { label: 'Goal impact', value: open ? '1 possible closure' : 'Already counted', detail: `Measure goal is ${num(measure?.goal_50th)}%.` },
+            ]}
+          />
+        </div>
       </section>
 
       <div className="m360-stats">

@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import './ProviderAnalysis.css';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import { useToast } from '../ui/Toast';
+import PageAnalysis from '../ui/PageAnalysis';
 import useAsync from '../../hooks/useAsync';
 import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import { fetchAllMeasuresGrid } from '../../services/workflowService';
 import {
   num, shortId, statusFor, STATUS_TONE,
   SAMPLE_MEASURES, providerProfile,
-  providerSummary, providerIntel, withCustomGoals,
+  providerSummary, providerIntel, providerCriticalStratification, withCustomGoals,
 } from './v2utils';
 import { ProviderIntel } from './OverviewExplore';
 import AssignmentStatus from './AssignmentStatus';
@@ -31,7 +32,7 @@ const FOCUS_N = 8;
 // that measure. Opening a provider cold from the directory, no measure was
 // chosen — the entry measure is the provider's widest gap, picked for them — and
 // saying "opened from" there would invent a step the reader never took.
-const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorklist, origin = 'measure' }) => {
+const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorklist, origin = 'measure', criticalStratification }) => {
   const providerName = provider?.overall ? 'All providers (Overall)' : (provider?.crsp || 'Provider');
   const [showAll, setShowAll] = useState(false); // fold the measure long-tail by default
   const [assign, setAssign] = useState(null); // { intervention, measure } — recommended-action assign
@@ -57,6 +58,10 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
   // Explorer's active-provider card computes them identically (see v2utils).
   const intel = useMemo(() => providerIntel(profile), [profile]);
   const summary = useMemo(() => providerSummary(profile), [profile]);
+  const criticalStrat = useMemo(
+    () => criticalStratification || providerCriticalStratification(providerName, profile),
+    [criticalStratification, providerName, profile]
+  );
 
   if (gridAsync.error) {
     return <ErrorState message="Couldn't load the provider analysis." onRetry={gridAsync.refetch} />;
@@ -77,13 +82,56 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
             )
           )}
         </div>
-        <div className="pva-kpis">
-          <div className="pva-kpi"><span className="pva-kpi-k">Measures</span><span className="pva-kpi-v num">{gridAsync.loading ? '—' : summary.total}</span></div>
-          <div className="pva-kpi"><span className="pva-kpi-k">At / above goal</span><span className="pva-kpi-v num is-pos">{gridAsync.loading ? '—' : summary.at + summary.above}</span></div>
-          <div className="pva-kpi"><span className="pva-kpi-k">Below goal</span><span className="pva-kpi-v num is-neg">{gridAsync.loading ? '—' : summary.below}</span></div>
-          <div className="pva-kpi"><span className="pva-kpi-k">Avg gap</span><span className={`pva-kpi-v num ${summary.avgGap < 0 ? 'is-neg' : 'is-pos'}`}>{gridAsync.loading ? '—' : `${summary.avgGap >= 0 ? '+' : ''}${summary.avgGap} pts`}</span></div>
+        <div className="pva-head-right">
+          <div className="pva-kpis">
+            <div className="pva-kpi"><span className="pva-kpi-k">Measures</span><span className="pva-kpi-v num">{gridAsync.loading ? '—' : summary.total}</span></div>
+            <div className="pva-kpi"><span className="pva-kpi-k">At / above goal</span><span className="pva-kpi-v num is-pos">{gridAsync.loading ? '—' : summary.at + summary.above}</span></div>
+            <div className="pva-kpi"><span className="pva-kpi-k">Below goal</span><span className="pva-kpi-v num is-neg">{gridAsync.loading ? '—' : summary.below}</span></div>
+            <div className="pva-kpi"><span className="pva-kpi-k">Avg gap</span><span className={`pva-kpi-v num ${summary.avgGap < 0 ? 'is-neg' : 'is-pos'}`}>{gridAsync.loading ? '—' : `${summary.avgGap >= 0 ? '+' : ''}${summary.avgGap} pts`}</span></div>
+          </div>
+          <PageAnalysis
+            context="PROVIDER ANALYSIS"
+            title={providerName}
+            summary={`${summary.below} of ${summary.total} measures are below goal${criticalStrat ? `, with the strongest repeated population risk in ${criticalStrat.dimLabel.toLowerCase()} group ${criticalStrat.group}` : ''}.`}
+            signals={[
+              { label: 'Portfolio standing', value: `${summary.below} below goal`, detail: `Average position is ${Math.abs(summary.avgGap)} points ${summary.avgGap < 0 ? 'below' : 'above'} goal.` },
+              criticalStrat && { label: 'Critical stratification', value: `${criticalStrat.dimLabel} · ${criticalStrat.group}`, detail: `${criticalStrat.affectedMeasures} below-goal measures show the repeated risk signal.`, tone: 'critical' },
+              intel?.top && { label: 'First measure to act on', value: intel.top.measure.display_name, detail: `${Math.round(intel.top.gap * 10) / 10} points below goal.` },
+            ].filter(Boolean)}
+          />
         </div>
       </header>
+
+      {criticalStrat && (
+        <section className="pva-card pva-critical">
+          <div className="pva-card-head">
+            <div><div className="eyebrow">CRITICAL STRATIFICATION</div><h2 className="pva-card-title">Population risk across the provider portfolio</h2></div>
+            <span className="pva-critical-badge">{criticalStrat.dimLabel} · {criticalStrat.group}</span>
+          </div>
+          <div className="pva-critical-body">
+            <div className="pva-critical-copy">
+              <strong>{criticalStrat.group} is the most consistent underperforming population.</strong>
+              <p>The signal appears across <b className="num">{criticalStrat.affectedMeasures}</b> of the provider’s <b className="num">{criticalStrat.totalBelow}</b> below-goal measures. Start with <b>{criticalStrat.measure.display_name}</b>, where this group is estimated at <b className="num">{criticalStrat.rate}%</b> against a <b className="num">{criticalStrat.goal}%</b> goal.</p>
+              <small>Portfolio signal modeled from provider performance; validate against stratified member data before clinical action.</small>
+            </div>
+            <div className="pva-critical-metrics">
+              <div><span>Measures affected</span><strong className="num">{criticalStrat.affectedMeasures}</strong></div>
+              <div><span>Average deficit</span><strong className="num is-neg">{Math.abs(criticalStrat.avgGap)} pts below</strong></div>
+              <div><span>Members not meeting</span><strong className="num is-neg">{criticalStrat.notMeeting}</strong></div>
+            </div>
+            <div className="pva-critical-actions">
+              {onOpenWorklist && (
+                <button type="button" className="btn btn-secondary" onClick={() => onOpenWorklist(
+                  criticalStrat.measure,
+                  provider,
+                  { type: criticalStrat.type, group: criticalStrat.group, rate: criticalStrat.rate, goal: criticalStrat.goal, notMeeting: criticalStrat.notMeeting }
+                )}>Open stratified members</button>
+              )}
+              <button type="button" className="btn btn-primary" onClick={() => setAssign({ measure: criticalStrat.measure, strat: criticalStrat })}>Assign intervention</button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Narratives and the measure grid, side by side: the rolled-up read on the
           left, the per-measure standing it's reading on the right. */}
@@ -195,13 +243,21 @@ const ProviderAnalysis = ({ token, selectedMonth, measure, provider, onOpenWorkl
             numerator: num(m?.numerator), denominator: num(m?.denominator),
           };
           const isOverall = !!provider?.overall;
+          const equity = { age: [], race: [], ethnicity: [] };
+          if (assign.strat) equity[assign.strat.type] = [{
+            group: assign.strat.group,
+            rate: assign.strat.rate,
+            goal: assign.strat.goal,
+            notMeeting: assign.strat.notMeeting,
+            disparity: true,
+          }];
           return (
             <AssignPanel measure={m}
               providers={isOverall ? [] : [row]}
-              equity={{ age: [], race: [], ethnicity: [] }}
+              equity={equity}
               scope={isOverall
-                ? { level: 'measure', intervention: assign.intervention }
-                : { level: 'provider', provider: row, intervention: assign.intervention }}
+                ? { level: 'measure', intervention: assign.intervention, strata: assign.strat ? [assign.strat] : [] }
+                : { level: 'provider', provider: row, intervention: assign.intervention, strata: assign.strat ? [assign.strat] : [] }}
               onClose={() => setAssign(null)}
               onAssign={(payload) => {
                 setAssign(null);

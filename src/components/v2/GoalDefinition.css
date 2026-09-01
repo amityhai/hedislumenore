@@ -95,3 +95,4 @@
 @media (max-width: 560px) {
   .gdf-name { display: none; }
 }
+.gdf-head-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;padding-right:120px; }

@@ -4,6 +4,7 @@ import './OverviewDashboard.css';
 import MonthFilter from '../MonthFilter';
 import { Skeleton, EmptyState } from '../ui/Feedback';
 import { useToast } from '../ui/Toast';
+import PageAnalysis from '../ui/PageAnalysis';
 import useAsync from '../../hooks/useAsync';
 import AssignPanel, { UNASSIGNED } from './AssignPanel';
 import {
@@ -260,7 +261,19 @@ const OverviewDashboard = ({ token, selectedMonth, onMonthChange, availableMonth
     <div className="od">
       <header className="od-head">
         <div><span className="od-kicker">QUALITY MANAGEMENT</span><h1>HEDIS performance overview</h1><p>Monitor goals, find member gaps, and move directly into action.</p></div>
-        <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+        <div className="od-head-tools">
+          <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
+          <PageAnalysis
+            context="HEDIS OVERVIEW"
+            title="Portfolio performance"
+            summary={`${counts.below} of ${grid.length} measures are below goal, requiring approximately ${fmt(totalNeed)} member closures to reach their current targets.`}
+            signals={[
+              filtered[0] && { label: 'Largest measure opportunity', value: filtered[0].display_name, detail: `${Math.abs(gapOf(filtered[0]))} points below goal with ${fmt(openGaps(filtered[0]))} open member gaps.`, tone: 'critical' },
+              { label: 'Portfolio population', value: `${fmt(eligible)} eligible members`, detail: `${counts.at + counts.above} measures are currently at or above goal.` },
+              insightItems[0] && { label: `${insightTab} focus`, value: insightItems[0].title, detail: insightItems[0].meta },
+            ].filter(Boolean)}
+          />
+        </div>
       </header>
 
       {data?.sample && !loading && <div className="od-data-note" role="status"><span>Live workflow unavailable — showing representative data.</span><button onClick={refetch}>Retry</button></div>}

@@ -3,6 +3,7 @@ import './CareActionCenter.css';
 import CustomSelect from './CustomSelect';
 import { Skeleton, EmptyState } from './ui/Feedback';
 import { useToast } from './ui/Toast';
+import PageAnalysis from './ui/PageAnalysis';
 import {
   fetchCACMeasures,
   fetchCACCRSPs,
@@ -323,9 +324,21 @@ const CareActionCenter = ({ token }) => {
   return (
     <div className="cac">
       <header className="cac-head">
-        <div className="eyebrow">CARE MANAGEMENT</div>
-        <h1 className="cac-title">Care Action Center</h1>
-        <p className="cac-sub">Prioritize open care gaps and assign them to your team.</p>
+        <div>
+          <div className="eyebrow">CARE MANAGEMENT</div>
+          <h1 className="cac-title">Care Action Center</h1>
+          <p className="cac-sub">Prioritize open care gaps and assign them to your team.</p>
+        </div>
+        <PageAnalysis
+          context="CARE ACTION CENTER"
+          title="Care-gap operations"
+          summary={`${kpiData.unassigned.toLocaleString()} of ${kpiData.nonCompliant.toLocaleString()} non-compliant members are unassigned; ${kpiData.actionable.toLocaleString()} are actionable now.`}
+          signals={[
+            { label: 'Immediate staffing need', value: `${kpiData.unassigned.toLocaleString()} unassigned`, detail: 'Use the Unassigned KPI to narrow the worklist.', tone: 'critical' },
+            { label: 'Actionable population', value: `${kpiData.actionable.toLocaleString()} members`, detail: 'Members ready for outreach or intervention.' },
+            { label: 'Work completed', value: `${actionTakenCount.toLocaleString()} actions taken`, detail: 'Current completion count for this view.', tone: 'positive' },
+          ]}
+        />
       </header>
 
       {/* KPIs — "Unassigned" doubles as a filter on the list below */}

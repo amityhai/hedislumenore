@@ -14,6 +14,7 @@
   padding: 20px 24px;
 }
 .pva-head-left { min-width: 0; }
+.pva-head-right { display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;justify-content:flex-end; }
 .pva-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 4px; }
 .pva-sub { margin-top: 8px; font-size: 14px; color: var(--c-text-3); }
 .pva-sub strong { color: var(--c-text-2); font-weight: 600; }
@@ -163,9 +164,26 @@
 .pva-actions .pva-assign .asx-assign { width: 100%; min-height: 100%; justify-content: center; }
 .pva-actions .pva-worklist { flex: 1; margin-top: 0; align-self: auto; }
 
+.pva-critical { border-color:var(--c-error-border);background:linear-gradient(135deg,#fff,#fffafa); }
+.pva-critical .pva-card-head { align-items:center;padding-bottom:12px;border-bottom:1px solid var(--c-error-border); }
+.pva-critical .pva-card-title { margin-top:3px;font-size:17px; }
+.pva-critical-badge { padding:6px 10px;border:1px solid var(--c-error-border);border-radius:var(--r-full);background:var(--c-error-bg);color:var(--c-error-text);font-size:13px;font-weight:700; }
+.pva-critical-body { display:grid;grid-template-columns:minmax(0,1.5fr) auto auto;align-items:center;gap:24px; }
+.pva-critical-copy>strong { color:var(--c-text);font-size:15px; }
+.pva-critical-copy p { margin-top:5px;color:var(--c-text-3);font-size:14px;line-height:1.5; }
+.pva-critical-copy p b { color:var(--c-text-2); }
+.pva-critical-copy small { display:block;margin-top:7px;color:var(--c-text-4);font-size:11px; }
+.pva-critical-metrics { display:flex;align-items:stretch; }
+.pva-critical-metrics>div { display:flex;flex-direction:column;gap:4px;padding:3px 17px;border-left:1px solid var(--c-error-border); }
+.pva-critical-metrics span { color:var(--c-text-4);font-size:11px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap; }
+.pva-critical-metrics strong { color:var(--c-text);font-size:18px; }
+.pva-critical-actions { display:flex;flex-direction:column;gap:8px;min-width:190px; }
+
 @media (max-width: 900px) {
   .pva-split { grid-template-columns: 1fr; }
   .pva-main { grid-template-columns: 1fr; }
+  .pva-critical-body { grid-template-columns:1fr; }
+  .pva-critical-actions { flex-direction:row; }
 }
 @media (max-width: 768px) {
   .pva-head { padding: 16px; }
