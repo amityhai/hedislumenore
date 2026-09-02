@@ -21,13 +21,10 @@ const PageAnalysis = ({ title, context, summary, signals = [], className = '' })
 
   return (
     <>
-      {createPortal(
-        <button type="button" className={`pai-trigger ${className}`} onClick={() => setOpen(true)} aria-haspopup="dialog">
-          <Spark />
-          <span>Analyze</span>
-        </button>,
-        document.body
-      )}
+      <button type="button" className={`pai-trigger ${className}`} onClick={() => setOpen(true)} aria-haspopup="dialog">
+        <Spark />
+        <span>Explain this page</span>
+      </button>
       {open && createPortal(
         <div className="pai-scrim" onClick={() => setOpen(false)}>
           <aside className="pai-drawer" role="dialog" aria-modal="true" aria-labelledby="pai-title" onClick={(event) => event.stopPropagation()}>

@@ -1,4 +1,4 @@
-.pai-trigger { position:fixed;top:18px;right:24px;z-index:190;flex:none;height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 15px;border:1px solid transparent;border-radius:11px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(120deg,#7c5cff,#c34fe4 52%,#2ba7df) border-box;color:#4f3fbd;font:700 14px var(--font);box-shadow:0 5px 15px rgba(91,65,190,.12);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease; }
+.pai-trigger { flex:none;height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 15px;border:1px solid transparent;border-radius:11px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(120deg,#7c5cff,#c34fe4 52%,#2ba7df) border-box;color:#4f3fbd;font:700 14px var(--font);box-shadow:0 5px 15px rgba(91,65,190,.12);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease; }
 .pai-trigger:hover { transform:translateY(-1px);box-shadow:0 8px 20px rgba(91,65,190,.15); }
 .pai-trigger:focus-visible { outline:3px solid rgba(124,92,255,.2);outline-offset:2px; }
 .pai-scrim { position:fixed;inset:0;z-index:240;background:rgba(20,18,42,.24);animation:pai-fade .18s ease both; }
@@ -27,5 +27,3 @@
 .pai-signals p,.pai-empty { margin-top:4px;color:#606a82;font-size:13px;line-height:1.45; }
 .pai-foot { flex:none;display:flex;align-items:flex-start;gap:8px;padding:12px 18px;border-top:1px solid #eceaf3;background:#faf9fd;color:#757d91;font-size:11px;line-height:1.4; }
 @media(prefers-reduced-motion:reduce){.pai-scrim,.pai-drawer{animation:none}}
-.sc2-topnav { padding-right:124px; }
-@media(max-width:768px){.pai-trigger{top:12px;right:14px}.sc2-topnav{padding-right:116px}}

@@ -148,4 +148,4 @@
   .od-head .month-filter-container { max-width: 100%; overflow-x: auto; }
   .od-work-tabs { gap: 15px; }
 }
-.od-head-tools { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;padding-right:120px; }
+.od-head-tools { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end; }

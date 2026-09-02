@@ -163,7 +163,7 @@ const ActionView = ({ assignment, onBack, onClose, onSubmitted }) => {
         <div className="pv-drawer-foot-actions">
           <button type="button" className="pv-btn" onClick={onBack}>Cancel</button>
           <button type="button" className="pv-btn pv-btn-primary" disabled={!canSubmit} onClick={handleSubmit}>
-            Submit
+            Save update
           </button>
         </div>
       </div>

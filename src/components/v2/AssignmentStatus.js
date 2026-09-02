@@ -76,7 +76,7 @@ const AssignmentStatus = ({ measureId, onAssign, className = '' }) => {
         </span>
       </div>
       <button type="button" className="btn btn-secondary btn-sm asx-manage" onClick={() => onAssign()}>
-        Reassign / add
+        Reassign or add
       </button>
     </div>
   );

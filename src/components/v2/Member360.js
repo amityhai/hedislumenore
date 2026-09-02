@@ -72,7 +72,7 @@ const Member360 = ({ member, measure, provider, token, selectedMonth }) => {
           <h3>{measure?.display_name || 'Selected measure'}</h3>
           <p>{measure?.measure_definition || 'This member is included in the current HEDIS measurement population.'}</p>
           <dl><div><dt>Status</dt><dd className={open ? 'is-alert' : 'is-good'}>{open ? 'Open care gap' : 'Compliant'}</dd></div><div><dt>Data source</dt><dd>{member?.source || '—'}</dd></div><div><dt>Provider</dt><dd>{provider?.crsp || member?.crsp || '—'}</dd></div><div><dt>Goal impact</dt><dd>1 member closure</dd></div></dl>
-          <button type="button" className="btn btn-primary" onClick={() => setAssignOpen(true)}>Create intervention</button>
+          <button type="button" className="btn btn-primary" onClick={() => setAssignOpen(true)}>Assign intervention</button>
         </aside>
       </div>
       {assignOpen && createPortal(

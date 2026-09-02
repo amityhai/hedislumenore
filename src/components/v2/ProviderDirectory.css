@@ -16,7 +16,7 @@
 }
 .pdir-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--c-text); margin-top: 4px; }
 .pdir-sub { margin-top: 8px; font-size: 14px; color: var(--c-text-3); }
-.pdir-head-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;padding-right:120px; }
+.pdir-head-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end; }
 
 .pdir-search {
   display: flex; align-items: center; gap: 8px; height: var(--h-control);

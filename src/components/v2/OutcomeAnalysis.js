@@ -123,7 +123,7 @@ const MissedTable = ({ title, rowLabel, rows }) => {
 
 const SORTS = [
   { key: 'lift', label: 'Biggest lift', cmp: (a, b) => b.lift - a.lift },
-  { key: 'missed', label: 'Most left on the table', cmp: (a, b) => b.ptsMissed - a.ptsMissed },
+  { key: 'missed', label: 'Biggest missed opportunity', cmp: (a, b) => b.ptsMissed - a.ptsMissed },
   { key: 'gap', label: 'Furthest from goal', cmp: (a, b) => (a.current - a.goal) - (b.current - b.goal) },
 ];
 

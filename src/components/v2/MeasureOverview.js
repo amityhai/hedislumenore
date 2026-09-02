@@ -105,7 +105,7 @@ const MeasureAiInsightDrawer = ({ measure, rate, goal, gap, open, need, provider
       <aside className="mov-ai-drawer" role="dialog" aria-modal="true" aria-labelledby="mov-ai-title" onClick={(event) => event.stopPropagation()}>
         <header className="mov-ai-drawer-head">
           <div className="mov-ai-drawer-brand"><AiIcon size={22} id="mov-ai-drawer-gradient" /><span>AI page analysis</span></div>
-          <button type="button" onClick={onClose} aria-label="Close AI analysis">×</button>
+          <button type="button" onClick={onClose} aria-label="Close explanation">×</button>
         </header>
 
         <div className="mov-ai-drawer-body">
@@ -545,13 +545,10 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
     <div className={`mov ${memberWorkspace ? 'has-member-workspace' : ''}`}>
       <div className="mov-topnav">
         {breadcrumb}
-        {createPortal(
-          <button type="button" className="mov-ai-trigger" onClick={() => setAiOpen(true)} aria-haspopup="dialog">
-            <AiIcon id="mov-ai-trigger-gradient" />
-            <span>Analyze</span>
-          </button>,
-          document.body
-        )}
+        <button type="button" className="mov-ai-trigger" onClick={() => setAiOpen(true)} aria-haspopup="dialog">
+          <AiIcon id="mov-ai-trigger-gradient" />
+          <span>Explain this page</span>
+        </button>
       </div>
 
       <section className="mov-hero">
@@ -606,7 +603,7 @@ const MeasureOverview = ({ token, selectedMonth, measure, breadcrumb }) => {
                   : <p>No provider success signal is available for this period.</p>}</div>
               </article>
             </div>
-            <button type="button" className="btn btn-assign" onClick={() => setAssignScope({ level: 'measure' })}>Assign measure intervention</button>
+            <button type="button" className="btn btn-assign" onClick={() => setAssignScope({ level: 'measure' })}>Assign intervention for this measure</button>
           </div>}
         </aside>
       </div>

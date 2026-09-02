@@ -93,7 +93,7 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
       <header className="gdf-head">
         <div className="gdf-head-left">
           <div className="eyebrow">GOALS</div>
-          <h1 className="gdf-title">Goal Definition</h1>
+          <h1 className="gdf-title">Measure Goals</h1>
           <p className="gdf-sub">
             Set your own target per measure. A custom goal <strong>replaces the 50th-percentile benchmark</strong> as
             the working target across the app — status bands, colours and gaps all follow it.
@@ -102,7 +102,7 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
         <div className="gdf-head-actions">
           <MonthFilter selectedMonth={selectedMonth} onMonthChange={onMonthChange} availableMonths={availableMonths} />
           <PageAnalysis
-            context="GOAL DEFINITION"
+            context="MEASURE GOALS"
             title="Goal-setting impact"
             summary={`${customCount} custom goals are active. ${belowGoal.length} of ${rows.length} visible measures remain below their working target.`}
             signals={[
@@ -124,7 +124,7 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
               : 'No custom goals — every measure uses its benchmark'}
           </span>
           {customCount > 0 && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={resetAll}>Reset all to benchmark</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={resetAll}>Reset all goals to benchmark</button>
           )}
         </div>
 
@@ -182,7 +182,7 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
                       <span className="gdf-input-pct" aria-hidden="true">%</span>
                     </span>
                     {dirty ? (
-                      <button type="button" className="gdf-apply" onClick={() => applyDraft(m)}>Apply</button>
+                      <button type="button" className="gdf-apply" onClick={() => applyDraft(m)}>Save</button>
                     ) : isCustom && <span className="gdf-tag">custom</span>}
                   </span>
                   <span className={`gdf-standing gdf-standing-${tone}`}>
@@ -191,7 +191,7 @@ const GoalDefinition = ({ token, selectedMonth, onMonthChange, availableMonths }
                   </span>
                   <span className="ta-r">
                     {isCustom && (
-                      <button type="button" className="gdf-reset" onClick={() => resetOne(m.measure_id)}>Reset</button>
+                      <button type="button" className="gdf-reset" onClick={() => resetOne(m.measure_id)}>Use benchmark</button>
                     )}
                   </span>
                 </div>

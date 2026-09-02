@@ -256,7 +256,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                 {provider && !provider.overall && onAnalyzeProvider && (
                   <button type="button" className="btn btn-tonal btn-sm"
                     onClick={() => onAnalyzeProvider(measure, provider)}>
-                    Open provider profile
+                    View provider profile
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
                     </svg>
@@ -319,11 +319,11 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
             <div className="mwl-toolbar">
               <button type="button" className={`mwl-filter ${ncOnly ? 'is-active' : ''}`} onClick={() => setFilter(!ncOnly)}>
                 <span className="mwl-filter-dot" aria-hidden="true" />
-                Non-compliant only
+                Open care gaps only
                 <span className="mwl-filter-count num">{nonCompliant}</span>
               </button>
               {ncOnly && (
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFilter(false)}>Clear ✕</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFilter(false)}>Clear filter</button>
               )}
               <span className="mwl-toolbar-count num">{shown.length} of {members.length} shown</span>
             </div>
@@ -336,7 +336,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                 <div className="mwl-bulk-actions">
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>Clear</button>
                   <button type="button" className="btn btn-assign btn-sm" onClick={() => setModalMembers(selectedMembers)}>
-                    Assign selected ({selectedIds.size})
+                    Assign to {selectedIds.size} selected
                   </button>
                 </div>
               </div>
@@ -394,7 +394,7 @@ const MemberWorklist = ({ token, selectedMonth, measure, provider, strat, onAnal
                       </button>
                       {onOpenMember && (
                         <button type="button" className="btn btn-tonal btn-sm" onClick={() => onOpenMember(m)}>
-                          Open 360
+                          View profile
                         </button>
                       )}
                     </span>

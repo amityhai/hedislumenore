@@ -437,7 +437,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                   onClick={() => setProvPick(provPick ? null : conc.rows)}>
                   <span className="apx-check" aria-hidden="true" />
                   <span><strong className="num">{conc.rows.length}</strong> providers account for <strong className="num">{conc.share}%</strong> of the shortfall</span>
-                  <span className="apx-pick-cta">{provPick ? 'Targeted' : 'Target these'}</span>
+                  <span className="apx-pick-cta">{provPick ? 'Selected' : 'Select these'}</span>
                 </button>
               )}
             </section>
@@ -491,7 +491,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                 assigner can see who they are and check specific members to pick a set. */}
             <button type="button" className={`btn btn-secondary btn-sm apx-viewmembers ${memberScope?.kind === 'scope' ? 'is-on' : ''}`}
               aria-pressed={memberScope?.kind === 'scope'} onClick={() => setMemberScope(memberScope?.kind === 'scope' ? null : { kind: 'scope' })}>
-              {hasPicked ? 'View / pick members' : 'View members'}
+              {hasPicked ? 'Choose members' : 'View members'}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
             </button>
           </section>
@@ -527,7 +527,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                       </span>
                       <span className="apx-eq-rate num">{r.rate}%</span>
                       <span className="apx-eq-delta num">▼ {Math.abs(r.delta)} pts</span>
-                      <span className="apx-eq-cta">{on ? 'Targeted' : 'Target this'}</span>
+                      <span className="apx-eq-cta">{on ? 'Selected' : 'Select this'}</span>
                     </button>
                   );
                 })}
@@ -581,7 +581,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
                 {atMeasure && providerRows.length > 0 && (
                   <button type="button" className={`btn btn-secondary btn-sm apx-viewmembers ${showPool ? 'is-on' : ''}`}
                     aria-pressed={showPool} onClick={() => { setShowPool((s) => !s); setMemberScope(null); }}>
-                    {showPool ? 'Hide providers' : 'View / pick providers'}
+                    {showPool ? 'Hide providers' : 'Choose providers'}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
                   </button>
                 )}
@@ -615,7 +615,7 @@ const AssignPanel = ({ measure, providers = [], equity = { age: [], race: [], et
           <div className="apx-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="button" className="btn btn-assign" disabled={!tasks || !interventions.length} onClick={submit}>
-              Assign {tasks > 0 ? tasks.toLocaleString() : ''}
+              Assign {tasks > 0 ? `${tasks.toLocaleString()} ${tasks === 1 ? 'task' : 'tasks'}` : ''}
             </button>
           </div>
         </footer>
@@ -885,7 +885,7 @@ const MembersPanel = ({ token, selectedMonth, measureId, level, crsp, stratum, s
         <div className="apxm-tabs">
           {selectedCount > 0 && <span className="apxm-selected"><span className="num">{selectedCount}</span> selected</span>}
           <button type="button" className={`apxm-tab ${!showAll ? 'is-on' : ''}`} onClick={() => setShowAll(false)}>
-            Non-compliant <span className="num">{nonCompliant.length.toLocaleString()}</span>
+            Open gaps <span className="num">{nonCompliant.length.toLocaleString()}</span>
           </button>
           <button type="button" className={`apxm-tab ${showAll ? 'is-on' : ''}`} onClick={() => setShowAll(true)}>
             All <span className="num">{all.length.toLocaleString()}</span>

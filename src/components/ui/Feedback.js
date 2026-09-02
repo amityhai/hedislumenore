@@ -36,7 +36,7 @@ export const ErrorState = ({ title = 'Couldn’t load this', message, onRetry })
     {message && <div className="state-hint">{message}</div>}
     {onRetry && (
       <button type="button" className="btn btn-secondary state-retry" onClick={onRetry}>
-        ↻ Retry
+        ↻ Try again
       </button>
     )}
   </div>

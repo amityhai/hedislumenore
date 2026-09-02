@@ -473,7 +473,7 @@ const CareActionCenter = ({ token }) => {
                         className={`btn ${isUnassignedRow ? 'btn-assign' : 'btn-secondary'} btn-sm`}
                         onClick={(e) => { e.stopPropagation(); handleOpenModal(row); }}
                       >
-                        {isUnassignedRow ? 'Assign' : 'View / Edit'}
+                        {isUnassignedRow ? 'Assign' : 'View or edit'}
                       </button>
                     </td>
                   </tr>
@@ -570,12 +570,12 @@ const CareActionCenter = ({ token }) => {
                 {isNewAssignment && !actionType && <span className="cac-modal-hint">Choose an action type to save</span>}
                 {selectedAction.latestPlay && (
                   <button type="button" className="btn btn-ghost btn-sm" onClick={handleRemoveAssignment} disabled={saving}>
-                    {isBroadPlay ? 'Remove this population/stratum-wide play' : 'Remove assignment'}
+                    {isBroadPlay ? 'Remove this group-wide assignment' : 'Remove assignment'}
                   </button>
                 )}
                 <button className="btn btn-secondary" onClick={handleCloseModal} disabled={saving}>Cancel</button>
                 <button className="btn btn-primary" onClick={handleSaveAction} disabled={saving || (isNewAssignment && !actionType)}>
-                  {saving ? 'Saving…' : 'Save Action'}
+                  {saving ? 'Saving…' : 'Save action'}
                 </button>
               </div>
             </div>
